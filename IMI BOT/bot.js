@@ -124,7 +124,13 @@
 
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
             const title   = titleEl
-                ? titleEl.innerText.trim().replace(/\n/g, ' ')
+                ? (() => {
+                    // 텍스트 노드만 추출해서 뱃지(span 등) 제외
+                    const raw = Array.from(titleEl.childNodes)
+                        .filter(n => n.nodeType === Node.TEXT_NODE)
+                        .map(n => n.textContent.trim()).filter(Boolean).join(' ');
+                    return (raw || titleEl.innerText.split('\n')[0]).trim();
+                })()
                 : text.substring(0, 40) + '...';
 
             const candidates = el.tagName === 'A'
