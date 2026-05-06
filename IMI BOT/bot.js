@@ -89,12 +89,13 @@
             const n = parseInt(s);
             if (n >= 10000) prices.push(n);
         });
-        (text.match(/[\d,]+만원?/g) || []).forEach(s => {
-            const n = parseInt(s.replace(/,/g, '').replace(/만원?$/, '')) * 10000;
+        (text.match(/[\d,]+만원/g) || []).forEach(s => {
+            const n = parseInt(s.replace(/,/g, '').replace(/만원$/, '')) * 10000;
             if (n >= 10000) prices.push(n);
         });
-        (text.match(/\d+억원?/g) || []).forEach(s => {
-            prices.push(parseInt(s.replace(/억원?$/, '')) * 100000000);
+        // "N억원"만 가격 인식 — "1억 개" 같은 수량 표현 제외
+        (text.match(/\d+억원/g) || []).forEach(s => {
+            prices.push(parseInt(s.replace(/억원$/, '')) * 100000000);
         });
         return prices.length ? Math.max(...prices) : 0;
     }
