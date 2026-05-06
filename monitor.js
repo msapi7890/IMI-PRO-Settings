@@ -16,7 +16,6 @@ function _sendToBot(msg) {
 }
 
 function toggleBotFromWeb() {
-    if (!_botBridgeConnected) return;
     var btn = document.getElementById('monBotToggleBtn');
     if (btn) btn.disabled = true;
     if (_botStatus && _botStatus.active) {
@@ -31,21 +30,23 @@ function _updateBotToggleBtn() {
     var btn = document.getElementById('monBotToggleBtn');
     if (!btn) return;
     var active = _botStatus && _botStatus.active;
-    if (!_botBridgeConnected) {
+    // Firebase에서 봇 상태를 수신하면 버튼 활성화 (브릿지 연결 여부와 무관)
+    if (_botStatus) {
+        if (active) {
+            btn.textContent = '⏸ 봇 중지';
+            btn.style.background = '#ef4444';
+            btn.style.color = '#fff';
+        } else {
+            btn.textContent = '▶ 봇 시작';
+            btn.style.background = '#22c55e';
+            btn.style.color = '#fff';
+        }
+        btn.disabled = false;
+    } else if (!_botBridgeConnected) {
         btn.textContent = '확장프로그램 필요';
         btn.disabled = true;
         btn.style.background = '#334155';
         btn.style.color = '#94a3b8';
-    } else if (active) {
-        btn.textContent = '⏸ 봇 중지';
-        btn.disabled = false;
-        btn.style.background = '#ef4444';
-        btn.style.color = '#fff';
-    } else {
-        btn.textContent = '▶ 봇 시작';
-        btn.disabled = false;
-        btn.style.background = '#22c55e';
-        btn.style.color = '#fff';
     }
 }
 
@@ -537,7 +538,6 @@ function _triggerMonitorAlert(id, rule, items) {
 }
 
 function closeMonitorFlash() { db.ref('monitor_flash_state/active').set(false); }
-
 
 function _showMonitorFlash(s) {
     document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');

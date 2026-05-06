@@ -19,3 +19,5 @@ _announce();
 setTimeout(_announce, 300);
 setTimeout(_announce, 1000);
 setTimeout(_announce, 3000);
+setTimeout(_announce, 7000);
+setTimeout(_announce, 15000);
