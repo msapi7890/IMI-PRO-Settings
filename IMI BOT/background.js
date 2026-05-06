@@ -291,6 +291,38 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         })();
         return true;
     }
+    // alert_popup → 스캔 탭의 bot.js에 DOM 클릭 요청
+    if (msg.type === 'CLICK_ITEM_IN_SCAN_TAB') {
+        (async () => {
+            const tabMap = await getTabMap();
+            let tabId = tabMap[msg.ruleId];
+            if (tabId) { try { await chrome.tabs.get(tabId); } catch(e) { tabId = null; } }
+            if (!tabId) {
+                const allTabs = await chrome.tabs.query({});
+                const found = allTabs.find(t => t.url && t.url.includes('itemmania.com') && !t.url.includes('application.html'));
+                if (found) tabId = found.id;
+            }
+            if (tabId) {
+                // 먼저 bot.js에 DOM 클릭 요청
+                chrome.tabs.sendMessage(tabId, { type: 'CLICK_ITEM_URL', url: msg.url }, res => {
+                    if (chrome.runtime.lastError || !res || !res.ok) {
+                        // DOM 요소 없음(페이지 새로고침됨) → 직접 URL 이동
+                        chrome.scripting.executeScript({
+                            target: { tabId },
+                            world: 'MAIN',
+                            func: (u) => { location.href = u; },
+                            args: [msg.url]
+                        }).catch(() => {});
+                    }
+                    chrome.tabs.update(tabId, { active: true }).catch(() => {});
+                });
+            } else {
+                chrome.tabs.create({ url: msg.url });
+            }
+            sendResponse({ ok: true });
+        })();
+        return true;
+    }
     if (msg.type === 'START_ALL')   { startAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'STOP_ALL')    { stopAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'SYNC_STATUS') { syncStatus(); sendResponse({ ok: true }); }

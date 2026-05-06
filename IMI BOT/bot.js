@@ -2,17 +2,32 @@
     'use strict';
     if (window.top !== window.self) return;
     if (window._imiBotLoaded) return;
+    if (location.pathname.includes('application.html')) return;
     window._imiBotLoaded = true;
 
     let rule = null;
     let isRunning = false;
     let blockedItems = new Set();
 
+    // --- 메시지 핸들러 ---
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+        if (msg.type === 'STOP_BOT') {
+            isRunning = false;
+            setStatus('⏹ 정지됨', '#94a3b8');
+            sendResponse({ ok: true });
+            return true;
+        }
+        // alert_popup에서 요청: 현재 페이지 DOM 요소 직접 클릭
+        if (msg.type === 'CLICK_ITEM_URL') {
+            const clicked = clickItemByUrl(msg.url);
+            sendResponse({ ok: clicked });
+            return true;
+        }
+    });
+
     chrome.runtime.sendMessage({ type: 'GET_MY_RULE' }, res => {
         rule = (res && res.rule) ? res.rule : null;
-        // rule이 없거나 봇이 정지 상태이면 시작 안 함
         if (!rule || res.botStopped) return;
-        // Firebase 포함 차단목록 수신 (background가 원격 병합 후 반환)
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
             initUI();
@@ -48,38 +63,82 @@
         if (el) { el.textContent = text; el.style.color = color || '#94a3b8'; }
     }
 
-    // --- 물품 차단 (Firebase 공유 → 전체 실무자 적용) ---
+    // --- 물품 차단 ---
     function blockItem(key) {
         blockedItems.add(key);
         chrome.runtime.sendMessage({ type: 'BLOCK_ITEM', key });
     }
 
+    // --- DOM 요소 직접 클릭 (itemmania 세션 유지) ---
+    function clickItemByUrl(url) {
+        const tidMatch = url.match(/[?&]tid=(\d+)/);
+        if (tidMatch) {
+            const el = document.querySelector('li[data-tid="' + tidMatch[1] + '"]');
+            if (el) { (el.querySelector('a') || el).click(); return true; }
+        }
+        const idMatch = url.match(/[?&]id=(\d+)/);
+        if (idMatch) {
+            let el = document.querySelector('[data-id="' + idMatch[1] + '"]') ||
+                     document.querySelector('[data-no="' + idMatch[1] + '"]');
+            if (!el) {
+                document.querySelectorAll('[onclick]').forEach(e => {
+                    if (!el && (e.getAttribute('onclick') || '').includes(idMatch[1])) el = e;
+                });
+            }
+            if (el) { (el.querySelector('a') || el).click(); return true; }
+        }
+        return false;
+    }
+
+    function clickItemDirectly(it) {
+        // 1순위: 저장된 DOM 참조 (페이지 새로고침 전)
+        if (it._el && document.contains(it._el)) {
+            const a = it._el.querySelector('a[href*="application"]') || it._el.querySelector('a') || it._el;
+            a.click();
+            return;
+        }
+        // 2순위: URL로 DOM 탐색
+        if (it.u && clickItemByUrl(it.u)) return;
+        // 3순위: background 경유 탭 이동 (페이지 이미 새로고침된 경우)
+        if (it.u) chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', url: it.u, ruleId: rule.id });
+    }
+
     function renderAlertItems(items) {
         const container = document.getElementById('_imi_items');
         if (!container) return;
-        container.innerHTML = items.slice(0, 5).map(it =>
-            `<div data-key="${_e(it.key)}" style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #334155;">
-                <div style="flex:1;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${it.u
-                        ? `<span data-url="${_e(it.u)}" style="color:#38bdf8;text-decoration:none;font-weight:800;cursor:pointer;">${_e(it.t)} ↗</span>`
-                        : _e(it.t)}
-                </div>
-                <button data-block="${_e(it.key)}" style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;">🚫 차단</button>
-            </div>`
-        ).join('');
-        container.querySelectorAll('span[data-url]').forEach(span => {
-            span.addEventListener('click', () => {
-                chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', url: span.dataset.url, ruleId: rule.id });
+        container.innerHTML = '';
+        items.slice(0, 5).forEach(it => {
+            const row = document.createElement('div');
+            row.dataset.key = it.key;
+            row.style.cssText = 'display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #334155;';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.style.cssText = 'flex:1;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+            if (it.u) {
+                const span = document.createElement('span');
+                span.textContent = it.t + ' ↗';
+                span.style.cssText = 'color:#38bdf8;font-weight:800;cursor:pointer;';
+                span.addEventListener('click', () => clickItemDirectly(it));
+                titleDiv.appendChild(span);
+            } else {
+                titleDiv.textContent = it.t;
+            }
+
+            const blockBtn = document.createElement('button');
+            blockBtn.dataset.block = it.key;
+            blockBtn.textContent = '🚫 차단';
+            blockBtn.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;';
+            blockBtn.addEventListener('click', () => {
+                blockItem(it.key);
+                row.style.opacity = '0.3';
+                blockBtn.disabled = true;
+                blockBtn.textContent = '차단됨';
             });
-        });
-        container.querySelectorAll('button[data-block]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                blockItem(btn.dataset.block);
-                const row = btn.closest('div[data-key]');
-                if (row) row.style.opacity = '0.3';
-                btn.disabled = true;
-                btn.textContent = '차단됨';
-            });
+
+            row.appendChild(titleDiv);
+            row.appendChild(blockBtn);
+            container.appendChild(row);
         });
     }
 
@@ -129,9 +188,8 @@
             if (maxPrice > 0 && price > maxPrice) return;
 
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
-            const title   = titleEl
+            const title = titleEl
                 ? (() => {
-                    // 텍스트 노드만 추출해서 뱃지(span 등) 제외
                     const raw = Array.from(titleEl.childNodes)
                         .filter(n => n.nodeType === Node.TEXT_NODE)
                         .map(n => n.textContent.trim()).filter(Boolean).join(' ');
@@ -147,7 +205,6 @@
                 candidates.find(a => a.href && a.href.startsWith('http') && !a.href.includes('javascript'))
             )?.href || '';
 
-            // data-tid (아이템매니아) → URL 구성
             if (!href) {
                 const tid = el.getAttribute('data-tid');
                 if (tid && /^\d{6,}$/.test(tid)) {
@@ -155,7 +212,6 @@
                 }
             }
 
-            // onclick / data 속성에서 ID 추출 → URL 구성
             if (!href) {
                 const allEls = [el, ...Array.from(el.querySelectorAll('[onclick],[data-id],[data-no],[data-seq]'))];
                 for (const e of allEls) {
@@ -176,7 +232,8 @@
             if (seen.has(key)) return;
             seen.add(key);
             chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
-            items.push({ t: title, p: price, u: href, key: itemKey });
+            // _el: DOM 참조 저장 → 클릭 시 직접 사용
+            items.push({ t: title, p: price, u: href, key: itemKey, _el: el });
         });
         return items;
     }

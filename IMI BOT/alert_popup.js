@@ -18,8 +18,8 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
             row.style.cursor = 'pointer';
             (function(url, ruleId) {
                 row.addEventListener('click', function() {
-                    // 항상 기존 스캔 탭 활용 (새 탭 열면 세션 없어서 메인으로 리다이렉트)
-                    chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', url: url, ruleId: ruleId });
+                    // 스캔 탭 bot.js에 DOM 클릭 요청 (세션 유지)
+                    chrome.runtime.sendMessage({ type: 'CLICK_ITEM_IN_SCAN_TAB', url: url, ruleId: ruleId });
                     window.close();
                 });
             })(it.u, data.ruleId);
