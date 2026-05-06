@@ -2,34 +2,16 @@
     'use strict';
     if (window.top !== window.self) return;
     if (window._imiBotLoaded) return;
-    // application.html 상세 페이지에서는 봇 실행 안 함
-    if (location.pathname.includes('application.html')) return;
     window._imiBotLoaded = true;
 
     let rule = null;
     let isRunning = false;
     let blockedItems = new Set();
 
-    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-        if (msg.type === 'CLICK_ITEM_TID') {
-            const tid = msg.tid;
-            const el = document.querySelector('li[data-tid="' + tid + '"]');
-            if (el) {
-                // 요소가 DOM에 있으면 실제 클릭 시뮬레이션 (사이트 JS가 처리)
-                const a = el.querySelector('a');
-                (a || el).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-            } else {
-                // 페이지가 이미 새로고침된 경우 - 이 탭 컨텍스트에서 열면 Referer가 itemmania.com으로 설정됨
-                window.open(location.origin + '/sell/application.html?tid=' + tid, '_blank');
-            }
-            sendResponse({ ok: true });
-            return true;
-        }
-    });
-
     chrome.runtime.sendMessage({ type: 'GET_MY_RULE' }, res => {
         rule = (res && res.rule) ? res.rule : null;
-        if (!rule) return;
+        // rule이 없거나 봇이 정지 상태이면 시작 안 함
+        if (!rule || res.botStopped) return;
         // Firebase 포함 차단목록 수신 (background가 원격 병합 후 반환)
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
@@ -153,14 +135,6 @@
                 candidates.find(a => a.href && a.href.startsWith('http') && !a.href.includes('javascript'))
             )?.href || '';
 
-            // data-tid (아이템매니아) → URL 구성
-            if (!href) {
-                const tid = el.getAttribute('data-tid');
-                if (tid && /^\d{6,}$/.test(tid)) {
-                    href = location.origin + '/sell/application.html?tid=' + tid;
-                }
-            }
-
             // onclick / data 속성에서 ID 추출 → URL 구성
             if (!href) {
                 const allEls = [el, ...Array.from(el.querySelectorAll('[onclick],[data-id],[data-no],[data-seq]'))];
@@ -178,10 +152,13 @@
             const itemKey = title.substring(0, 30).trim();
             if (blockedItems.has(itemKey)) return;
 
+            // 링크 없으면 배너/이벤트 영역 → 스킵
+            if (!href) return;
+
             const key = title.substring(0, 20) + '_' + price;
             if (seen.has(key)) return;
             seen.add(key);
-            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + href });
             items.push({ t: title, p: price, u: href, key: itemKey });
         });
         return items;
@@ -221,7 +198,6 @@
             path: '/monitor_flash_state',
             data: {
                 active: true,
-                ruleId: rule.id,
                 ruleName: rule.name,
                 ruleUrl: rule.url,
                 itemCount: items.length,

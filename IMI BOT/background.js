@@ -55,7 +55,7 @@ const saveTabMap = (m) => store.set('imi_tab_map', m);
 const isActive   = () => store.get('imi_active').then(v => !!v);
 const getBlocked = () => store.get('imi_blocked').then(v => v || []);
 
-// 서비스워커 시작 시 Firebase 차단목록 → 로컬 병합 + 상태 동기화
+// 서비스워커 시작 시 Firebase 차단목록 → 로컬 병합 (다른 실무자 차단 내역 수신)
 (async () => {
     const remote = await fireGet('/imi_blocked');
     if (remote && Array.isArray(remote) && remote.length) {
@@ -63,8 +63,6 @@ const getBlocked = () => store.get('imi_blocked').then(v => v || []);
         const merged = [...new Set([...local, ...remote])];
         await store.set('imi_blocked', merged);
     }
-    // 시작 시 Firebase에 현재 실제 상태 반영 (삭제 후 재설치 시 구 데이터 덮어쓰기)
-    await syncStatus();
 })();
 
 // --- Firebase 상태 동기화 (IMI PRO 대시보드용) ---
@@ -107,11 +105,23 @@ async function startAll() {
 
 async function stopAll() {
     await store.set('imi_active', false);
+    // 모든 아이템매니아 탭에 STOP 브로드캐스트 (tabMap 비어있어도 동작)
+    const allTabs = await chrome.tabs.query({});
+    for (const tab of allTabs) {
+        if (tab.url && tab.url.includes('itemmania.com')) {
+            chrome.tabs.sendMessage(tab.id, { type: 'STOP_BOT' }).catch(() => {});
+        }
+    }
     const tabMap = await getTabMap();
     for (const tabId of Object.values(tabMap)) {
         try { await chrome.tabs.remove(tabId); } catch(e) {}
     }
     await saveTabMap({});
+    // 알림 팝업 닫기
+    if (_alertWinId) {
+        try { await chrome.windows.remove(_alertWinId); } catch(e) {}
+        _alertWinId = null;
+    }
     await syncStatus();
 }
 
@@ -165,10 +175,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // 컨텐츠 스크립트가 자신의 규칙을 물어볼 때
     if (msg.type === 'GET_MY_RULE') {
         getTabMap().then(async tabMap => {
-            const rules    = await getRules();
+            const [rules, active] = await Promise.all([getRules(), isActive()]);
             const ruleId   = Object.entries(tabMap).find(([, tid]) => tid === sender.tab.id)?.[0];
             const rule     = ruleId ? (rules.find(r => r.id === ruleId) || null) : null;
-            sendResponse({ rule });
+            // 봇이 정지 상태면 botStopped 플래그 반환 → 페이지 재로드 후 재시작 방지
+            sendResponse({ rule, botStopped: !active });
         });
         return true;
     }
@@ -185,61 +196,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg.type === 'GET_BLOCKED') {
         getBlocked().then(list => sendResponse({ blocked: list }));
-        return true;
-    }
-    if (msg.type === 'DEBUG_LOG') {
-        console.log('[IMI BOT]', msg.text);
-        sendResponse({ ok: true });
-        return true;
-    }
-    if (msg.type === 'OPEN_ITEM_IN_TAB') {
-        (async () => {
-            // 30초 쿨다운 (루프 방지)
-            const now = Date.now();
-            const lastOpen = await store.get('imi_last_open') || 0;
-            if (now - lastOpen < 30000) { sendResponse({ ok: false }); return; }
-            await store.set('imi_last_open', now);
-            const [tabMap, rules] = await Promise.all([getTabMap(), getRules()]);
-            let tabId = tabMap[msg.ruleId];
-            const rule = rules.find(r => r.id === msg.ruleId);
-            const url  = 'https://www.itemmania.com/sell/application.html?tid=' + msg.tid;
-
-            // tabMap에 없으면 열려있는 아이템매니아 탭 직접 검색
-            if (!tabId) {
-                const imitabs = await chrome.tabs.query({ url: '*://*.itemmania.com/*' });
-                const found = imitabs.find(t => t.url && !t.url.includes('application.html'));
-                if (found) tabId = found.id;
-            }
-            console.log('[OPEN_ITEM] ruleId:', msg.ruleId, '| tabId:', tabId);
-
-            if (tabId) {
-                try {
-                    await chrome.scripting.executeScript({
-                        target: { tabId },
-                        world: 'MAIN',
-                        func: (u) => { location.href = u; },
-                        args: [url]
-                    });
-                    console.log('[OPEN_ITEM] executeScript OK');
-                    await chrome.tabs.update(tabId, { active: true });
-                    // 봇이 활성 상태일 때만 새 모니터링 탭 생성
-                    if (rule && await isActive()) {
-                        const newTab = await chrome.tabs.create({ url: rule.url, active: false });
-                        const newMap = await getTabMap();
-                        newMap[rule.id] = newTab.id;
-                        await saveTabMap(newMap);
-                        await syncStatus();
-                    }
-                } catch(e) {
-                    console.log('[OPEN_ITEM] executeScript 실패:', e.message);
-                    chrome.tabs.create({ url });
-                }
-            } else {
-                console.log('[OPEN_ITEM] itemmania 탭 없음 → 새 탭 fallback');
-                chrome.tabs.create({ url });
-            }
-            sendResponse({ ok: !!tabId });
-        })();
         return true;
     }
     if (msg.type === 'START_RULE') {
