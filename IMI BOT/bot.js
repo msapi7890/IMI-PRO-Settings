@@ -61,12 +61,17 @@
             `<div data-key="${_e(it.key)}" style="display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid #334155;">
                 <div style="flex:1;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                     ${it.u
-                        ? `<a href="${_e(it.u)}" target="_blank" style="color:#38bdf8;text-decoration:none;font-weight:800;">${_e(it.t)}</a>`
+                        ? `<span data-url="${_e(it.u)}" style="color:#38bdf8;text-decoration:none;font-weight:800;cursor:pointer;">${_e(it.t)} ↗</span>`
                         : _e(it.t)}
                 </div>
                 <button data-block="${_e(it.key)}" style="font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;">🚫 차단</button>
             </div>`
         ).join('');
+        container.querySelectorAll('span[data-url]').forEach(span => {
+            span.addEventListener('click', () => {
+                chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', url: span.dataset.url, ruleId: rule.id });
+            });
+        });
         container.querySelectorAll('button[data-block]').forEach(btn => {
             btn.addEventListener('click', () => {
                 blockItem(btn.dataset.block);

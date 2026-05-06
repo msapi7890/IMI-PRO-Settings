@@ -159,8 +159,14 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'FIREBASE_SET') {
+        // 봇 탭 ID 자동 갱신 → OPEN_ITEM_IN_TAB에서 올바른 탭 사용
+        if (sender.tab && sender.tab.id && msg.data && msg.data.ruleId) {
+            getTabMap().then(m => {
+                m[msg.data.ruleId] = sender.tab.id;
+                saveTabMap(m);
+            });
+        }
         fireSet(msg.path, msg.data).then(() => {
-            // 물품 감지 알림 → 커스텀 팝업 창
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 showAlertPopup(msg.data);
             }
@@ -228,6 +234,61 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             }
             sendResponse({ ok: true });
         });
+        return true;
+    }
+    if (msg.type === 'OPEN_ITEM_IN_TAB') {
+        (async () => {
+            const [tabMap, rules] = await Promise.all([getTabMap(), getRules()]);
+            // msg.url 우선, 없으면 tid로 구성
+            const url = msg.url || ('https://www.itemmania.com/sell/application.html?tid=' + msg.tid);
+            const rule = rules.find(r => r.id === msg.ruleId);
+
+            let tabId = tabMap[msg.ruleId];
+            if (tabId) {
+                try { await chrome.tabs.get(tabId); } catch(e) { tabId = null; }
+            }
+            // tabMap에 없으면 열려있는 아이템매니아 탭 검색
+            if (!tabId) {
+                const allTabs = await chrome.tabs.query({});
+                const found = allTabs.find(t =>
+                    t.url && t.url.includes('itemmania.com') && !t.url.includes('application.html')
+                );
+                if (found) {
+                    tabId = found.id;
+                    const newMap = await getTabMap();
+                    newMap[msg.ruleId] = tabId;
+                    await saveTabMap(newMap);
+                }
+            }
+
+            if (tabId) {
+                try {
+                    await chrome.scripting.executeScript({
+                        target: { tabId },
+                        world: 'MAIN',
+                        func: (u) => { location.href = u; },
+                        args: [url]
+                    });
+                    await chrome.tabs.update(tabId, { active: true });
+                    // 봇 활성 상태면 새 스캔 탭 생성
+                    if (rule && await isActive()) {
+                        const newTab = await chrome.tabs.create({ url: rule.url, active: false });
+                        const newMap = await getTabMap();
+                        newMap[rule.id] = newTab.id;
+                        await saveTabMap(newMap);
+                        await syncStatus();
+                    }
+                    sendResponse({ ok: true });
+                } catch(e) {
+                    chrome.tabs.create({ url });
+                    sendResponse({ ok: false });
+                }
+            } else {
+                // 스캔 탭 없음 → 새 탭으로 fallback
+                chrome.tabs.create({ url });
+                sendResponse({ ok: false });
+            }
+        })();
         return true;
     }
     if (msg.type === 'START_ALL')   { startAll().then(() => sendResponse({ ok: true })); return true; }

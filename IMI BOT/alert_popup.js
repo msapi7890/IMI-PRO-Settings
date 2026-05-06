@@ -18,12 +18,8 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
             row.style.cursor = 'pointer';
             (function(url, ruleId) {
                 row.addEventListener('click', function() {
-                    var tidMatch = url.match(/[?&]tid=(\d+)/);
-                    if (tidMatch && ruleId) {
-                        chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', tid: tidMatch[1], ruleId: ruleId });
-                    } else {
-                        chrome.tabs.create({ url: url });
-                    }
+                    // 항상 기존 스캔 탭 활용 (새 탭 열면 세션 없어서 메인으로 리다이렉트)
+                    chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', url: url, ruleId: ruleId });
                     window.close();
                 });
             })(it.u, data.ruleId);
