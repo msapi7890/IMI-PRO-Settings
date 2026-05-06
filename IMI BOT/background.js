@@ -105,11 +105,23 @@ async function startAll() {
 
 async function stopAll() {
     await store.set('imi_active', false);
+    // 모든 아이템매니아 탭에 STOP 브로드캐스트 (tabMap 비어있어도 동작)
+    const allTabs = await chrome.tabs.query({});
+    for (const tab of allTabs) {
+        if (tab.url && tab.url.includes('itemmania.com')) {
+            chrome.tabs.sendMessage(tab.id, { type: 'STOP_BOT' }).catch(() => {});
+        }
+    }
     const tabMap = await getTabMap();
     for (const tabId of Object.values(tabMap)) {
         try { await chrome.tabs.remove(tabId); } catch(e) {}
     }
     await saveTabMap({});
+    // 알림 팝업 닫기
+    if (_alertWinId) {
+        try { await chrome.windows.remove(_alertWinId); } catch(e) {}
+        _alertWinId = null;
+    }
     await syncStatus();
 }
 
@@ -163,10 +175,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // 컨텐츠 스크립트가 자신의 규칙을 물어볼 때
     if (msg.type === 'GET_MY_RULE') {
         getTabMap().then(async tabMap => {
-            const rules    = await getRules();
+            const [rules, active] = await Promise.all([getRules(), isActive()]);
             const ruleId   = Object.entries(tabMap).find(([, tid]) => tid === sender.tab.id)?.[0];
             const rule     = ruleId ? (rules.find(r => r.id === ruleId) || null) : null;
-            sendResponse({ rule });
+            // 봇이 정지 상태면 botStopped 플래그 반환 → 페이지 재로드 후 재시작 방지
+            sendResponse({ rule, botStopped: !active });
         });
         return true;
     }

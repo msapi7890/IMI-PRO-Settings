@@ -10,7 +10,8 @@
 
     chrome.runtime.sendMessage({ type: 'GET_MY_RULE' }, res => {
         rule = (res && res.rule) ? res.rule : null;
-        if (!rule) return;
+        // rule이 없거나 봇이 정지 상태이면 시작 안 함
+        if (!rule || res.botStopped) return;
         // Firebase 포함 차단목록 수신 (background가 원격 병합 후 반환)
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
@@ -151,10 +152,13 @@
             const itemKey = title.substring(0, 30).trim();
             if (blockedItems.has(itemKey)) return;
 
+            // 링크 없으면 배너/이벤트 영역 → 스킵
+            if (!href) return;
+
             const key = title.substring(0, 20) + '_' + price;
             if (seen.has(key)) return;
             seen.add(key);
-            console.log('[IMI BOT] item:', title.substring(0,30), '| href:', href || '(없음)', '| el.tag:', el.tagName, '| links:', candidates.length);
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + href });
             items.push({ t: title, p: price, u: href, key: itemKey });
         });
         return items;
