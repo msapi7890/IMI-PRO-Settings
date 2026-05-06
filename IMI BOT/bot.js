@@ -215,6 +215,7 @@
             path: '/monitor_flash_state',
             data: {
                 active: true,
+                ruleId: rule.id,
                 ruleName: rule.name,
                 ruleUrl: rule.url,
                 itemCount: items.length,
