@@ -3,7 +3,7 @@
   "name": "IMI 물리 검색봇",
   "version": "2.0",
   "description": "아이템매니아 다중 카테고리 자동 모니터링",
-  "permissions": ["storage", "tabs", "alarms"],
+  "permissions": ["storage", "tabs", "alarms", "scripting", "declarativeNetRequest"],
   "host_permissions": [
     "*://*.itemmania.com/*",
     "https://manual-9a47c-default-rtdb.firebaseio.com/*",
@@ -16,7 +16,20 @@
     "default_popup": "popup.html",
     "default_title": "IMI 물리 검색봇"
   },
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules.json"
+    }]
+  },
   "content_scripts": [
+    {
+      "matches": ["*://*.itemmania.com/sell/application.html*"],
+      "js": ["referrer_fix.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
     {
       "matches": ["*://*.itemmania.com/*"],
       "js": ["bot.js"],

@@ -4,7 +4,7 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
     var data = d.imi_alert_popup_data;
     if (!data) { window.close(); return; }
 
-    document.getElementById('ruleName').textContent = '규칙: ' + (data.ruleName || '');
+    document.getElementById('ruleName').textContent = '규칙: ' + (data.ruleName || '') + ' [' + (data.ruleId||'NO-ID') + ']';
     document.getElementById('itemCount').textContent = (data.itemCount || 0) + '개 물품 감지됨';
 
     var listEl = document.getElementById('itemList');
@@ -16,12 +16,17 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
 
         if (it.u) {
             row.style.cursor = 'pointer';
-            (function(url) {
+            (function(url, ruleId) {
                 row.addEventListener('click', function() {
-                    chrome.tabs.create({ url: url });
+                    var tidMatch = url.match(/[?&]tid=(\d+)/);
+                    if (tidMatch && ruleId) {
+                        chrome.runtime.sendMessage({ type: 'OPEN_ITEM_IN_TAB', tid: tidMatch[1], ruleId: ruleId });
+                    } else {
+                        chrome.tabs.create({ url: url });
+                    }
                     window.close();
                 });
-            })(it.u);
+            })(it.u, data.ruleId);
         }
         listEl.appendChild(row);
     });

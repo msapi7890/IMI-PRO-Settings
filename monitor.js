@@ -538,6 +538,7 @@ function _triggerMonitorAlert(id, rule, items) {
 
 function closeMonitorFlash() { db.ref('monitor_flash_state/active').set(false); }
 
+
 function _showMonitorFlash(s) {
     document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');
     document.getElementById('monitorAlertCount').textContent = (s.itemCount||0)+'개 물품 감지됨';
