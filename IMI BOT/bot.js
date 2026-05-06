@@ -122,7 +122,7 @@
             if (minPrice > 0 && price < minPrice) return;
             if (maxPrice > 0 && price > maxPrice) return;
 
-            const titleEl = el.querySelector('.item_title, .title, .col_title, td:nth-child(2)');
+            const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
             const title   = titleEl
                 ? titleEl.innerText.trim().replace(/\n/g, ' ')
                 : text.substring(0, 40) + '...';
@@ -134,6 +134,14 @@
                 candidates.find(a => a.href && a.href.includes('application')) ||
                 candidates.find(a => a.href && a.href.startsWith('http') && !a.href.includes('javascript'))
             )?.href || '';
+
+            // data-tid (아이템매니아) → URL 구성
+            if (!href) {
+                const tid = el.getAttribute('data-tid');
+                if (tid && /^\d{6,}$/.test(tid)) {
+                    href = location.origin + '/sell/application.html?tid=' + tid;
+                }
+            }
 
             // onclick / data 속성에서 ID 추출 → URL 구성
             if (!href) {
@@ -152,13 +160,10 @@
             const itemKey = title.substring(0, 30).trim();
             if (blockedItems.has(itemKey)) return;
 
-            // 링크 없으면 배너/이벤트 영역 → 스킵
-            if (!href) return;
-
             const key = title.substring(0, 20) + '_' + price;
             if (seen.has(key)) return;
             seen.add(key);
-            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + href });
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
             items.push({ t: title, p: price, u: href, key: itemKey });
         });
         return items;
