@@ -54,6 +54,7 @@
                 ${rule.scanInterval ? ' / ⏱' + rule.scanInterval + '초' : ''}
             </div>
             <div id="_imi_status" style="font-size:11px;font-weight:700;color:#94a3b8;margin-top:6px;">준비 중...</div>
+            <div id="_imi_scan_stat" style="font-size:9px;color:#475569;margin-top:2px;"></div>
             <div id="_imi_items" style="max-height:120px;overflow-y:auto;margin-top:5px;"></div>`;
         document.body.appendChild(box);
     }
@@ -174,18 +175,20 @@
 
         const seen  = new Set();
         const items = [];
+        let cTotal = 0, cKw = 0, cPrice = 0, cBlocked = 0, cDup = 0;
 
         document.querySelectorAll('li, tr, .item_row, .item_wrap').forEach(el => {
             let text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
             if (text.length < 15) return;
             if (text.includes('물품제목') && text.includes('등록일시')) return;
+            cTotal++;
 
-            if (kws.length && !kws.some(k => text.includes(k))) return;
-            if (exKws.length && exKws.some(k => text.includes(k))) return;
+            if (kws.length && !kws.some(k => text.includes(k))) { cKw++; return; }
+            if (exKws.length && exKws.some(k => text.includes(k))) { cKw++; return; }
 
             const price = extractMaxPrice(text);
-            if (minPrice > 0 && price < minPrice) return;
-            if (maxPrice > 0 && price > maxPrice) return;
+            if (minPrice > 0 && price < minPrice) { cPrice++; return; }
+            if (maxPrice > 0 && price > maxPrice) { cPrice++; return; }
 
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title');
             const title = titleEl
@@ -234,14 +237,19 @@
 
             // 차단 키: tid 우선 (없으면 제목 앞30자) — 제목이 "내용확인"같은 공통 텍스트여도 오차단 방지
             const itemKey = tid || title.substring(0, 30).trim();
-            if (blockedItems.has(itemKey)) return;
+            if (blockedItems.has(itemKey)) { cBlocked++; return; }
 
             const key = tid || (title.substring(0, 20) + '_' + price);
-            if (seen.has(key)) return;
+            if (seen.has(key)) { cDup++; return; }
             seen.add(key);
-            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | tid: ' + (tid||'없음') + ' | href: ' + (href || '(없음)') });
             items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
         });
+
+        // 오버레이에 스캔 통계 표시
+        const statEl = document.getElementById('_imi_scan_stat');
+        const stat = `DOM:${cTotal} 키워드탈락:${cKw} 가격탈락:${cPrice} 차단:${cBlocked} 중복:${cDup} → ${items.length}개`;
+        if (statEl) statEl.textContent = stat;
+        chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: '[SCAN] ' + stat });
         return items;
     }
 
