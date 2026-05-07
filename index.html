@@ -800,11 +800,17 @@
             if(confirm("IMI PRO v49.0\n모드: "+currentMode.toUpperCase()+"\nAPI키: "+CLAUDE_API_KEY.substring(0,12)+"...\n\n[확인] 키 변경  [취소] 닫기")){
                 var pw=prompt("관리자 비밀번호를 입력하세요:");
                 if(pw!==ADMIN_PW){alert("❌ 비밀번호가 틀렸습니다.");return;}
-                var key=prompt("새 Claude API 키 입력 (sk-ant-...):");
-                if(key&&key.startsWith('sk-ant-')){
+                var key=prompt("새 Claude API 키 입력 (sk-ant-...)\n※ 빈칸으로 확인 시 API 키 삭제됩니다:");
+                if(key===null){ /* 취소 */ }
+                else if(key.trim()===''){
+                    if(confirm("API 키를 삭제하시겠습니까?\nAI 기능이 비활성화됩니다.")){
+                        db.ref('config/claude_api_key').set('');
+                        alert("✅ API 키가 삭제됐습니다. 전체 실무자에게 자동 적용됩니다.");
+                    }
+                } else if(key.trim().startsWith('sk-ant-')){
                     db.ref('config/claude_api_key').set(key.trim());
                     alert("✅ API 키 변경 완료! 전체 실무자에게 자동 적용됩니다.");
-                } else if(key){alert("❌ 올바르지 않은 형식입니다.");}
+                } else {alert("❌ 올바르지 않은 형식입니다.");}
             }
         }
     }
