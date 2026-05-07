@@ -89,6 +89,7 @@ async function syncRulesFromFirebase() {
         await store.set('imi_blocked', merged);
     }
     await syncRulesFromFirebase();
+    await syncStatus();
 })();
 
 // --- Firebase 상태 동기화 (IMI PRO 대시보드용) ---
@@ -172,13 +173,17 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 // 알람: 탭 생존 확인(3분) + 차단목록 월간 정리(24시간)
 chrome.runtime.onInstalled.addListener(() => {
-    chrome.alarms.create('imi_watchdog', { periodInMinutes: 3 });
-    chrome.alarms.create('imi_cleanup',  { periodInMinutes: 60 * 24 });
+    chrome.alarms.create('imi_watchdog',  { periodInMinutes: 3 });
+    chrome.alarms.create('imi_rule_sync', { periodInMinutes: 1 });
+    chrome.alarms.create('imi_cleanup',   { periodInMinutes: 60 * 24 });
 });
 chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_watchdog') {
-        await syncRulesFromFirebase();
         if (await isActive()) await startAll();
+    }
+    if (alarm.name === 'imi_rule_sync') {
+        await syncRulesFromFirebase();
+        await syncStatus();
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
 });
