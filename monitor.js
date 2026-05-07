@@ -581,6 +581,29 @@ function _showMonitorFlash(s) {
     // 탭 제목 깜빡임
     _startTabBlink(s.ruleName, s.itemCount);
 
+    // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
+    if ('Notification' in window) {
+        if (Notification.permission === 'granted') {
+            var body = (s.itemCount||0) + '개 물품 감지\n';
+            if (s.itemRows && s.itemRows[0]) body += s.itemRows[0].t || '';
+            new Notification('🚨 ' + (s.ruleName||'IMI PRO 감지 알림'), {
+                body: body,
+                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+                requireInteraction: true
+            });
+        } else if (Notification.permission === 'default') {
+            Notification.requestPermission().then(function(perm) {
+                if (perm === 'granted') {
+                    new Notification('🚨 ' + (s.ruleName||'IMI PRO 감지 알림'), {
+                        body: (s.itemCount||0) + '개 물품 감지됨',
+                        icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+                        requireInteraction: true
+                    });
+                }
+            });
+        }
+    }
+
     if (window._monFlashTimer) clearTimeout(window._monFlashTimer);
     window._monFlashTimer = setTimeout(closeMonitorFlash, 30000);
 }
