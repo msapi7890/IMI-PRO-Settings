@@ -241,7 +241,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return true;
     }
     if (msg.type === 'GET_BLOCKED') {
-        getBlocked().then(list => sendResponse({ blocked: list }));
+        // Firebase에서 직접 조회 → 차단 해제 즉시 반영
+        fireGet('/imi_blocked').then(async remote => {
+            const list = (remote !== null && Array.isArray(remote)) ? remote : await getBlocked();
+            if (remote !== null) await store.set('imi_blocked', list);
+            sendResponse({ blocked: list });
+        });
         return true;
     }
     if (msg.type === 'START_RULE') {
