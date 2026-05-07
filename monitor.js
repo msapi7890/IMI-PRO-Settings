@@ -663,6 +663,21 @@ document.addEventListener('click', function(e) {
     });
 });
 
+// 물품차단 버튼 — 이벤트 위임 (로그 패널 내)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-logbk]');
+    if (!btn) return;
+    var key = btn.getAttribute('data-logbk');
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        if (!list.includes(key)) { list.push(key); db.ref('/imi_blocked').set(list); }
+        btn.disabled = true;
+        btn.textContent = '차단됨';
+        btn.style.opacity = '0.4';
+    });
+});
+
 // ===== 로그 패널 =====
 function openLogPanel() {
     document.getElementById('logPanel').classList.remove('hidden');
@@ -708,11 +723,13 @@ function loadMonitorLog() {
             var d = entry.data;
             var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
             var rows = (d.itemRows || []).map(function(it) {
+                var bk = _esc(it.key || it.tid || (it.t || '').substring(0, 30).trim());
                 return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
                     + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
                     + '<div style="display:flex;align-items:center;gap:6px;">'
                     + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
                     + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(it.p).toLocaleString() + '원</div>' : '')
+                    + (bk ? '<button data-logbk="' + bk + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">🚫 차단</button>' : '')
                     + '</div>'
                     + '</div>';
             }).join('');
