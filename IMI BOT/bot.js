@@ -54,7 +54,6 @@
                 ${rule.scanInterval ? ' / ⏱' + rule.scanInterval + '초' : ''}
             </div>
             <div id="_imi_status" style="font-size:11px;font-weight:700;color:#94a3b8;margin-top:6px;">준비 중...</div>
-            <div id="_imi_scan_stat" style="font-size:9px;color:#475569;margin-top:2px;"></div>
             <div id="_imi_items" style="max-height:120px;overflow-y:auto;margin-top:5px;"></div>`;
         document.body.appendChild(box);
     }
@@ -65,9 +64,9 @@
     }
 
     // --- 물품 차단 ---
-    function blockItem(key, title) {
+    function blockItem(key) {
         blockedItems.add(key);
-        chrome.runtime.sendMessage({ type: 'BLOCK_ITEM', key, title: title || '' });
+        chrome.runtime.sendMessage({ type: 'BLOCK_ITEM', key });
     }
 
     // --- DOM 요소 직접 클릭 (itemmania 세션 유지) ---
@@ -131,7 +130,7 @@
             blockBtn.textContent = '🚫 차단';
             blockBtn.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;';
             blockBtn.addEventListener('click', () => {
-                blockItem(it.key, it.t);
+                blockItem(it.key);
                 row.style.opacity = '0.3';
                 blockBtn.disabled = true;
                 blockBtn.textContent = '차단됨';
@@ -175,22 +174,20 @@
 
         const seen  = new Set();
         const items = [];
-        let cTotal = 0, cKw = 0, cPrice = 0, cBlocked = 0, cDup = 0;
 
         document.querySelectorAll('li, tr, .item_row, .item_wrap').forEach(el => {
             let text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
             if (text.length < 15) return;
             if (text.includes('물품제목') && text.includes('등록일시')) return;
-            cTotal++;
 
-            if (kws.length && !kws.some(k => text.includes(k))) { cKw++; return; }
-            if (exKws.length && exKws.some(k => text.includes(k))) { cKw++; return; }
+            if (kws.length && !kws.some(k => text.includes(k))) return;
+            if (exKws.length && exKws.some(k => text.includes(k))) return;
 
             const price = extractMaxPrice(text);
-            if (minPrice > 0 && price < minPrice) { cPrice++; return; }
-            if (maxPrice > 0 && price > maxPrice) { cPrice++; return; }
+            if (minPrice > 0 && price < minPrice) return;
+            if (maxPrice > 0 && price > maxPrice) return;
 
-            const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title');
+            const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
             const title = titleEl
                 ? (() => {
                     const raw = Array.from(titleEl.childNodes)
@@ -228,29 +225,22 @@
                 }
             }
 
-            // tid 먼저 계산
+            const itemKey = title.substring(0, 30).trim();
+            if (blockedItems.has(itemKey)) return;
+
+            const key = title.substring(0, 20) + '_' + price;
+            if (seen.has(key)) return;
+            seen.add(key);
+            // data-tid 직접 우선, 없으면 href 파싱
             const elTid = el.getAttribute('data-tid') ||
-                          Array.from(el.querySelectorAll('[data-tid]')).reduce((a, e) => a || e.getAttribute('data-tid'), '');
+                          [el, ...Array.from(el.querySelectorAll('[data-tid]'))].reduce((acc, e) => acc || e.getAttribute('data-tid'), '');
             const tidM = href.match(/[?&]tid=(\d+)/);
             const idM  = href.match(/[?&]id=(\d+)/);
             const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
-
-            // 차단 키: tid 우선 (없으면 제목 앞30자) — 제목이 "내용확인"같은 공통 텍스트여도 오차단 방지
-            const itemKey = tid || title.substring(0, 30).trim();
-            if (blockedItems.has(itemKey)) { cBlocked++; return; }
-
-            // dedup: TID > href URL > 제목+가격 순 — 같은 제목+가격 항목도 URL 다르면 별개 물품
-            const key = tid || href || (title.substring(0, 20) + '_' + price);
-            if (seen.has(key)) { cDup++; return; }
-            seen.add(key);
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
+            // _el: DOM 참조 저장 → 클릭 시 직접 사용
             items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
         });
-
-        // 오버레이에 스캔 통계 표시
-        const statEl = document.getElementById('_imi_scan_stat');
-        const stat = `DOM:${cTotal} 키워드탈락:${cKw} 가격탈락:${cPrice} 차단:${cBlocked} 중복:${cDup} → ${items.length}개`;
-        if (statEl) statEl.textContent = stat;
-        chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: '[SCAN] ' + stat });
         return items;
     }
 
@@ -292,7 +282,7 @@
                 ruleName: rule.name,
                 ruleUrl: rule.url,
                 itemCount: items.length,
-                itemRows: items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '' })),
+                itemRows: items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' })),
                 at: Date.now()
             }
         });
@@ -301,17 +291,6 @@
             path: '/urgent_notices',
             data: { content, createdAt: Date.now(), expiresAt: Date.now() + 86400000, isMonitorAlert: true }
         });
-        chrome.runtime.sendMessage({
-            type: 'FIREBASE_PUSH',
-            path: '/monitor_history',
-            data: {
-                ruleId: rule.id,
-                ruleName: rule.name,
-                itemCount: items.length,
-                itemRows: items.slice(0, 50).map(it => ({ t: it.t, p: it.p, tid: it.tid || '', key: it.key || '' })),
-                at: Date.now()
-            }
-        });
     }
 
     // --- 메인 스캔 루프 ---
@@ -319,33 +298,27 @@
         if (!isRunning || !rule) return;
         setStatus('🔍 스캔 중...', '#3abff8');
 
-        // 차단 목록 갱신 후 스캔 (콜백 안에서 실행해야 최신 데이터 반영)
-        chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
-            if (!isRunning) return;
-            blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
+        const items = scanPage();
+        const intervalMs = (rule.scanInterval || 5) * 1000;
 
-            const items = scanPage();
-            const intervalMs = (rule.scanInterval || 5) * 1000;
-
-            if (items.length > 0) {
-                setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
-                document.getElementById('_imi_box').style.borderColor = '#ef4444';
-                renderAlertItems(items);
-                sendAlert(items);
-                setTimeout(() => {
-                    if (!isRunning) return;
-                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
-                    document.getElementById('_imi_items').innerHTML = '';
-                    setStatus('30초 대기 후 재검색...', '#94a3b8');
-                    submitSearch();
-                }, 30000);
-            } else {
-                const t = new Date().toLocaleTimeString('ko-KR');
-                setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
+        if (items.length > 0) {
+            setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
+            document.getElementById('_imi_box').style.borderColor = '#ef4444';
+            renderAlertItems(items);
+            sendAlert(items);
+            setTimeout(() => {
+                if (!isRunning) return;
+                document.getElementById('_imi_box').style.borderColor = '#3abff8';
                 document.getElementById('_imi_items').innerHTML = '';
-                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
-            }
-        });
+                setStatus('30초 대기 후 재검색...', '#94a3b8');
+                submitSearch();
+            }, 30000);
+        } else {
+            const t = new Date().toLocaleTimeString('ko-KR');
+            setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
+            document.getElementById('_imi_items').innerHTML = '';
+            setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+        }
     }
 
     function _e(s) {
