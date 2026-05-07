@@ -310,6 +310,11 @@
         if (!isRunning || !rule) return;
         setStatus('🔍 스캔 중...', '#3abff8');
 
+        // 매 스캔마다 차단 목록 갱신 (차단 해제 즉시 반영)
+        chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
+            blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
+        });
+
         const items = scanPage();
         const intervalMs = (rule.scanInterval || 5) * 1000;
 
