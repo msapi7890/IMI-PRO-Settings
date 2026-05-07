@@ -20,18 +20,42 @@
         return _origAlert.apply(this, arguments);
     };
 
-    // 3. 메인 페이지로 강제 리다이렉트 차단
+    // 메인 페이지 리다이렉트 판별 (상대경로 + 절대URL 모두 처리)
+    function isMainRedirect(v) {
+        var s = String(v || '');
+        // 상대경로: /, /index.html, /main.html 등
+        if (s === '/' || s === '') return true;
+        if (/^\/(index|main)?(\.html?|\.php|\.jsp)?(\?.*)?$/i.test(s)) return true;
+        // 절대URL: https://www.itemmania.com/ 또는 https://www.itemmania.com/index.html
+        if (/https?:\/\/[^/]*itemmania\.com\/?(\?.*)?$/.test(s)) return true;
+        if (/https?:\/\/[^/]*itemmania\.com\/(index|main)?(\.html?|\.php|\.jsp)?(\?.*)?$/i.test(s)) return true;
+        return false;
+    }
+
+    // 3. location.href 세터 차단
     var _locDesc = Object.getOwnPropertyDescriptor(Location.prototype, 'href');
     if (_locDesc && _locDesc.set) {
         Object.defineProperty(Location.prototype, 'href', {
             get: _locDesc.get,
             set: function (v) {
-                var s = String(v);
-                // '/'나 루트로 보내는 리다이렉트만 차단
-                if (s === '/' || s === '' || /^\/(index|main)?(\.html?|\.php|\.jsp)?$/i.test(s)) return;
+                if (isMainRedirect(v)) return;
                 return _locDesc.set.call(this, v);
             },
             configurable: true
         });
     }
+
+    // 4. location.replace() 차단
+    var _origReplace = Location.prototype.replace;
+    Location.prototype.replace = function (v) {
+        if (isMainRedirect(v)) return;
+        return _origReplace.call(this, v);
+    };
+
+    // 5. location.assign() 차단
+    var _origAssign = Location.prototype.assign;
+    Location.prototype.assign = function (v) {
+        if (isMainRedirect(v)) return;
+        return _origAssign.call(this, v);
+    };
 })();
