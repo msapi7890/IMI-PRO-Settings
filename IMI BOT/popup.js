@@ -1,7 +1,26 @@
+const DB_URL = 'https://manual-9a47c-default-rtdb.firebaseio.com';
+
 function getRules()   { return new Promise(r => chrome.storage.local.get('imi_rules',   d => r(d.imi_rules   || []))); }
 function saveRules(v) { return new Promise(r => chrome.storage.local.set({ imi_rules: v }, r)); }
 function getTabMap()  { return new Promise(r => chrome.storage.local.get('imi_tab_map', d => r(d.imi_tab_map || {}))); }
 function isActive()   { return new Promise(r => chrome.storage.local.get('imi_active',  d => r(!!d.imi_active))); }
+
+// Firebase 규칙 동기화
+async function fireGetRules() {
+    try {
+        const res = await fetch(DB_URL + '/imi_rules.json?_t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) { const d = await res.json(); return Array.isArray(d) ? d : null; }
+    } catch(e) {}
+    return null;
+}
+async function fireSaveRules(rules) {
+    try {
+        await fetch(DB_URL + '/imi_rules.json', {
+            method: 'PUT', body: JSON.stringify(rules),
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch(e) {}
+}
 
 function sendBg(msg) {
     return new Promise(r => {
@@ -15,9 +34,24 @@ function sendBg(msg) {
 
 let currentTabMap = {};
 let currentActive = false;
-let editingRuleId = null;  // 수정 중인 규칙 ID
+let editingRuleId = null;
+let _initialSynced = false;
 
 async function refresh() {
+    // 첫 로드 시 Firebase에서 최신 규칙 pull
+    if (!_initialSynced) {
+        _initialSynced = true;
+        const remote = await fireGetRules();
+        if (remote && remote.length) {
+            const local = await getRules();
+            // Firebase 우선, 로컬에만 있는 규칙(미동기화)은 병합
+            const remoteIds = new Set(remote.map(r => r.id));
+            const onlyLocal = local.filter(r => !remoteIds.has(r.id));
+            const merged = [...remote, ...onlyLocal];
+            await saveRules(merged);
+            if (onlyLocal.length) await fireSaveRules(merged);
+        }
+    }
     const [rules, tabMap, active] = await Promise.all([getRules(), getTabMap(), isActive()]);
     currentTabMap = tabMap;
     currentActive = active;
@@ -114,6 +148,7 @@ async function toggleAll() {
 async function toggleRule(id, enabled) {
     const rules = (await getRules()).map(r => r.id === id ? { ...r, enabled } : r);
     await saveRules(rules);
+    fireSaveRules(rules);
     await refresh();
     await sendBg({ type: enabled ? 'START_RULE' : 'STOP_RULE', ruleId: id });
 }
@@ -122,6 +157,7 @@ async function deleteRule(id) {
     if (!confirm('이 규칙을 삭제하시겠습니까?')) return;
     const rules = (await getRules()).filter(r => r.id !== id);
     await saveRules(rules);
+    fireSaveRules(rules);
     if (editingRuleId === id) cancelEdit();
     await refresh();
 }
@@ -147,6 +183,7 @@ async function addRule() {
                 : r
         );
         await saveRules(rules);
+        fireSaveRules(rules);
         cancelEdit();
         await refresh();
         sendBg({ type: 'SYNC_STATUS' });
@@ -160,6 +197,7 @@ async function addRule() {
         };
         const rules = [...(await getRules()), newRule];
         await saveRules(rules);
+        fireSaveRules(rules);
         ['inName','inUrl','inKw','inMin','inMax','inInterval','inExclude'].forEach(id => document.getElementById(id).value = '');
         await refresh();
         sendBg({ type: 'SYNC_STATUS' });

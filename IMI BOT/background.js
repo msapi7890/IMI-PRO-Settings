@@ -66,7 +66,20 @@ async function maybeCleanupBlocked() {
     await fireSet('/imi_blocked', []);
 }
 
-// 서비스워커 시작 시 Firebase 차단목록 → 로컬 병합 (다른 실무자 차단 내역 수신)
+// Firebase 규칙 동기화 (다른 실무자가 변경한 규칙 수신)
+async function syncRulesFromFirebase() {
+    try {
+        const remote = await fireGet('/imi_rules');
+        if (!remote || !Array.isArray(remote) || !remote.length) return;
+        const local = await getRules();
+        const remoteIds = new Set(remote.map(r => r.id));
+        const onlyLocal = local.filter(r => !remoteIds.has(r.id));
+        const merged = [...remote, ...onlyLocal];
+        await saveRules(merged);
+    } catch(e) {}
+}
+
+// 서비스워커 시작 시 Firebase 차단목록 + 규칙 동기화
 (async () => {
     await maybeCleanupBlocked();
     const remote = await fireGet('/imi_blocked');
@@ -75,6 +88,7 @@ async function maybeCleanupBlocked() {
         const merged = [...new Set([...local, ...remote])];
         await store.set('imi_blocked', merged);
     }
+    await syncRulesFromFirebase();
 })();
 
 // --- Firebase 상태 동기화 (IMI PRO 대시보드용) ---
@@ -162,7 +176,10 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.alarms.create('imi_cleanup',  { periodInMinutes: 60 * 24 });
 });
 chrome.alarms.onAlarm.addListener(async alarm => {
-    if (alarm.name === 'imi_watchdog' && await isActive()) await startAll();
+    if (alarm.name === 'imi_watchdog') {
+        await syncRulesFromFirebase();
+        if (await isActive()) await startAll();
+    }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
 });
 
