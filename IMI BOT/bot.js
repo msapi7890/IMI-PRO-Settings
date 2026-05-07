@@ -310,32 +310,33 @@
         if (!isRunning || !rule) return;
         setStatus('🔍 스캔 중...', '#3abff8');
 
-        // 매 스캔마다 차단 목록 갱신 (차단 해제 즉시 반영)
+        // 차단 목록 갱신 후 스캔 (콜백 안에서 실행해야 최신 데이터 반영)
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
+            if (!isRunning) return;
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
-        });
 
-        const items = scanPage();
-        const intervalMs = (rule.scanInterval || 5) * 1000;
+            const items = scanPage();
+            const intervalMs = (rule.scanInterval || 5) * 1000;
 
-        if (items.length > 0) {
-            setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
-            document.getElementById('_imi_box').style.borderColor = '#ef4444';
-            renderAlertItems(items);
-            sendAlert(items);
-            setTimeout(() => {
-                if (!isRunning) return;
-                document.getElementById('_imi_box').style.borderColor = '#3abff8';
+            if (items.length > 0) {
+                setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
+                document.getElementById('_imi_box').style.borderColor = '#ef4444';
+                renderAlertItems(items);
+                sendAlert(items);
+                setTimeout(() => {
+                    if (!isRunning) return;
+                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
+                    document.getElementById('_imi_items').innerHTML = '';
+                    setStatus('30초 대기 후 재검색...', '#94a3b8');
+                    submitSearch();
+                }, 30000);
+            } else {
+                const t = new Date().toLocaleTimeString('ko-KR');
+                setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
                 document.getElementById('_imi_items').innerHTML = '';
-                setStatus('30초 대기 후 재검색...', '#94a3b8');
-                submitSearch();
-            }, 30000);
-        } else {
-            const t = new Date().toLocaleTimeString('ko-KR');
-            setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
-            document.getElementById('_imi_items').innerHTML = '';
-            setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
-        }
+                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+            }
+        });
     }
 
     function _e(s) {

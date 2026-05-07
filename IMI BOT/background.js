@@ -186,6 +186,11 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     }
     if (alarm.name === 'imi_rule_sync') {
         await syncRulesFromFirebase();
+        // 차단 목록도 Firebase 기준으로 덮어씀 (차단 해제 반영)
+        const remoteBlocked = await fireGet('/imi_blocked');
+        if (remoteBlocked !== null) {
+            await store.set('imi_blocked', Array.isArray(remoteBlocked) ? remoteBlocked : []);
+        }
         await syncStatus();
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
