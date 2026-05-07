@@ -43,6 +43,22 @@ async function firePush(path, data) {
     }
 }
 
+// Firebase 빈 배열 저장 시 null 반환 문제 전용 처리
+// fireGet은 null=에러, fireGetBlocked는 null=정상 빈 목록으로 구분
+async function fireGetBlocked() {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    try {
+        const res = await fetch(DB_URL + '/imi_blocked.json', { signal: ctrl.signal });
+        if (res.ok) {
+            const data = await res.json();
+            return Array.isArray(data) ? data : [];  // null(빈 목록) → []
+        }
+    } catch(e) {}
+    finally { clearTimeout(t); }
+    return null;  // null = 네트워크 에러(폴백 필요)
+}
+
 // --- Storage helpers ---
 const store = {
     get: (key) => new Promise(r => chrome.storage.local.get(key, d => r(d[key]))),
@@ -82,13 +98,16 @@ async function syncRulesFromFirebase() {
 // 서비스워커 시작 시 Firebase 차단목록 + 규칙 동기화
 (async () => {
     await maybeCleanupBlocked();
-    const remote = await fireGet('/imi_blocked');
-    if (remote && Array.isArray(remote) && remote.length) {
-        const local = await getBlocked();
-        const remoteKeys = new Set(remote.map(i => (typeof i === 'object' ? i.key : i)));
-        const onlyLocal = local.filter(i => !remoteKeys.has(typeof i === 'object' ? i.key : i));
-        const merged = [...remote, ...onlyLocal];
-        await store.set('imi_blocked', merged);
+    const remote = await fireGetBlocked();
+    if (remote !== null) {
+        if (remote.length > 0) {
+            const local = await getBlocked();
+            const remoteKeys = new Set(remote.map(i => (typeof i === 'object' ? i.key : i)));
+            const onlyLocal = local.filter(i => !remoteKeys.has(typeof i === 'object' ? i.key : i));
+            await store.set('imi_blocked', [...remote, ...onlyLocal]);
+        } else {
+            await store.set('imi_blocked', []);  // Firebase 빈 목록 → 로컬도 초기화
+        }
     }
     await syncRulesFromFirebase();
     await syncStatus();
@@ -189,9 +208,9 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_rule_sync') {
         await syncRulesFromFirebase();
         // 차단 목록도 Firebase 기준으로 덮어씀 (차단 해제 반영)
-        const remoteBlocked = await fireGet('/imi_blocked');
+        const remoteBlocked = await fireGetBlocked();
         if (remoteBlocked !== null) {
-            await store.set('imi_blocked', Array.isArray(remoteBlocked) ? remoteBlocked : []);
+            await store.set('imi_blocked', remoteBlocked);
         }
         await syncStatus();
     }
@@ -244,10 +263,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return true;
     }
     if (msg.type === 'GET_BLOCKED') {
-        fireGet('/imi_blocked').then(async remote => {
-            const list = (remote !== null && Array.isArray(remote)) ? remote : await getBlocked();
+        fireGetBlocked().then(async remote => {
+            // remote !== null → Firebase 도달 성공 (빈 배열 포함)
+            // remote === null → 네트워크 에러 → 로컬 폴백
+            const list = remote !== null ? remote : await getBlocked();
             if (remote !== null) await store.set('imi_blocked', list);
-            // 봇은 key 문자열만 필요
             const keys = list.map(i => (typeof i === 'object' ? i.key : i));
             sendResponse({ blocked: keys });
         });
