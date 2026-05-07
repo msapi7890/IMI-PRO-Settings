@@ -3912,7 +3912,7 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
-        // 배포 자동 감지 — 2분마다 index.html ETag 체크 후 변경 시 자동 새로고침
+        // 배포 자동 감지 — 2분마다 ETag 체크 후 변경 시 상단 배너 표시
         (function(){
             var _etag = null;
             function checkUpdate(){
@@ -3921,7 +3921,16 @@
                         var tag = r.headers.get('ETag') || r.headers.get('Last-Modified');
                         if(!tag) return;
                         if(_etag === null){ _etag = tag; return; }
-                        if(tag !== _etag){ location.reload(); }
+                        if(tag !== _etag){
+                            _etag = tag;
+                            if(document.getElementById('_updateBanner')) return;
+                            var b = document.createElement('div');
+                            b.id = '_updateBanner';
+                            b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:900;cursor:pointer;';
+                            b.innerHTML = '🔔 새 버전이 배포됐습니다. 클릭하면 새로고침됩니다. <span style="opacity:0.5;font-size:11px;">(업무 마무리 후 클릭하세요)</span>';
+                            b.onclick = function(){ location.reload(); };
+                            document.body.prepend(b);
+                        }
                     }).catch(function(){});
             }
             setInterval(checkUpdate, 120000);
