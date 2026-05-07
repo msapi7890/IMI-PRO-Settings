@@ -663,18 +663,19 @@ document.addEventListener('click', function(e) {
     });
 });
 
-// 물품차단 버튼 — 이벤트 위임 (log-box 안 #monitorLogList에 직접 위임, stopPropagation 우회)
+// 필터제외 버튼 — 이벤트 위임 (log-box 안 #monitorLogList에 직접 위임, stopPropagation 우회)
 document.getElementById('monitorLogList').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-logbk]');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     var key = btn.getAttribute('data-logbk');
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
         if (!list.includes(key)) { list.push(key); db.ref('/imi_blocked').set(list); }
         btn.disabled = true;
-        btn.textContent = '차단됨';
+        btn.textContent = '제외됨';
         btn.style.opacity = '0.4';
+        btn.style.cursor = 'default';
     });
 });
 
@@ -697,51 +698,64 @@ function switchLogTab(n) {
 
 function loadMonitorLog() {
     var cutoff = Date.now() - 3600000;
-    db.ref('/monitor_history').once('value', function(snap) {
-        var val = snap.val() || {};
-        var toDelete = [];
-        var entries = [];
-        Object.keys(val).forEach(function(k) {
-            var e = val[k];
-            if (!e || e.at < cutoff) { toDelete.push(k); return; }
-            entries.push({ key: k, data: e });
-        });
-        // 오래된 항목 삭제
-        toDelete.forEach(function(k) { db.ref('/monitor_history/' + k).remove(); });
-        // 최신순 정렬
-        entries.sort(function(a, b) { return b.data.at - a.data.at; });
+    // 차단 목록 먼저 조회 → 이미 제외된 항목 버튼 비활성 처리
+    db.ref('/imi_blocked').once('value', function(blockedSnap) {
+        var blockedList = blockedSnap.val() || [];
+        if (!Array.isArray(blockedList)) blockedList = [];
+        var blockedSet = {};
+        blockedList.forEach(function(k) { blockedSet[k] = true; });
 
-        var empty = document.getElementById('monitorLogEmpty');
-        var list  = document.getElementById('monitorLogList');
-        if (!entries.length) {
-            if (empty) empty.style.display = '';
-            if (list)  list.innerHTML = '';
-            return;
-        }
-        if (empty) empty.style.display = 'none';
-        if (list) list.innerHTML = entries.map(function(entry) {
-            var d = entry.data;
-            var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
-            var rows = (d.itemRows || []).map(function(it) {
-                var bk = _esc(it.key || it.tid || (it.t || '').substring(0, 30).trim());
-                return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
-                    + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
-                    + '<div style="display:flex;align-items:center;gap:6px;">'
-                    + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
-                    + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(it.p).toLocaleString() + '원</div>' : '')
-                    + (bk ? '<button data-logbk="' + bk + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">🚫 차단</button>' : '')
+        db.ref('/monitor_history').once('value', function(snap) {
+            var val = snap.val() || {};
+            var toDelete = [];
+            var entries = [];
+            Object.keys(val).forEach(function(k) {
+                var e = val[k];
+                if (!e || e.at < cutoff) { toDelete.push(k); return; }
+                entries.push({ key: k, data: e });
+            });
+            toDelete.forEach(function(k) { db.ref('/monitor_history/' + k).remove(); });
+            entries.sort(function(a, b) { return b.data.at - a.data.at; });
+
+            var empty = document.getElementById('monitorLogEmpty');
+            var list  = document.getElementById('monitorLogList');
+            if (!entries.length) {
+                if (empty) empty.style.display = '';
+                if (list)  list.innerHTML = '';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+            if (list) list.innerHTML = entries.map(function(entry) {
+                var d = entry.data;
+                var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
+                var rows = (d.itemRows || []).map(function(it) {
+                    var rawKey = it.key || it.tid || (it.t || '').substring(0, 30).trim();
+                    var bk = _esc(rawKey);
+                    var isBlocked = blockedSet[rawKey];
+                    var btnHtml = bk
+                        ? (isBlocked
+                            ? '<button data-logbk="' + bk + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                            : '<button data-logbk="' + bk + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                        : '';
+                    return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
+                        + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
+                        + '<div style="display:flex;align-items:center;gap:6px;">'
+                        + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
+                        + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(it.p).toLocaleString() + '원</div>' : '')
+                        + btnHtml
+                        + '</div>'
+                        + '</div>';
+                }).join('');
+                return '<div style="border:1.5px solid var(--border-ui);border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
+                    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+                    + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(d.ruleName || '') + '</div>'
+                    + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">' + timeStr + '</div>'
+                    + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">' + (d.itemCount || 0) + '개 감지</div>'
                     + '</div>'
+                    + '<div style="display:flex;flex-direction:column;gap:5px;">' + rows + '</div>'
                     + '</div>';
             }).join('');
-            return '<div style="border:1.5px solid var(--border-ui);border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
-                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
-                + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(d.ruleName || '') + '</div>'
-                + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">' + timeStr + '</div>'
-                + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">' + (d.itemCount || 0) + '개 감지</div>'
-                + '</div>'
-                + '<div style="display:flex;flex-direction:column;gap:5px;">' + rows + '</div>'
-                + '</div>';
-        }).join('');
+        });
     });
 }
 
