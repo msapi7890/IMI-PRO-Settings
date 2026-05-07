@@ -531,9 +531,8 @@
 </div>
 
 <!-- 감지 로그 + 차단 목록 전체 패널 -->
-<div id="logPanel" class="hidden">
-    <div style="position:absolute;inset:0;z-index:0;" onclick="closeLogPanel()"></div>
-    <div class="log-box" style="position:relative;z-index:1;">
+<div id="logPanel" class="hidden" onclick="closeLogPanel()">
+    <div class="log-box" onclick="event.stopPropagation()">
         <div class="log-hdr">
             <div>
                 <div style="font-size:15px;font-weight:900;">📋 IMI PRO 로그</div>
