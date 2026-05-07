@@ -291,6 +291,17 @@
             path: '/urgent_notices',
             data: { content, createdAt: Date.now(), expiresAt: Date.now() + 86400000, isMonitorAlert: true }
         });
+        chrome.runtime.sendMessage({
+            type: 'FIREBASE_PUSH',
+            path: '/monitor_history',
+            data: {
+                ruleId: rule.id,
+                ruleName: rule.name,
+                itemCount: items.length,
+                itemRows: items.slice(0, 10).map(it => ({ t: it.t, p: it.p, tid: it.tid || '', key: it.key || '' })),
+                at: Date.now()
+            }
+        });
     }
 
     // --- 메인 스캔 루프 ---

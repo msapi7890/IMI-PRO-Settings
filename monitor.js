@@ -663,13 +663,69 @@ document.addEventListener('click', function(e) {
     });
 });
 
-// ===== 모니터링 모달 탭 전환 =====
-function switchMonTab(n) {
-    document.getElementById('monTab1').classList.toggle('mon-tab-active', n === 1);
-    document.getElementById('monTab2').classList.toggle('mon-tab-active', n === 2);
-    document.getElementById('monTabContent1').style.display = n === 1 ? '' : 'none';
-    document.getElementById('monTabContent2').style.display = n === 2 ? '' : 'none';
+// ===== 로그 패널 =====
+function openLogPanel() {
+    document.getElementById('logPanel').classList.remove('hidden');
+    switchLogTab(1);
+}
+function closeLogPanel() {
+    document.getElementById('logPanel').classList.add('hidden');
+}
+function switchLogTab(n) {
+    document.getElementById('logTab1').classList.toggle('mon-tab-active', n === 1);
+    document.getElementById('logTab2').classList.toggle('mon-tab-active', n === 2);
+    document.getElementById('logTabContent1').style.display = n === 1 ? '' : 'none';
+    document.getElementById('logTabContent2').style.display = n === 2 ? '' : 'none';
+    if (n === 1) loadMonitorLog();
     if (n === 2) loadBlockedItems();
+}
+
+function loadMonitorLog() {
+    var cutoff = Date.now() - 3600000;
+    db.ref('/monitor_history').once('value', function(snap) {
+        var val = snap.val() || {};
+        var toDelete = [];
+        var entries = [];
+        Object.keys(val).forEach(function(k) {
+            var e = val[k];
+            if (!e || e.at < cutoff) { toDelete.push(k); return; }
+            entries.push({ key: k, data: e });
+        });
+        // 오래된 항목 삭제
+        toDelete.forEach(function(k) { db.ref('/monitor_history/' + k).remove(); });
+        // 최신순 정렬
+        entries.sort(function(a, b) { return b.data.at - a.data.at; });
+
+        var empty = document.getElementById('monitorLogEmpty');
+        var list  = document.getElementById('monitorLogList');
+        if (!entries.length) {
+            if (empty) empty.style.display = '';
+            if (list)  list.innerHTML = '';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (list) list.innerHTML = entries.map(function(entry) {
+            var d = entry.data;
+            var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
+            var rows = (d.itemRows || []).map(function(it) {
+                return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
+                    + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
+                    + '<div style="display:flex;align-items:center;gap:6px;">'
+                    + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
+                    + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(it.p).toLocaleString() + '원</div>' : '')
+                    + '</div>'
+                    + '</div>';
+            }).join('');
+            return '<div style="border:1.5px solid var(--border-ui);border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+                + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(d.ruleName || '') + '</div>'
+                + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">' + timeStr + '</div>'
+                + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">' + (d.itemCount || 0) + '개 감지</div>'
+                + '</div>'
+                + '<div style="display:flex;flex-direction:column;gap:5px;">' + rows + '</div>'
+                + '</div>';
+        }).join('');
+    });
 }
 
 // ===== 차단 목록 로드 =====
