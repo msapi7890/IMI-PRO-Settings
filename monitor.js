@@ -583,23 +583,17 @@ function _showMonitorFlash(s) {
 
     // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
     if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-            var body = (s.itemCount||0) + '개 물품 감지\n';
-            if (s.itemRows && s.itemRows[0]) body += s.itemRows[0].t || '';
-            new Notification('🚨 ' + (s.ruleName||'IMI PRO 감지 알림'), {
-                body: body,
-                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
-                requireInteraction: true
+        var _fireNotif = function() {
+            new Notification('🚨 IMI PRO 사기글 감지', {
+                body: (s.itemCount||0) + '개 물품 감지됨 — IMI PRO 확인',
+                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico'
             });
+        };
+        if (Notification.permission === 'granted') {
+            _fireNotif();
         } else if (Notification.permission === 'default') {
             Notification.requestPermission().then(function(perm) {
-                if (perm === 'granted') {
-                    new Notification('🚨 ' + (s.ruleName||'IMI PRO 감지 알림'), {
-                        body: (s.itemCount||0) + '개 물품 감지됨',
-                        icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
-                        requireInteraction: true
-                    });
-                }
+                if (perm === 'granted') _fireNotif();
             });
         }
     }
