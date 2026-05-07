@@ -21,7 +21,20 @@ function toggleBotFromWeb() {
     if (_botStatus && _botStatus.active) {
         _sendToBot({ type: 'STOP_ALL' });
     } else {
-        _sendToBot({ type: 'START_ALL' });
+        // 체크된 규칙 ID 수집
+        var rules = (_botStatus && _botStatus.rules) || [];
+        var checkedIds = rules
+            .filter(function(r) {
+                var chk = document.getElementById('ruleChk_' + r.id);
+                return chk && chk.checked;
+            })
+            .map(function(r) { return r.id; });
+        if (!checkedIds.length) {
+            alert('실행할 규칙을 하나 이상 체크해주세요.');
+            if (btn) btn.disabled = false;
+            return;
+        }
+        _sendToBot({ type: 'START_SELECTED', ruleIds: checkedIds });
     }
     setTimeout(function() { if (btn) btn.disabled = false; }, 2000);
 }
@@ -106,7 +119,7 @@ function _renderBotStatus() {
         return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;">'
-            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' onchange="toggleRuleFromWeb(\'' + _esc(r.id) + '\',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--active-focus-color);">'
+            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' style="width:15px;height:15px;cursor:pointer;accent-color:var(--active-focus-color);">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
             + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
@@ -120,10 +133,6 @@ function _renderBotStatus() {
     }).join('');
 }
 
-function toggleRuleFromWeb(ruleId, enabled) {
-    if (!_botStatus) { alert('확장프로그램이 연결되어 있지 않습니다.'); return; }
-    window.postMessage({ __imiBot: true, type: 'TOGGLE_RULE', ruleId: ruleId, enabled: enabled }, '*');
-}
 
 function openMonitorModal() {
     _renderBotStatus();

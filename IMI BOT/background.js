@@ -381,6 +381,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         })();
         return true;
     }
+    // 웹에서 체크된 규칙만 시작
+    if (msg.type === 'START_SELECTED') {
+        (async () => {
+            const rules = await getRules();
+            for (const rule of rules) {
+                rule.enabled = (msg.ruleIds || []).includes(rule.id);
+            }
+            await saveRules(rules);
+            await store.set('imi_active', true);
+            const tabMap = await getTabMap();
+            // 비활성 규칙 탭 닫기
+            for (const rule of rules.filter(r => !r.enabled)) {
+                const tabId = tabMap[rule.id];
+                if (tabId) { try { await chrome.tabs.remove(tabId); } catch(e) {} delete tabMap[rule.id]; }
+            }
+            // 활성 규칙 탭 열기
+            for (const rule of rules.filter(r => r.enabled)) {
+                if (tabMap[rule.id]) { try { await chrome.tabs.get(tabMap[rule.id]); continue; } catch(e) {} }
+                const tab = await chrome.tabs.create({ url: rule.url, active: false });
+                tabMap[rule.id] = tab.id;
+            }
+            await saveTabMap(tabMap);
+            await syncStatus();
+            sendResponse({ ok: true });
+        })();
+        return true;
+    }
     if (msg.type === 'START_ALL')   { startAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'STOP_ALL')    { stopAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'SYNC_STATUS') { syncStatus(); sendResponse({ ok: true }); }
