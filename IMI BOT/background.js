@@ -85,7 +85,9 @@ async function syncRulesFromFirebase() {
     const remote = await fireGet('/imi_blocked');
     if (remote && Array.isArray(remote) && remote.length) {
         const local = await getBlocked();
-        const merged = [...new Set([...local, ...remote])];
+        const remoteKeys = new Set(remote.map(i => (typeof i === 'object' ? i.key : i)));
+        const onlyLocal = local.filter(i => !remoteKeys.has(typeof i === 'object' ? i.key : i));
+        const merged = [...remote, ...onlyLocal];
         await store.set('imi_blocked', merged);
     }
     await syncRulesFromFirebase();
@@ -231,21 +233,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg.type === 'BLOCK_ITEM') {
         getBlocked().then(async list => {
-            if (!list.includes(msg.key)) {
-                list.push(msg.key);
+            const keys = list.map(i => (typeof i === 'object' ? i.key : i));
+            if (!keys.includes(msg.key)) {
+                list.push(msg.title ? { key: msg.key, title: msg.title } : msg.key);
                 await store.set('imi_blocked', list);
-                await fireSet('/imi_blocked', list);  // 전체 실무자 공유
+                await fireSet('/imi_blocked', list);
             }
             sendResponse({ ok: true });
         });
         return true;
     }
     if (msg.type === 'GET_BLOCKED') {
-        // Firebase에서 직접 조회 → 차단 해제 즉시 반영
         fireGet('/imi_blocked').then(async remote => {
             const list = (remote !== null && Array.isArray(remote)) ? remote : await getBlocked();
             if (remote !== null) await store.set('imi_blocked', list);
-            sendResponse({ blocked: list });
+            // 봇은 key 문자열만 필요
+            const keys = list.map(i => (typeof i === 'object' ? i.key : i));
+            sendResponse({ blocked: keys });
         });
         return true;
     }

@@ -569,7 +569,7 @@ function _showMonitorFlash(s) {
             +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
             +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
             +'</div>'
-            +'<button data-bk="'+k+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">물품제외</button>'
+            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">필터제외</button>'
             +'</div>';
     }).join('');
     document.getElementById('monitorAlertFlash').classList.remove('hidden');
@@ -648,15 +648,20 @@ db.ref('monitor_flash_state').on('value', function(snap) {
     else _hideMonitorFlashLocal();
 });
 
-// 물품제외 버튼 — 이벤트 위임 (monitorAlertFlash 내)
+// 필터제외 버튼 — 이벤트 위임 (monitorAlertFlash 내)
 document.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-bk]');
     if (!btn || !document.getElementById('monitorAlertItems').contains(btn)) return;
-    var key = btn.getAttribute('data-bk');
+    var key   = btn.getAttribute('data-bk');
+    var title = btn.getAttribute('data-title') || '';
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
-        if (!list.includes(key)) { list.push(key); db.ref('/imi_blocked').set(list); }
+        var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
+        if (!keys.includes(key)) {
+            list.push(title ? { key: key, title: title } : key);
+            db.ref('/imi_blocked').set(list);
+        }
         btn.disabled = true;
         btn.textContent = '제외됨';
         btn.style.opacity = '0.4';
@@ -667,11 +672,16 @@ document.addEventListener('click', function(e) {
 document.getElementById('monitorLogList').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-logbk]');
     if (!btn || btn.disabled) return;
-    var key = btn.getAttribute('data-logbk');
+    var key   = btn.getAttribute('data-logbk');
+    var title = btn.getAttribute('data-logtitle') || '';
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
-        if (!list.includes(key)) { list.push(key); db.ref('/imi_blocked').set(list); }
+        var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
+        if (!keys.includes(key)) {
+            list.push(title ? { key: key, title: title } : key);
+            db.ref('/imi_blocked').set(list);
+        }
         btn.disabled = true;
         btn.textContent = '제외됨';
         btn.style.opacity = '0.4';
@@ -732,10 +742,11 @@ function loadMonitorLog() {
                     var rawKey = it.key || it.tid || (it.t || '').substring(0, 30).trim();
                     var bk = _esc(rawKey);
                     var isBlocked = blockedSet[rawKey];
+                    var titleAttr = _esc(it.t || '');
                     var btnHtml = bk
                         ? (isBlocked
-                            ? '<button data-logbk="' + bk + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
-                            : '<button data-logbk="' + bk + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                            ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                            : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
                         + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
@@ -772,9 +783,14 @@ function loadBlockedItems() {
             return;
         }
         empty.style.display = 'none';
-        container.innerHTML = list.map(function(key, i) {
+        container.innerHTML = list.map(function(item, i) {
+            var key   = typeof item === 'object' ? (item.key   || '') : item;
+            var title = typeof item === 'object' ? (item.title || '') : '';
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
-                + '<div style="flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(key) + '</div>'
+                + '<div style="flex:1;min-width:0;">'
+                + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>' : '')
+                + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(key) + '</div>'
+                + '</div>'
                 + '<button onclick="unblockItem(' + i + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
                 + '</div>';
         }).join('');

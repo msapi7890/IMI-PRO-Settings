@@ -64,9 +64,9 @@
     }
 
     // --- 물품 차단 ---
-    function blockItem(key) {
+    function blockItem(key, title) {
         blockedItems.add(key);
-        chrome.runtime.sendMessage({ type: 'BLOCK_ITEM', key });
+        chrome.runtime.sendMessage({ type: 'BLOCK_ITEM', key, title: title || '' });
     }
 
     // --- DOM 요소 직접 클릭 (itemmania 세션 유지) ---
@@ -130,7 +130,7 @@
             blockBtn.textContent = '🚫 차단';
             blockBtn.style.cssText = 'font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;';
             blockBtn.addEventListener('click', () => {
-                blockItem(it.key);
+                blockItem(it.key, it.t);
                 row.style.opacity = '0.3';
                 blockBtn.disabled = true;
                 blockBtn.textContent = '차단됨';
