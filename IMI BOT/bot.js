@@ -299,7 +299,7 @@
                 ruleId: rule.id,
                 ruleName: rule.name,
                 itemCount: items.length,
-                itemRows: items.slice(0, 10).map(it => ({ t: it.t, p: it.p, tid: it.tid || '', key: it.key || '' })),
+                itemRows: items.slice(0, 50).map(it => ({ t: it.t, p: it.p, tid: it.tid || '', key: it.key || '' })),
                 at: Date.now()
             }
         });
