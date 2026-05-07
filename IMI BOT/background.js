@@ -53,10 +53,22 @@ const saveRules = (r) => store.set('imi_rules', r);
 const getTabMap  = () => store.get('imi_tab_map').then(v => v || {});
 const saveTabMap = (m) => store.set('imi_tab_map', m);
 const isActive   = () => store.get('imi_active').then(v => !!v);
-const getBlocked = () => store.get('imi_blocked').then(v => v || []);
+const getBlocked        = () => store.get('imi_blocked').then(v => v || []);
+const getBlockedCleared = () => store.get('imi_blocked_cleared_at').then(v => v || 0);
+const THIRTY_DAYS_MS    = 30 * 24 * 60 * 60 * 1000;
+
+// 30일 경과 시 차단 목록 자동 초기화 (전체 실무자 공유)
+async function maybeCleanupBlocked() {
+    const clearedAt = await getBlockedCleared();
+    if (Date.now() - clearedAt < THIRTY_DAYS_MS) return;
+    await store.set('imi_blocked', []);
+    await store.set('imi_blocked_cleared_at', Date.now());
+    await fireSet('/imi_blocked', []);
+}
 
 // 서비스워커 시작 시 Firebase 차단목록 → 로컬 병합 (다른 실무자 차단 내역 수신)
 (async () => {
+    await maybeCleanupBlocked();
     const remote = await fireGet('/imi_blocked');
     if (remote && Array.isArray(remote) && remote.length) {
         const local = await getBlocked();
@@ -117,11 +129,6 @@ async function stopAll() {
         try { await chrome.tabs.remove(tabId); } catch(e) {}
     }
     await saveTabMap({});
-    // 알림 팝업 닫기
-    if (_alertWinId) {
-        try { await chrome.windows.remove(_alertWinId); } catch(e) {}
-        _alertWinId = null;
-    }
     await syncStatus();
 }
 
@@ -148,12 +155,14 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     await syncStatus();
 });
 
-// 알람: 주기적으로 탭 생존 확인
+// 알람: 탭 생존 확인(3분) + 차단목록 월간 정리(24시간)
 chrome.runtime.onInstalled.addListener(() => {
     chrome.alarms.create('imi_watchdog', { periodInMinutes: 3 });
+    chrome.alarms.create('imi_cleanup',  { periodInMinutes: 60 * 24 });
 });
 chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_watchdog' && await isActive()) await startAll();
+    if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
 });
 
 // --- Message handler ---
@@ -303,19 +312,39 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 if (found) tabId = found.id;
             }
             if (tabId) {
-                // 먼저 bot.js에 DOM 클릭 요청
-                chrome.tabs.sendMessage(tabId, { type: 'CLICK_ITEM_URL', url: msg.url }, res => {
-                    if (chrome.runtime.lastError || !res || !res.ok) {
-                        // DOM 요소 없음(페이지 새로고침됨) → 직접 URL 이동
-                        chrome.scripting.executeScript({
-                            target: { tabId },
-                            world: 'MAIN',
-                            func: (u) => { location.href = u; },
-                            args: [msg.url]
-                        }).catch(() => {});
-                    }
-                    chrome.tabs.update(tabId, { active: true }).catch(() => {});
-                });
+                const url = msg.url;
+                const tidM = url.match(/[?&]tid=(\d+)/);
+                const idM  = url.match(/[?&]id=(\d+)/);
+                try {
+                    // MAIN world에서 직접 DOM 클릭 → itemmania 자체 이벤트 핸들러 정상 동작
+                    await chrome.scripting.executeScript({
+                        target: { tabId },
+                        world: 'MAIN',
+                        func: (u, tid, id) => {
+                            let el = null;
+                            if (tid) {
+                                el = document.querySelector('li[data-tid="' + tid + '"]') ||
+                                     document.querySelector('[data-tid="' + tid + '"]');
+                            }
+                            if (!el && id) {
+                                el = document.querySelector('[data-id="' + id + '"]') ||
+                                     document.querySelector('[data-no="' + id + '"]');
+                                if (!el) {
+                                    document.querySelectorAll('[onclick]').forEach(function(e) {
+                                        if (!el && (e.getAttribute('onclick') || '').includes(id)) el = e;
+                                    });
+                                }
+                            }
+                            if (el) { (el.querySelector('a') || el).click(); return true; }
+                            location.href = u;
+                            return false;
+                        },
+                        args: [url, tidM ? tidM[1] : null, idM ? idM[1] : null]
+                    });
+                } catch(e) {
+                    chrome.tabs.create({ url });
+                }
+                chrome.tabs.update(tabId, { active: true }).catch(() => {});
             } else {
                 chrome.tabs.create({ url: msg.url });
             }
@@ -349,8 +378,8 @@ async function showAlertPopup(data) {
     const win = await chrome.windows.create({
         url: chrome.runtime.getURL('alert_popup.html'),
         type: 'popup',
-        width: 388,
-        height: 290,
+        width: 540,
+        height: 440,
         focused: true
     });
     _alertWinId = win.id;

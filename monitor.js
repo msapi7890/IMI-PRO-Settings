@@ -543,10 +543,14 @@ function _showMonitorFlash(s) {
     document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');
     document.getElementById('monitorAlertCount').textContent = (s.itemCount||0)+'개 물품 감지됨';
     document.getElementById('monitorAlertItems').innerHTML = (s.itemRows||[]).map(function(it){
-        return '<div style="padding:5px 0;border-bottom:1px solid var(--border-ui);font-size:12px;">'
-            +'<div style="font-weight:800;">'+_esc(it.t||'')+'</div>'
-            +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:11px;">'+Number(it.p).toLocaleString()+'원</div>':'')
-            +(it.u?'<a href="'+_esc(it.u)+'" target="_blank" style="font-size:10px;color:var(--active-focus-color);font-weight:800;">바로가기 ↗</a>':'')
+        var k = _esc(it.key || (it.t||'').substring(0,30).trim());
+        return '<div style="padding:6px 0;border-bottom:1px solid var(--border-ui);">'
+            +(it.tid?'<div style="font-size:11px;font-weight:900;color:#38bdf8;margin-bottom:2px;">#'+_esc(it.tid)+'</div>':'')
+            +'<div style="display:flex;align-items:center;gap:6px;">'
+            +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
+            +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
+            +'</div>'
+            +'<button data-bk="'+k+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">물품제외</button>'
             +'</div>';
     }).join('');
     document.getElementById('monitorAlertFlash').classList.remove('hidden');
@@ -624,3 +628,65 @@ db.ref('monitor_flash_state').on('value', function(snap) {
     if (s.active) _showMonitorFlash(s);
     else _hideMonitorFlashLocal();
 });
+
+// 물품제외 버튼 — 이벤트 위임 (monitorAlertFlash 내)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-bk]');
+    if (!btn || !document.getElementById('monitorAlertItems').contains(btn)) return;
+    var key = btn.getAttribute('data-bk');
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        if (!list.includes(key)) { list.push(key); db.ref('/imi_blocked').set(list); }
+        btn.disabled = true;
+        btn.textContent = '제외됨';
+        btn.style.opacity = '0.4';
+    });
+});
+
+// ===== 모니터링 모달 탭 전환 =====
+function switchMonTab(n) {
+    document.getElementById('monTab1').classList.toggle('mon-tab-active', n === 1);
+    document.getElementById('monTab2').classList.toggle('mon-tab-active', n === 2);
+    document.getElementById('monTabContent1').style.display = n === 1 ? '' : 'none';
+    document.getElementById('monTabContent2').style.display = n === 2 ? '' : 'none';
+    if (n === 2) loadBlockedItems();
+}
+
+// ===== 차단 목록 로드 =====
+function loadBlockedItems() {
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        var container = document.getElementById('blockedItemList');
+        var empty     = document.getElementById('blockedEmpty');
+        if (!list.length) {
+            container.innerHTML = '';
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        container.innerHTML = list.map(function(key, i) {
+            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
+                + '<div style="flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(key) + '</div>'
+                + '<button onclick="unblockItem(' + i + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
+                + '</div>';
+        }).join('');
+    });
+}
+
+// ===== 개별 차단 해제 =====
+function unblockItem(idx) {
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        list.splice(idx, 1);
+        db.ref('/imi_blocked').set(list, function() { loadBlockedItems(); });
+    });
+}
+
+// ===== 전체 차단 해제 =====
+function clearAllBlocked() {
+    if (!confirm('차단 목록을 전체 삭제하시겠습니까?')) return;
+    db.ref('/imi_blocked').set([], function() { loadBlockedItems(); });
+}

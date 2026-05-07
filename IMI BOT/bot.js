@@ -187,7 +187,7 @@
             if (minPrice > 0 && price < minPrice) return;
             if (maxPrice > 0 && price > maxPrice) return;
 
-            const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
+            const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title');
             const title = titleEl
                 ? (() => {
                     const raw = Array.from(titleEl.childNodes)
@@ -231,9 +231,15 @@
             const key = title.substring(0, 20) + '_' + price;
             if (seen.has(key)) return;
             seen.add(key);
-            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
+            // data-tid 직접 우선, 없으면 href 파싱
+            const elTid = el.getAttribute('data-tid') ||
+                          Array.from(el.querySelectorAll('[data-tid]')).reduce((a, e) => a || e.getAttribute('data-tid'), '');
+            const tidM = href.match(/[?&]tid=(\d+)/);
+            const idM  = href.match(/[?&]id=(\d+)/);
+            const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | tid: ' + (tid||'없음') + ' | href: ' + (href || '(없음)') });
             // _el: DOM 참조 저장 → 클릭 시 직접 사용
-            items.push({ t: title, p: price, u: href, key: itemKey, _el: el });
+            items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
         });
         return items;
     }
@@ -276,7 +282,7 @@
                 ruleName: rule.name,
                 ruleUrl: rule.url,
                 itemCount: items.length,
-                itemRows: items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '' })),
+                itemRows: items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '' })),
                 at: Date.now()
             }
         });
