@@ -172,11 +172,14 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 });
 
 // 알람: 탭 생존 확인(3분) + 차단목록 월간 정리(24시간)
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.alarms.create('imi_watchdog',  { periodInMinutes: 3 });
-    chrome.alarms.create('imi_rule_sync', { periodInMinutes: 1 });
-    chrome.alarms.create('imi_cleanup',   { periodInMinutes: 60 * 24 });
-});
+function ensureAlarms() {
+    chrome.alarms.get('imi_watchdog',  a => { if (!a) chrome.alarms.create('imi_watchdog',  { periodInMinutes: 3 }); });
+    chrome.alarms.get('imi_rule_sync', a => { if (!a) chrome.alarms.create('imi_rule_sync', { periodInMinutes: 1 }); });
+    chrome.alarms.get('imi_cleanup',   a => { if (!a) chrome.alarms.create('imi_cleanup',   { periodInMinutes: 60 * 24 }); });
+}
+chrome.runtime.onInstalled.addListener(ensureAlarms);
+chrome.runtime.onStartup.addListener(ensureAlarms);
+ensureAlarms(); // 서비스워커 재시작 시에도 보장
 chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_watchdog') {
         if (await isActive()) await startAll();
