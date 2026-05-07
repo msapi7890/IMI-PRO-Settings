@@ -225,21 +225,21 @@
                 }
             }
 
-            const itemKey = title.substring(0, 30).trim();
-            if (blockedItems.has(itemKey)) return;
-
-            // tid 먼저 계산 — dedup key로 사용
+            // tid 먼저 계산
             const elTid = el.getAttribute('data-tid') ||
                           Array.from(el.querySelectorAll('[data-tid]')).reduce((a, e) => a || e.getAttribute('data-tid'), '');
             const tidM = href.match(/[?&]tid=(\d+)/);
             const idM  = href.match(/[?&]id=(\d+)/);
             const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
 
+            // 차단 키: tid 우선 (없으면 제목 앞30자) — 제목이 "내용확인"같은 공통 텍스트여도 오차단 방지
+            const itemKey = tid || title.substring(0, 30).trim();
+            if (blockedItems.has(itemKey)) return;
+
             const key = tid || (title.substring(0, 20) + '_' + price);
             if (seen.has(key)) return;
             seen.add(key);
             chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | tid: ' + (tid||'없음') + ' | href: ' + (href || '(없음)') });
-            // _el: DOM 참조 저장 → 클릭 시 직접 사용
             items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
         });
         return items;
