@@ -100,19 +100,29 @@ function _renderBotStatus() {
         return;
     }
     ruleList.innerHTML = rules.map(function(r) {
-        var runColor = (r.enabled && r.tabOpen) ? '#22c55e' : '#94a3b8';
+        var runColor = (r.enabled && r.tabOpen) ? '#22c55e' : (r.enabled ? '#f59e0b' : '#94a3b8');
         var runLabel = (r.enabled && r.tabOpen) ? '● 감시중' : (r.enabled ? '○ 대기' : '■ 비활성');
+        var chkId = 'ruleChk_' + r.id;
         return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
-            + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">'
-            + '<div style="flex:1;font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</div>'
+            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+            + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;">'
+            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' onchange="toggleRuleFromWeb(\'' + _esc(r.id) + '\',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--active-focus-color);">'
+            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
+            + '</label>'
             + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
-            + (r.keyword  ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
-            + (r.minPrice ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.keyword      ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + (r.minPrice     ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
+            + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + '</div>'
             + '</div>';
     }).join('');
+}
+
+function toggleRuleFromWeb(ruleId, enabled) {
+    if (!_botStatus) { alert('확장프로그램이 연결되어 있지 않습니다.'); return; }
+    window.postMessage({ __imiBot: true, type: 'TOGGLE_RULE', ruleId: ruleId, enabled: enabled }, '*');
 }
 
 function openMonitorModal() {

@@ -85,6 +85,7 @@ async function syncStatus() {
         name: r.name,
         keyword: r.keyword || '',
         minPrice: r.minPrice || 0,
+        scanInterval: r.scanInterval || 5,
         enabled: r.enabled,
         tabOpen: tabMap[r.id] !== undefined
     }));
@@ -348,6 +349,34 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             } else {
                 chrome.tabs.create({ url: msg.url });
             }
+            sendResponse({ ok: true });
+        })();
+        return true;
+    }
+    // 웹 대시보드에서 개별 규칙 활성/비활성
+    if (msg.type === 'TOGGLE_RULE') {
+        (async () => {
+            const rules = await getRules();
+            const idx = rules.findIndex(r => r.id === msg.ruleId);
+            if (idx === -1) { sendResponse({ ok: false }); return; }
+            rules[idx].enabled = msg.enabled;
+            await saveRules(rules);
+            const tabMap = await getTabMap();
+            if (msg.enabled) {
+                if (!tabMap[msg.ruleId]) {
+                    const tab = await chrome.tabs.create({ url: rules[idx].url, active: false });
+                    tabMap[msg.ruleId] = tab.id;
+                    await saveTabMap(tabMap);
+                }
+            } else {
+                const tabId = tabMap[msg.ruleId];
+                if (tabId) {
+                    try { await chrome.tabs.remove(tabId); } catch(e) {}
+                    delete tabMap[msg.ruleId];
+                    await saveTabMap(tabMap);
+                }
+            }
+            await syncStatus();
             sendResponse({ ok: true });
         })();
         return true;
