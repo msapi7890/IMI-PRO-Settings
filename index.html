@@ -3912,6 +3912,20 @@
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
+        // 배포 자동 감지 — 2분마다 index.html ETag 체크 후 변경 시 자동 새로고침
+        (function(){
+            var _etag = null;
+            function checkUpdate(){
+                fetch(location.href, { method:'HEAD', cache:'no-store' })
+                    .then(function(r){
+                        var tag = r.headers.get('ETag') || r.headers.get('Last-Modified');
+                        if(!tag) return;
+                        if(_etag === null){ _etag = tag; return; }
+                        if(tag !== _etag){ location.reload(); }
+                    }).catch(function(){});
+            }
+            setInterval(checkUpdate, 120000);
+        })();
         // 이미지 모달 드래그 이동
         var _imgEl=document.getElementById('imgModalImg');
         if(_imgEl){
