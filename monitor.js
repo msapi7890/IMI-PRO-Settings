@@ -663,8 +663,8 @@ document.addEventListener('click', function(e) {
     });
 });
 
-// 물품차단 버튼 — 이벤트 위임 (로그 패널 내)
-document.addEventListener('click', function(e) {
+// 물품차단 버튼 — 이벤트 위임 (log-box 안 #monitorLogList에 직접 위임, stopPropagation 우회)
+document.getElementById('monitorLogList').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-logbk]');
     if (!btn) return;
     var key = btn.getAttribute('data-logbk');
