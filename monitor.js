@@ -803,12 +803,18 @@ function unblockItem(idx) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
         list.splice(idx, 1);
-        db.ref('/imi_blocked').set(list, function() { loadBlockedItems(); });
+        db.ref('/imi_blocked').set(list, function() {
+            loadBlockedItems();
+            loadMonitorLog();
+        });
     });
 }
 
 // ===== 전체 차단 해제 =====
 function clearAllBlocked() {
     if (!confirm('차단 목록을 전체 삭제하시겠습니까?')) return;
-    db.ref('/imi_blocked').set([], function() { loadBlockedItems(); });
+    db.ref('/imi_blocked').set([], function() {
+        loadBlockedItems();
+        loadMonitorLog();
+    });
 }
