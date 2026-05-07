@@ -239,7 +239,8 @@
             const itemKey = tid || title.substring(0, 30).trim();
             if (blockedItems.has(itemKey)) { cBlocked++; return; }
 
-            const key = tid || (title.substring(0, 20) + '_' + price);
+            // dedup: TID > href URL > 제목+가격 순 — 같은 제목+가격 항목도 URL 다르면 별개 물품
+            const key = tid || href || (title.substring(0, 20) + '_' + price);
             if (seen.has(key)) { cDup++; return; }
             seen.add(key);
             items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
