@@ -2515,21 +2515,18 @@
     }
 
     function _getRelatedNotices(title){
-        var _stop=new Set(['서비스','안내','관련','처리','내용','방법','이용','기능','기준','진행','확인','변경','적용','추가','삭제','종료','요청','접수','수정','등록','해제','설정','운영','사용','완료','경우','통해','대한','위한','해당','제공','관리','제한','여부','가능','불가','문의','신청']);
         var notices=allNotices[currentMode]||{};
-        var raw=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2; });
-        var words=raw.filter(function(w){ return !_stop.has(w); });
-        if(!words.length) words=raw; // 전부 stopword면 원본 사용
+        // 숫자만으로 이루어진 토큰은 제외 (날짜 등)
+        var words=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_:]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2 && !/^\d+$/.test(w); });
         if(!words.length) return [];
-        var threshold=Math.max(1, Math.ceil(words.length*0.6));
         var results=[];
         Object.keys(notices).forEach(function(id){
             try{
                 var n=notices[id];
                 if(!n||typeof n!=='object') return;
                 var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
-                var cnt=words.filter(function(w){ return hay.indexOf(w)>=0; }).length;
-                if(cnt>=threshold){
+                // 모든 단어가 공지에 포함될 때만 매칭
+                if(words.every(function(w){ return hay.indexOf(w)>=0; })){
                     results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
                 }
             }catch(e){}
