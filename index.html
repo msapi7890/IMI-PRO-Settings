@@ -859,6 +859,21 @@
     var BAY_MANUAL_INDEX = JSON.parse(document.getElementById('bayManualData').textContent);
     var BAY_PAGE_RANGES = JSON.parse(document.getElementById('bayPageRangesData').textContent);
 
+    // BAY 카테고리 그룹: PDF 파란줄 섹션 기준 (1-1. 리셋 지점마다 새 섹션)
+    var BAY_CATEGORY_GROUPS = (function(){
+        var _names = ['회원','판매','구매','결제','충전','출금','마이페이지','회원등급','보안서비스','상품권샵','거래인증','서비스','취소','사고'];
+        var _titles = Object.keys(BAY_MANUAL_INDEX);
+        var _gs = [], _cur = [];
+        _titles.forEach(function(t){
+            if(/^1-1\./.test(t) && _cur.length){ _gs.push(_cur); _cur=[]; }
+            _cur.push(t);
+        });
+        if(_cur.length) _gs.push(_cur);
+        var _map = {};
+        _gs.forEach(function(g,i){ if(_names[i]) _map[_names[i]]=g; });
+        return _map;
+    })();
+
     var FIREBASE_CONFIG = {databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
@@ -2317,6 +2332,26 @@
         var idx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         var titles=Object.keys(idx);
         var kw=q.toLowerCase().trim();
+
+        // 카테고리 검색 (베이 전용: 섹션 이름으로 전체 목록 표시)
+        if(currentMode==='bay'){
+            var _bg=BAY_CATEGORY_GROUPS[kw]||BAY_CATEGORY_GROUPS[q.trim()]||null;
+            if(!_bg){
+                // 부분 일치: 입력어가 카테고리명에 포함되거나 카테고리명이 입력어에 포함
+                var _bk=Object.keys(BAY_CATEGORY_GROUPS).find(function(c){
+                    return c===kw||c.indexOf(kw)>=0||kw.indexOf(c)>=0;
+                });
+                if(_bk) _bg=BAY_CATEGORY_GROUPS[_bk];
+            }
+            if(_bg&&_bg.length){
+                var _bh='<strong>📂 '+escHtml(kw)+' 카테고리 전체 ('+_bg.length+'건):</strong><div class="choice-card-wrap">';
+                _bg.forEach(function(t){_bh+="<button class='choice-card' onclick='showContentById(\""+t.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(t)+"</button>";});
+                _bh+='</div>';
+                botD.innerHTML=_bh;
+                document.getElementById('chatBox').scrollTop=99999;
+                return;
+            }
+        }
 
         // 카테고리 검색 (매니아 전용: 일반/사고)
         if(currentMode==='mania'&&(kw==='일반'||kw==='사고')){
