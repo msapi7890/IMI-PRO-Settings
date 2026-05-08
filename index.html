@@ -90,6 +90,7 @@
         #bellModal, #urgentCreateModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; }
         #bellModal.hidden, #urgentCreateModal.hidden { display:none !important; }
         #bellModal .bell-backdrop, #urgentCreateModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
+        #urgentCreateModal .bell-backdrop { pointer-events:none; }
         #bellModal .bell-box, #urgentCreateModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
         #bellModal .bell-title { font-size:15px; font-weight:900; }
         #bellModal .bell-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; }
@@ -535,8 +536,8 @@
 </div>
 
 <!-- 긴급공지 등록 모달 -->
-<div id="urgentCreateModal" class="hidden">
-    <div class="bell-backdrop" onclick="closeUrgentCreateModal()"></div>
+<div id="urgentCreateModal" class="hidden" onclick="if(event.target===this)closeUrgentCreateModal()">
+    <div class="bell-backdrop"></div>
     <div class="bell-box" style="border-color:#ef4444;width:min(94vw,460px);">
         <div>
             <div style="font-size:16px;font-weight:900;">🚨 긴급공지 등록</div>
