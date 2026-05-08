@@ -2515,20 +2515,29 @@
     }
 
     function _getRelatedNotices(title){
-        // 공지 제목에서만 매칭 (내용 검색 시 긴 본문에 단어가 우연히 포함돼 오매칭 발생)
         var _stop=new Set(['안내','관련','이용','서비스','기능','방법','내용','경우','완료','제공','해당','통해','위한','대한']);
         var notices=allNotices[currentMode]||{};
         var raw=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_:]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2&&!/^\d+$/.test(w); });
         var words=raw.filter(function(w){ return !_stop.has(w); });
         if(!words.length) words=raw;
         if(!words.length) return [];
+        // 핵심어: 4자 이상 단어 + 인접 단어 bigram(결제+인증→결제인증)
+        // → 브랜드명/복합어 기준 매칭, 짧은 범용 단어(충전·결제 단독)로 오매칭 방지
+        var primary=[];
+        words.forEach(function(w,i){
+            if(w.length>=4) primary.push(w);
+            if(i<words.length-1) primary.push(w+words[i+1]);
+        });
         var results=[];
         Object.keys(notices).forEach(function(id){
             try{
                 var n=notices[id];
                 if(!n||typeof n!=='object') return;
-                var hay=(n.title||'').toLowerCase(); // 제목만 검색
-                if(words.some(function(w){ return hay.indexOf(w)>=0; })){
+                var titleOnly=(n.title||'').toLowerCase();
+                // 핵심어 있으면 제목+내용 전체, 없으면(단일 짧은 단어) 제목만
+                var hay=primary.length ? (titleOnly+' '+(n.content||'')).toLowerCase() : titleOnly;
+                var terms=primary.length ? primary : words;
+                if(terms.some(function(w){ return hay.indexOf(w)>=0; })){
                     results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
                 }
             }catch(e){}
