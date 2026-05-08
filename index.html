@@ -4080,7 +4080,9 @@
         var hours=durEl?parseInt(durEl.value):48;
         var dateStr=new Date(now).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short'});
         var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:now+hours*3600000,showInTicker:true,permanent:false};
-        db.ref('urgent_notices').child(String(now)).set(obj);
+        db.ref('urgent_notices').child(String(now)).set(obj, function(err){
+            if(err){ alert('🚨 Firebase 오류: '+err.message+'\n\n경로: urgent_notices'); }
+        });
         urgentNotices[String(now)]=obj; updateTicker(); updateBellBadge();
         // 오른쪽 공지에도 등록 (체크 시, 핀 고정 없음)
         var alsoNotice=document.getElementById('urgentAlsoNotice');
