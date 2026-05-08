@@ -1288,8 +1288,9 @@
                 var rawS=snapS.val();
                 function _continueLoad(rawNames){
                     _schedNames=_parseStaffRaw(rawNames);
-                    db.ref('work_schedule/staff_colors').once('value', function(snapC){
-                        var rawC=snapC.val()||{};
+                    (function(){
+                        var rawC={};
+                        try{ rawC=JSON.parse(localStorage.getItem('imi_sched_colors')||'{}'); }catch(e){}
                         _schedColors={};
                         SCHED_GROUPS.forEach(function(g){ _schedColors[g.key]=(rawC[g.key]&&typeof rawC[g.key]==='object')?rawC[g.key]:{}; });
                         db.ref('work_schedule/custom_holidays/'+_schedYear).once('value', function(snapH){
@@ -1305,7 +1306,7 @@
                                 _renderScheduleTable();
                             });
                         });
-                    });
+                    })();
                 }
                 if(rawS){
                     _continueLoad(rawS);
@@ -1653,8 +1654,9 @@
         var gIdx=_schedColorPickerTarget.gIdx, staffId=_schedColorPickerTarget.staffId;
         var gKey=SCHED_GROUPS[gIdx].key;
         if(!_schedColors[gKey]) _schedColors[gKey]={};
-        if(color){ _schedColors[gKey][staffId]=color; db.ref('work_schedule/staff_colors/'+gKey+'/'+staffId).set(color); }
-        else { delete _schedColors[gKey][staffId]; db.ref('work_schedule/staff_colors/'+gKey+'/'+staffId).remove(); }
+        if(color){ _schedColors[gKey][staffId]=color; }
+        else { delete _schedColors[gKey][staffId]; }
+        try{ localStorage.setItem('imi_sched_colors', JSON.stringify(_schedColors)); }catch(e){}
         closeColorPicker();
         _renderScheduleTable();
     }
