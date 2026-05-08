@@ -89,8 +89,8 @@
         #scheduleTableWrap.stamp-mode td[id^="scell_"] { cursor: pointer !important; }
         #bellModal, #urgentCreateModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; }
         #bellModal.hidden, #urgentCreateModal.hidden { display:none !important; }
-        #bellModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
-        #bellModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
+        #bellModal .bell-backdrop, #urgentCreateModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
+        #bellModal .bell-box, #urgentCreateModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
         #bellModal .bell-title { font-size:15px; font-weight:900; }
         #bellModal .bell-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; }
         .bell-notice-item { background:var(--bg-chat); border:2px solid var(--border-ui); border-radius:10px; padding:10px 12px; cursor:pointer; transition:0.15s; }
@@ -4081,8 +4081,10 @@
         var dateStr=new Date(now).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short'});
         var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:now+hours*3600000,showInTicker:true,permanent:false};
         db.ref('urgent_notices').child(String(now)).set(obj);
+        urgentNotices[String(now)]=obj; updateTicker(); updateBellBadge();
         // 오른쪽 공지에도 등록 (체크 시, 핀 고정 없음)
-        if(document.getElementById('urgentAlsoNotice').checked){
+        var alsoNotice=document.getElementById('urgentAlsoNotice');
+        if(alsoNotice&&alsoNotice.checked){
             var noticeObj={title:obj.title,content:content,date:dateStr};
             db.ref('notices_'+currentMode).child(String(now)).set(noticeObj);
         }
