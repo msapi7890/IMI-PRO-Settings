@@ -229,6 +229,8 @@
         .log-box { background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); width:min(96vw,960px); height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.45); overflow:hidden; }
         .log-hdr { padding:16px 22px 14px; border-bottom:2px solid var(--border-ui); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
         .log-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+        #lockScreen { display:none; }
+        body.auth-pending #lockScreen { display:flex; }
         .log-item { border:1.5px solid var(--border-ui); border-radius:10px; padding:12px 15px; background:var(--bg-body); }
         .log-item-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-ui); }
         .log-item-row:last-child { border-bottom:none; }
@@ -286,12 +288,12 @@
 </div>
 <!-- ================== -->
 <script>
-// lockScreen div 파싱 직후 실행 — !important 없이 inline style로 표시
+// CSS 클래스 방식 — inline style 충돌 없음
 (function(){
     try{
         var a=JSON.parse(localStorage.getItem('imi_auth')||'null');
-        if(!a||!a.hash) document.getElementById('lockScreen').style.display='flex';
-    }catch(e){ document.getElementById('lockScreen').style.display='flex'; }
+        if(!a||!a.hash) document.body.classList.add('auth-pending');
+    }catch(e){ document.body.classList.add('auth-pending'); }
 })();
 </script>
 
@@ -923,18 +925,19 @@
     function _authLoadLocal(){
         try{ return JSON.parse(localStorage.getItem('imi_auth')||'null'); }catch(e){ return null; }
     }
-    async function _authInit(){
-        // 1) 로컬 토큰 즉시 확인 (flash 방지)
-        var saved = _authLoadLocal();
-        if(saved && saved.hash) document.getElementById('lockScreen').style.display = 'none';
+    function _lockShow(){ document.body.classList.add('auth-pending'); }
+    function _lockHide(){ document.body.classList.remove('auth-pending'); }
 
-        // 2) Firebase에서 설정 로드
+    async function _authInit(){
+        var saved = _authLoadLocal();
+
+        // Firebase 설정 로드
         try{
             var r = await fetch(_AUTH_DB+'/app_config.json?_t='+Date.now(),{cache:'no-store'});
             _authCfg = r.ok ? (await r.json()||{}) : {};
         }catch(e){ _authCfg = {}; }
 
-        // 3) 최초 접속: 초기 비밀번호 세팅
+        // 최초 접속: 초기 비밀번호 세팅
         if(!_authCfg.pw_hash){
             var h0 = await _sha256('mania3001!');
             _authCfg = {pw_hash:h0, pw_changed_at:Date.now()};
@@ -943,18 +946,16 @@
 
         var days = (Date.now()-(_authCfg.pw_changed_at||Date.now()))/86400000;
 
-        // 4) 만료 → 변경 화면
         if(days >= _AUTH_EXPIRY_DAYS){
             _showLockChange('비밀번호 만료 ('+Math.floor(days)+'일 경과)\n새 비밀번호로 변경 후 접속해주세요', false);
             return;
         }
-        // 5) 토큰 검증
         if(saved && saved.hash === _authCfg.pw_hash){
             _authGrant();
         } else {
             document.getElementById('lockLoadingView').style.display = 'none';
             document.getElementById('lockLoginView').style.display = '';
-            document.getElementById('lockScreen').style.display = 'flex';
+            _lockShow();
             setTimeout(function(){ var el=document.getElementById('lockPwInput'); if(el) el.focus(); }, 80);
         }
     }
@@ -983,14 +984,14 @@
         document.getElementById('lockChangeMsg').textContent = msg || '';
         document.getElementById('lockChangeErr').style.display = 'none';
         ['lockOldPw','lockNewPw','lockNewPw2'].forEach(function(id){ document.getElementById(id).value=''; });
-        document.getElementById('lockScreen').style.display = 'flex';
+        _lockShow();
     }
     function _openAdminChange(){
         _showLockChange('비밀번호 변경', true);
     }
     function _authCancelChange(){
         document.getElementById('lockChangeView').style.display = 'none';
-        document.getElementById('lockScreen').style.display = 'none';
+        _lockHide();
     }
     async function _authChangePw(){
         var oldPw = document.getElementById('lockOldPw').value;
@@ -1014,7 +1015,7 @@
         alert('✅ 비밀번호가 변경됐습니다.\n팀원에게 새 비밀번호를 공유해주세요.');
     }
     function _authGrant(){
-        document.getElementById('lockScreen').style.display = 'none';
+        _lockHide();
         document.getElementById('lockChangeView').style.display = 'none';
     }
     // ================================
