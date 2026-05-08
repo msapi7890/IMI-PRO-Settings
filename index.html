@@ -87,11 +87,12 @@
         tr.sched-row-highlight > td:first-child::after { box-shadow:inset 1.5px 1.5px 0 #3b82f6, inset 0 -1.5px 0 #3b82f6; }
         tr.sched-row-highlight > td:last-child::after { box-shadow:inset 0 1.5px 0 #3b82f6, inset -1.5px -1.5px 0 #3b82f6; }
         #scheduleTableWrap.stamp-mode td[id^="scell_"] { cursor: pointer !important; }
-        #bellModal, #urgentCreateModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; }
-        #bellModal.hidden, #urgentCreateModal.hidden { display:none !important; }
-        #bellModal .bell-backdrop, #urgentCreateModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
-        #urgentCreateModal .bell-backdrop { pointer-events:none; }
-        #bellModal .bell-box, #urgentCreateModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
+        #bellModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; }
+        #bellModal.hidden { display:none !important; }
+        #bellModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
+        #bellModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
+        #urgentCreateModal { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; }
+        #urgentCreateModal.hidden { display:none !important; }
         #bellModal .bell-title { font-size:15px; font-weight:900; }
         #bellModal .bell-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; }
         .bell-notice-item { background:var(--bg-chat); border:2px solid var(--border-ui); border-radius:10px; padding:10px 12px; cursor:pointer; transition:0.15s; }
@@ -537,15 +538,16 @@
 
 <!-- 긴급공지 등록 모달 -->
 <div id="urgentCreateModal" class="hidden" onclick="if(event.target===this)closeUrgentCreateModal()">
-    <div class="bell-backdrop"></div>
-    <div class="bell-box" style="border-color:#ef4444;width:min(94vw,460px);">
-        <div>
-            <div style="font-size:16px;font-weight:900;">🚨 긴급공지 등록</div>
-            <div style="font-size:10px;opacity:0.5;margin-top:4px;">매니아/베이 공통 공지</div>
+    <div style="position:relative;background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(94vw,460px);padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div style="font-size:16px;font-weight:900;">🚨 긴급공지 등록</div>
+                <div style="font-size:10px;opacity:0.5;margin-top:4px;">매니아/베이 공통 공지</div>
+            </div>
+            <button onclick="closeUrgentCreateModal()" style="font-size:22px;opacity:0.3;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
-        <textarea id="urgentInput" rows="5" style="width:100%;padding:12px;border-radius:10px;border:2px solid var(--border-ui);background:var(--bg-chat);color:var(--text-main);font-size:13px;font-weight:600;resize:vertical;outline:none;" placeholder="긴급공지 내용을 입력하세요..."></textarea>
-        <!-- 지속 시간 선택 -->
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 2px;">
+        <textarea id="urgentInput" rows="5" style="width:100%;padding:12px;border-radius:10px;border:2px solid var(--border-ui);background:var(--bg-chat);color:var(--text-main);font-size:13px;font-weight:600;resize:vertical;outline:none;box-sizing:border-box;" placeholder="긴급공지 내용을 입력하세요..."></textarea>
+        <div style="display:flex;align-items:center;gap:10px;padding:4px 2px;">
             <span style="font-size:11px;font-weight:700;opacity:0.55;flex-shrink:0;">⏱ 지속 시간</span>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:700;">
                 <input type="radio" name="urgentDuration" value="24" id="urgentDur24" style="accent-color:#ef4444;">
@@ -556,15 +558,14 @@
                 <span>48시간</span>
             </label>
         </div>
-        <!-- 오른쪽 공지에도 등록 -->
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 2px;border-top:1px solid var(--border-ui);">
             <input type="checkbox" id="urgentAlsoNotice" style="accent-color:#3b82f6;width:15px;height:15px;">
             <span style="font-size:12px;font-weight:700;">오른쪽 공지에도 등록 <span id="urgentNoticeModeLabel" style="opacity:0.5;font-weight:600;font-size:11px;"></span></span>
             <span style="font-size:10px;opacity:0.45;margin-left:auto;">핀 고정 없음</span>
         </label>
-        <div style="display:flex;gap:8px;flex-shrink:0;">
-            <button onclick="saveUrgentNotice()" style="flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:900;background:#ef4444;color:#fff;border:none;cursor:pointer;transition:0.15s;">🚨 등록</button>
-            <button onclick="closeUrgentCreateModal()" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:900;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;transition:0.15s;">취소</button>
+        <div style="display:flex;gap:8px;">
+            <button onclick="saveUrgentNotice()" style="flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:900;background:#ef4444;color:#fff;border:none;cursor:pointer;">🚨 등록</button>
+            <button onclick="closeUrgentCreateModal()" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:900;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;">취소</button>
         </div>
     </div>
 </div>
