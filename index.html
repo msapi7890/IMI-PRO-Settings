@@ -239,9 +239,70 @@
             50%      { box-shadow:inset 0 0 0 6px transparent, 0 0 0 rgba(239,68,68,0); outline: 4px solid transparent; }
         }
     </style>
+<script>
+// 페이지 렌더 전 빠른 토큰 확인 — 미인증 시 락 화면 즉시 표시
+(function(){
+    try{
+        var a=JSON.parse(localStorage.getItem('imi_auth')||'null');
+        if(!a||!a.hash){
+            var s=document.createElement('style');
+            s.textContent='#lockScreen{display:flex!important}';
+            document.head.appendChild(s);
+        }
+    }catch(e){
+        var s2=document.createElement('style');
+        s2.textContent='#lockScreen{display:flex!important}';
+        document.head.appendChild(s2);
+    }
+})();
+</script>
 </head>
 
 <body class="light-mode" id="mainBody">
+
+<!-- ===== 락 화면 ===== -->
+<div id="lockScreen" style="position:fixed;inset:0;z-index:99999;background:#0f172a;display:none;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
+    <div style="width:min(94vw,400px);background:#1e293b;border:2px solid #334155;border-radius:20px;padding:38px 34px;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div style="text-align:center;margin-bottom:30px;">
+            <div style="font-size:26px;font-weight:900;font-style:italic;letter-spacing:0.06em;background:linear-gradient(135deg,#0284c7,#3abff8,#db2777);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;">✦ IMI PRO ✦</div>
+            <div style="font-size:12px;color:#64748b;font-weight:700;letter-spacing:0.05em;">접근 제한 구역입니다</div>
+        </div>
+        <!-- 로그인 뷰 -->
+        <div id="lockLoginView" style="display:none;">
+            <input type="password" id="lockPwInput" placeholder="비밀번호를 입력하세요" autocomplete="current-password"
+                style="width:100%;box-sizing:border-box;padding:13px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:14px;font-weight:700;outline:none;transition:border-color 0.15s;margin-bottom:12px;display:block;"
+                onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'"
+                onkeydown="if(event.key==='Enter')_authSubmit()">
+            <button onclick="_authSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">확 인</button>
+            <div id="lockErrMsg" style="display:none;text-align:center;margin-top:12px;font-size:12px;font-weight:700;color:#f87171;"></div>
+        </div>
+        <!-- 로딩 뷰 -->
+        <div id="lockLoadingView" style="text-align:center;padding:10px 0;">
+            <div style="color:#475569;font-size:13px;font-weight:700;">연결 중...</div>
+        </div>
+        <!-- 비밀번호 변경 뷰 -->
+        <div id="lockChangeView" style="display:none;">
+            <div id="lockChangeMsg" style="text-align:center;margin-bottom:18px;font-size:12px;color:#f59e0b;font-weight:700;line-height:1.7;white-space:pre-line;"></div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+                <input type="password" id="lockOldPw" placeholder="현재 비밀번호" autocomplete="current-password"
+                    style="padding:12px 14px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:700;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
+                <input type="password" id="lockNewPw" placeholder="새 비밀번호 (6자 이상)" autocomplete="new-password"
+                    style="padding:12px 14px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:700;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
+                <input type="password" id="lockNewPw2" placeholder="새 비밀번호 확인" autocomplete="new-password"
+                    style="padding:12px 14px;border-radius:9px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:700;outline:none;transition:border-color 0.15s;"
+                    onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'"
+                    onkeydown="if(event.key==='Enter')_authChangePw()">
+            </div>
+            <button onclick="_authChangePw()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">변경 후 접속</button>
+            <div id="lockChangeErr" style="display:none;text-align:center;margin-top:12px;font-size:12px;font-weight:700;color:#f87171;"></div>
+            <button id="lockChangeCancelBtn" onclick="_authCancelChange()" style="display:none;width:100%;margin-top:8px;padding:11px;border-radius:10px;border:1.5px solid #334155;background:none;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">취소</button>
+        </div>
+    </div>
+</div>
+<!-- ================== -->
+
 <div id="imgModal" onclick="closeImgModal(event)">
   <span class="im-close" onclick="document.getElementById('imgModal').classList.remove('open')">X</span>
   <div class="im-zoom" onclick="event.stopPropagation()">
@@ -700,6 +761,7 @@
     </div>
     <div class="h-right">
         <div class="slider-container"><span class="text-[9px] font-black opacity-50 mr-1">FONT</span><span id="fontDisplay">16</span><input type="range" id="fontSlider" min="12" max="20" value="16" oninput="updateFontSize(this.value)"></div>
+        <button onclick="_openAdminChange()" style="font-size:16px;background:none;border:none;cursor:pointer;padding:4px;opacity:0.35;transition:opacity 0.15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.35" title="비밀번호 변경">🔐</button>
         <button onclick="cycleTheme()" class="text-2xl p-1 hover:scale-110 transition" id="themeBtn">🌞</button>
     </div>
 </header>
@@ -856,6 +918,114 @@
     }
 
     function cycleTheme(){ themeIdx=(themeIdx+1)%themes.length; applyTheme(themes[themeIdx]); }
+
+    // ===== 비밀번호 인증 시스템 =====
+    var _authCfg = null;
+    var _AUTH_DB = 'https://manual-9a47c-default-rtdb.firebaseio.com';
+    var _AUTH_EXPIRY_DAYS = 30;
+
+    async function _sha256(s){
+        var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+        return Array.from(new Uint8Array(b)).map(function(v){ return v.toString(16).padStart(2,'0'); }).join('');
+    }
+    function _authLoadLocal(){
+        try{ return JSON.parse(localStorage.getItem('imi_auth')||'null'); }catch(e){ return null; }
+    }
+    async function _authInit(){
+        // 1) 로컬 토큰 즉시 확인 (flash 방지)
+        var saved = _authLoadLocal();
+        if(saved && saved.hash) document.getElementById('lockScreen').style.display = 'none';
+
+        // 2) Firebase에서 설정 로드
+        try{
+            var r = await fetch(_AUTH_DB+'/app_config.json?_t='+Date.now(),{cache:'no-store'});
+            _authCfg = r.ok ? (await r.json()||{}) : {};
+        }catch(e){ _authCfg = {}; }
+
+        // 3) 최초 접속: 초기 비밀번호 세팅
+        if(!_authCfg.pw_hash){
+            var h0 = await _sha256('mania3001!');
+            _authCfg = {pw_hash:h0, pw_changed_at:Date.now()};
+            try{ await fetch(_AUTH_DB+'/app_config.json',{method:'PUT',body:JSON.stringify(_authCfg),headers:{'Content-Type':'application/json'}}); }catch(e){}
+        }
+
+        var days = (Date.now()-(_authCfg.pw_changed_at||Date.now()))/86400000;
+
+        // 4) 만료 → 변경 화면
+        if(days >= _AUTH_EXPIRY_DAYS){
+            _showLockChange('비밀번호 만료 ('+Math.floor(days)+'일 경과)\n새 비밀번호로 변경 후 접속해주세요', false);
+            return;
+        }
+        // 5) 토큰 검증
+        if(saved && saved.hash === _authCfg.pw_hash){
+            _authGrant();
+        } else {
+            document.getElementById('lockLoadingView').style.display = 'none';
+            document.getElementById('lockLoginView').style.display = '';
+            document.getElementById('lockScreen').style.display = 'flex';
+            setTimeout(function(){ var el=document.getElementById('lockPwInput'); if(el) el.focus(); }, 80);
+        }
+    }
+    async function _authSubmit(){
+        var pw = document.getElementById('lockPwInput').value;
+        var errEl = document.getElementById('lockErrMsg');
+        errEl.style.display = 'none';
+        if(!pw) return;
+        if(!_authCfg){ errEl.textContent='서버 연결 중입니다. 잠시 후 다시 시도하세요.'; errEl.style.display=''; return; }
+        var h = await _sha256(pw);
+        if(h === _authCfg.pw_hash){
+            localStorage.setItem('imi_auth', JSON.stringify({hash:h, at:Date.now()}));
+            _authGrant();
+        } else {
+            errEl.textContent = '비밀번호가 올바르지 않습니다';
+            errEl.style.display = '';
+            document.getElementById('lockPwInput').value = '';
+            document.getElementById('lockPwInput').focus();
+        }
+    }
+    function _showLockChange(msg, showCancel){
+        document.getElementById('lockLoadingView').style.display = 'none';
+        document.getElementById('lockLoginView').style.display = 'none';
+        document.getElementById('lockChangeView').style.display = '';
+        document.getElementById('lockChangeCancelBtn').style.display = showCancel ? '' : 'none';
+        document.getElementById('lockChangeMsg').textContent = msg || '';
+        document.getElementById('lockChangeErr').style.display = 'none';
+        ['lockOldPw','lockNewPw','lockNewPw2'].forEach(function(id){ document.getElementById(id).value=''; });
+        document.getElementById('lockScreen').style.display = 'flex';
+    }
+    function _openAdminChange(){
+        _showLockChange('비밀번호 변경', true);
+    }
+    function _authCancelChange(){
+        document.getElementById('lockChangeView').style.display = 'none';
+        document.getElementById('lockScreen').style.display = 'none';
+    }
+    async function _authChangePw(){
+        var oldPw = document.getElementById('lockOldPw').value;
+        var newPw = document.getElementById('lockNewPw').value;
+        var newPw2 = document.getElementById('lockNewPw2').value;
+        var errEl = document.getElementById('lockChangeErr');
+        errEl.style.display = 'none';
+        if(!oldPw||!newPw||!newPw2){ errEl.textContent='모든 항목을 입력해주세요'; errEl.style.display=''; return; }
+        if(newPw.length < 6){ errEl.textContent='비밀번호는 6자 이상이어야 합니다'; errEl.style.display=''; return; }
+        if(newPw !== newPw2){ errEl.textContent='새 비밀번호가 일치하지 않습니다'; errEl.style.display=''; return; }
+        var oldHash = await _sha256(oldPw);
+        if(oldHash !== _authCfg.pw_hash){ errEl.textContent='현재 비밀번호가 올바르지 않습니다'; errEl.style.display=''; return; }
+        var newHash = await _sha256(newPw);
+        _authCfg.pw_hash = newHash;
+        _authCfg.pw_changed_at = Date.now();
+        try{
+            await fetch(_AUTH_DB+'/app_config.json',{method:'PUT',body:JSON.stringify(_authCfg),headers:{'Content-Type':'application/json'}});
+        }catch(e){ errEl.textContent='저장 실패 (네트워크 오류)'; errEl.style.display=''; return; }
+        localStorage.setItem('imi_auth', JSON.stringify({hash:newHash, at:Date.now()}));
+        _authGrant();
+        alert('✅ 비밀번호가 변경됐습니다.\n팀원에게 새 비밀번호를 공유해주세요.');
+    }
+    function _authGrant(){
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('lockChangeView').style.display = 'none';
+    }
+    // ================================
 
     // 알림 설정 (개인 저장)
     var _notifPrefs = {flash:true, popup:true, sound:false};
@@ -3978,6 +4148,7 @@
     window.onload = function(){
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
+        _authInit();
         updateClock(); setInterval(updateClock,1000);
         seedKeywords();
         // 알림 권한 안내 배너
