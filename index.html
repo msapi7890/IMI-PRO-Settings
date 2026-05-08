@@ -2515,18 +2515,20 @@
     }
 
     function _getRelatedNotices(title){
+        // 공지 제목에서만 매칭 (내용 검색 시 긴 본문에 단어가 우연히 포함돼 오매칭 발생)
+        var _stop=new Set(['안내','관련','이용','서비스','기능','방법','내용','경우','완료','제공','해당','통해','위한','대한']);
         var notices=allNotices[currentMode]||{};
-        // 숫자만으로 이루어진 토큰은 제외 (날짜 등)
-        var words=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_:]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2 && !/^\d+$/.test(w); });
+        var raw=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_:]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2&&!/^\d+$/.test(w); });
+        var words=raw.filter(function(w){ return !_stop.has(w); });
+        if(!words.length) words=raw;
         if(!words.length) return [];
         var results=[];
         Object.keys(notices).forEach(function(id){
             try{
                 var n=notices[id];
                 if(!n||typeof n!=='object') return;
-                var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
-                // 모든 단어가 공지에 포함될 때만 매칭
-                if(words.every(function(w){ return hay.indexOf(w)>=0; })){
+                var hay=(n.title||'').toLowerCase(); // 제목만 검색
+                if(words.some(function(w){ return hay.indexOf(w)>=0; })){
                     results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
                 }
             }catch(e){}
