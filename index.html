@@ -2318,6 +2318,25 @@
         var titles=Object.keys(idx);
         var kw=q.toLowerCase().trim();
 
+        // 카테고리 검색 (매니아 전용: 일반/사고)
+        if(currentMode==='mania'&&(kw==='일반'||kw==='사고')){
+            var _isSago=kw==='사고';
+            var _catList=titles.filter(function(t){
+                var pr=PAGE_RANGES[normalizeKey(t)];
+                return _isSago ? (pr&&pr.start>=139) : (!pr||pr.start<139);
+            });
+            if(_catList.length){
+                var _ch='<strong>📂 '+escHtml(kw)+' 카테고리 전체 ('+_catList.length+'건):</strong><div class="choice-card-wrap">';
+                _catList.forEach(function(t){_ch+="<button class='choice-card' onclick='showContentById(\""+t.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(t)+"</button>";});
+                _ch+='</div>';
+                botD.innerHTML=_ch;
+            } else {
+                botD.innerHTML='<span>'+escHtml(kw)+' 카테고리 항목을 찾을 수 없습니다.</span>';
+            }
+            document.getElementById('chatBox').scrollTop=99999;
+            return;
+        }
+
         // 1. 완전 일치 - 바로 표시
         var exactMatch = titles.find(function(t){return t.toLowerCase()===kw;});
         if(exactMatch){showContent(exactMatch,botD,idx);return;}
