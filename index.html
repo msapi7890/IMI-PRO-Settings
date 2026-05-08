@@ -4063,10 +4063,10 @@
         document.getElementById('viewMode').classList.remove('hidden');
     }
     function openUrgentCreate(){
-        document.getElementById('urgentInput').value='';
-        document.getElementById('urgentDur48').checked=true;
-        document.getElementById('urgentAlsoNotice').checked=false;
-        document.getElementById('urgentNoticeModeLabel').textContent='('+( currentMode==='bay' ? '베이' : '매니아' )+' 공지)';
+        var inp=document.getElementById('urgentInput'); if(inp) inp.value='';
+        var d48=document.getElementById('urgentDur48'); if(d48) d48.checked=true;
+        var an=document.getElementById('urgentAlsoNotice'); if(an) an.checked=false;
+        var ml=document.getElementById('urgentNoticeModeLabel'); if(ml) ml.textContent='('+(currentMode==='bay'?'베이':'매니아')+' 공지)';
         document.getElementById('urgentCreateModal').classList.remove('hidden');
     }
     function closeUrgentCreateModal(){
