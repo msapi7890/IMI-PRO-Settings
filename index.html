@@ -2462,15 +2462,18 @@
 
     function _getRelatedNotices(title){
         var notices=allNotices[currentMode]||{};
-        var words=title.toLowerCase().replace(/[\/\(\)\[\]\.,·]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2; });
+        var words=title.toLowerCase().replace(/[\/\(\)\[\]\.,·\-_]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2; });
         if(!words.length) return [];
         var results=[];
         Object.keys(notices).forEach(function(id){
-            var n=notices[id];
-            var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
-            if(words.some(function(w){ return hay.indexOf(w)>=0; })){
-                results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
-            }
+            try{
+                var n=notices[id];
+                if(!n||typeof n!=='object') return;
+                var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
+                if(words.some(function(w){ return hay.indexOf(w)>=0; })){
+                    results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
+                }
+            }catch(e){}
         });
         results.sort(function(a,b){ return b._ts - a._ts; });
         return results.slice(0,5);
@@ -2479,19 +2482,19 @@
         var related=_getRelatedNotices(title);
         if(!related.length) return;
         var wrap=document.createElement('div');
-        wrap.style.cssText='margin-top:12px;border-top:1.5px solid var(--border-ui);padding-top:10px;';
+        wrap.style.cssText='margin-top:12px;border-top:1.5px solid var(--border-ui);padding-top:10px;display:block;';
         var h='<div style="font-size:10px;font-weight:900;opacity:0.45;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">📢 관련 공지 ('+related.length+'건 · 최신순)</div>'
             +'<div style="display:flex;flex-direction:column;gap:5px;">';
         related.forEach(function(n){
-            h+='<button class="notice-ref-btn" onclick="openViewModal(\''+n.id+'\')">'
+            h+='<button class="notice-ref-btn" onclick="event.stopPropagation();openViewModal(\''+n.id+'\')">'
                 +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escHtml(n.title)+'</span>'
-                +'<span style="font-size:10px;opacity:0.55;flex-shrink:0;">'+escHtml(n.date)+'</span>'
+                +'<span style="font-size:10px;opacity:0.55;flex-shrink:0;margin-left:8px;">'+escHtml(n.date)+'</span>'
                 +'</button>';
         });
         h+='</div>';
         wrap.innerHTML=h;
         botD.appendChild(wrap);
-        document.getElementById('chatBox').scrollTop=99999;
+        setTimeout(function(){ document.getElementById('chatBox').scrollTop=99999; }, 50);
     }
 
     function escHtml(t){
