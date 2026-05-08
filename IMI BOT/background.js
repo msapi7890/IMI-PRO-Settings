@@ -470,6 +470,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_ALL')   { startAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'STOP_ALL')    { stopAll().then(() => sendResponse({ ok: true })); return true; }
     if (msg.type === 'SYNC_STATUS') { syncStatus(); sendResponse({ ok: true }); }
+    if (msg.type === 'UPDATE_NOTIF_PREF') {
+        store.set('imi_notif_' + msg.key, msg.val);
+        sendResponse({ ok: true });
+    }
 });
 
 // 커스텀 팝업 창 (IMI PRO 스타일)
@@ -477,6 +481,9 @@ let _alertWinId = null;
 let _lastAlertAt = 0;
 
 async function showAlertPopup(data) {
+    const popupOn = await store.get('imi_notif_popup');
+    if (popupOn === false) return;
+
     const now = Date.now();
     // 5초 이내 중복 방지
     if (now - _lastAlertAt < 5000) return;

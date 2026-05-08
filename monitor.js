@@ -558,7 +558,24 @@ function _triggerMonitorAlert(id, rule, items) {
 
 function closeMonitorFlash() { db.ref('monitor_flash_state/active').set(false); }
 
+function _getNotifPrefs(){
+    try{ return Object.assign({flash:true,popup:true,sound:false},JSON.parse(localStorage.getItem('imi_notif_prefs')||'{}')); }catch(e){ return {flash:true,popup:true,sound:false}; }
+}
+function _playAlertBeep(){
+    try{
+        var ctx=new (window.AudioContext||window.webkitAudioContext)();
+        [0,0.22,0.44].forEach(function(d){
+            var o=ctx.createOscillator(), g=ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type='sine'; o.frequency.value=880;
+            g.gain.setValueAtTime(0.35,ctx.currentTime+d);
+            g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d+0.18);
+            o.start(ctx.currentTime+d); o.stop(ctx.currentTime+d+0.2);
+        });
+    }catch(e){}
+}
 function _showMonitorFlash(s) {
+    var _np=_getNotifPrefs();
     document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');
     document.getElementById('monitorAlertCount').textContent = (s.itemCount||0)+'개 물품 감지됨';
     document.getElementById('monitorAlertItems').innerHTML = (s.itemRows||[]).map(function(it){
@@ -573,13 +590,17 @@ function _showMonitorFlash(s) {
             +'</div>';
     }).join('');
     document.getElementById('monitorAlertFlash').classList.remove('hidden');
-    document.getElementById('chatSection').classList.add('monitor-border-flash');
 
-    // 전체화면 빨간 오버레이 플래시
-    _triggerFullscreenFlash();
+    if (_np.flash) {
+        document.getElementById('chatSection').classList.add('monitor-border-flash');
+        _triggerFullscreenFlash();
+    }
 
     // 탭 제목 깜빡임
     _startTabBlink(s.ruleName, s.itemCount);
+
+    // 경고음
+    if (_np.sound) _playAlertBeep();
 
     // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
     if ('Notification' in window) {
