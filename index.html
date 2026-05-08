@@ -126,6 +126,8 @@
         .choice-card-wrap { display:flex; flex-direction:column; gap:8px; margin-top:10px; width:100%; }
         .choice-card { display:block; width:100%; padding:11px 16px; border-radius:10px; border:2px solid var(--active-focus-color); color:var(--active-focus-color); background:var(--bg-card); font-size:13px; font-weight:800; cursor:pointer; transition:all 0.18s; text-align:left; }
         .choice-card:hover { background:var(--active-focus-color); color:white; transform:translateX(5px); box-shadow:0 4px 14px rgba(0,0,0,0.15); }
+        .notice-ref-btn { display:flex; align-items:center; gap:8px; width:100%; padding:9px 13px; border-radius:9px; border:1.5px solid #f59e0b; color:#f59e0b; background:var(--bg-card); font-size:11.5px; font-weight:800; cursor:pointer; transition:all 0.15s; text-align:left; box-sizing:border-box; }
+        .notice-ref-btn:hover { background:#f59e0b; color:#0f172a; }
 
         /* 매뉴얼 */
         .mt-card { width:100%; }
@@ -2394,7 +2396,7 @@
                 botD.innerHTML=content
                     ?'<div class="mt-card"><div class="mt-header">\uD83D\uDCCB '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content)+'</pre>'+kwHtml2+'</div>'
                     :"\uD83D\uDCED \uD574\uB2F9 \uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
-                if(content) loadKeywords(title, botD);
+                if(content){ loadKeywords(title, botD); _appendRelatedNotices(title, botD); }
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
                 return;
@@ -2418,6 +2420,7 @@
                 if(!urls.length){
                     var content=manualIdx[title];
                     botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content||'내용 없음')+'</pre></div>';
+                    _appendRelatedNotices(title, botD);
                     document.getElementById('chatBox').scrollTop=99999;
                     return;
                 }
@@ -2450,10 +2453,45 @@
                 }
                 botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div>'+pgHtml+kwHtml+'</div>';
                 loadKeywords(title, botD);
+                _appendRelatedNotices(title, botD);
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
             });
         });
+    }
+
+    function _getRelatedNotices(title){
+        var notices=allNotices[currentMode]||{};
+        var words=title.toLowerCase().replace(/[\/\(\)\[\]\.,·]/g,' ').split(/\s+/).filter(function(w){ return w.length>=2; });
+        if(!words.length) return [];
+        var results=[];
+        Object.keys(notices).forEach(function(id){
+            var n=notices[id];
+            var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
+            if(words.some(function(w){ return hay.indexOf(w)>=0; })){
+                results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
+            }
+        });
+        results.sort(function(a,b){ return b._ts - a._ts; });
+        return results.slice(0,5);
+    }
+    function _appendRelatedNotices(title, botD){
+        var related=_getRelatedNotices(title);
+        if(!related.length) return;
+        var wrap=document.createElement('div');
+        wrap.style.cssText='margin-top:12px;border-top:1.5px solid var(--border-ui);padding-top:10px;';
+        var h='<div style="font-size:10px;font-weight:900;opacity:0.45;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">📢 관련 공지 ('+related.length+'건 · 최신순)</div>'
+            +'<div style="display:flex;flex-direction:column;gap:5px;">';
+        related.forEach(function(n){
+            h+='<button class="notice-ref-btn" onclick="openViewModal(\''+n.id+'\')">'
+                +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escHtml(n.title)+'</span>'
+                +'<span style="font-size:10px;opacity:0.55;flex-shrink:0;">'+escHtml(n.date)+'</span>'
+                +'</button>';
+        });
+        h+='</div>';
+        wrap.innerHTML=h;
+        botD.appendChild(wrap);
+        document.getElementById('chatBox').scrollTop=99999;
     }
 
     function escHtml(t){
