@@ -2564,6 +2564,23 @@
     }
     // ===== 크롭 시스템 끝 =====
 
+    // ===== 페이지범위 1회 마이그레이션 =====
+    // 해킹머니_해킹아이템: 147페이지(구매이후재판매 내용) 포함 + cropBottom=44
+    // 롤백: 147페이지 상단 해킹머니 내용 제거 → cropTop=44
+    (function _migratePageRanges(){
+        var _m='manual_page_ranges/mania/';
+        db.ref(_m+'해킹머니_해킹아이템').once('value',function(s){
+            var r=s.val();
+            if(r && r.end===146){ db.ref(_m+'해킹머니_해킹아이템').update({end:147,cropBottom:44}); }
+        });
+        db.ref(_m+'롤백').once('value',function(s){
+            var r=s.val();
+            if(r && (r.cropTop===undefined||r.cropTop===null||r.cropTop===0)){
+                db.ref(_m+'롤백').update({cropTop:44});
+            }
+        });
+    })();
+
     function showContent(title,botD,manualIdx){
         if(!manualIdx) manualIdx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         botD.innerHTML='<div style="text-align:center;padding:20px;opacity:0.5">\uD83D\uDCC4 \uBD88\uB7EC\uC624\uB294 \uC911...</div>';
@@ -2623,7 +2640,16 @@
                         }).join('')+'</div>';
                     }
                 } else {
-                    var md=urls.slice(0,4);
+                    var md=urls; // 전체 페이지 표시 (이전 slice(0,4) 제거)
+                    // 멀티페이지: cropTop=첫페이지만, cropBottom=마지막페이지만 적용
+                    function _maniaCell(u,i){
+                        var ct=i===0?_cT:0, cb=i===md.length-1?_cB:100;
+                        var hc=ct>0||cb<100;
+                        return '<div class="mv-cell"'+(hc?' style="overflow:hidden;position:relative;"':'')
+                            +' onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span>'
+                            +'<img src="'+u+'" loading="lazy"'+(hc?' style="width:100%;display:block;" onload="_applyCrop(this,'+ct+','+cb+')"':'')
+                            +' onerror="this.style.display=\'none\'"></div>';
+                    }
                     if(md.length===1){
                         if(_cT>0||_cB<100){
                             pgHtml='<div class="mt-pages" style="overflow:hidden;position:relative;">'
@@ -2634,13 +2660,9 @@
                             pgHtml='<div class="mt-pages"><img src="'+md[0]+'" loading="lazy" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
                         }
                     } else if(md.length===2){
-                        pgHtml='<div class="mania-2col">'+md.map(function(u,i){
-                            return '<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span><img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
-                        }).join('')+'</div>';
+                        pgHtml='<div class="mania-2col">'+md.map(_maniaCell).join('')+'</div>';
                     } else {
-                        pgHtml='<div class="mania-multiview">'+md.map(function(u,i){
-                            return '<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span><img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
-                        }).join('')+'</div>';
+                        pgHtml='<div class="mania-multiview">'+md.map(_maniaCell).join('')+'</div>';
                     }
                 }
                 botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div>'+pgHtml+kwHtml+'</div>';
