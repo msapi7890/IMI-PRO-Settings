@@ -144,7 +144,7 @@
         .mv-num { position:absolute; top:4px; left:4px; background:rgba(0,0,0,0.65); color:#fff; font-size:11px; font-weight:900; border-radius:4px; padding:2px 6px; z-index:2; pointer-events:none; line-height:1.3; }
         /* 매니아 멀티뷰 - 2장: 좌우 나란히 / 3~4장: 좌열상하→우열상하 */
         .mania-2col { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:8px auto 0; width:var(--mania-mv-w,60%); max-width:100%; transition:width 0.2s; }
-        .mania-multiview { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto; grid-auto-flow:column; gap:5px; margin:8px auto 0; width:var(--mania-mv-w,60%); max-width:100%; transition:width 0.2s; }
+        .mania-multiview { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin:8px auto 0; width:var(--mania-mv-w,60%); max-width:100%; transition:width 0.2s; }
         .mania-2col img, .mania-multiview img { width:100%; display:block; border-radius:4px; }
         /* 베이 멀티뷰 - 최대 3장 가로 나열 */
         .bay-multiview { display:flex; gap:6px; margin:8px auto 0; align-items:flex-start; width:var(--bay-mv-w,65%); max-width:100%; transition:width 0.2s; }
@@ -2502,18 +2502,15 @@
         if(botPct <= topPct) return;
         var natW = img.naturalWidth, natH = img.naturalHeight;
         if(!natW || !natH) return;
+        var natCropH = natH * (botPct - topPct) / 100;
+        // object-position P% = topPct*100/(100-botPct+topPct) → object-fit:cover로 올바른 슬라이스 표시
+        var posP = topPct > 0 ? (topPct * 100 / (100 - botPct + topPct)).toFixed(3) : '0';
+        // 싱글페이지는 --mania-mv-w 변수 사용, 멀티뷰 셀은 100%
         var wrap = img.parentElement;
-        if(!wrap) return;
-        // padding-bottom% = (natH/natW) * (botPct-topPct) → wrap 높이를 크롭 비율로 설정
-        // (padding % is relative to element's own width, so no offsetWidth measurement needed)
-        var padPct = (natH / natW) * (botPct - topPct);
-        // top offset as % of wrap height = topPct / (botPct-topPct) * 100
-        var topOff = topPct > 0 ? (topPct / (botPct - topPct) * 100) : 0;
-        wrap.style.position = 'relative';
-        wrap.style.height = '0';
-        wrap.style.paddingBottom = padPct.toFixed(3) + '%';
-        wrap.style.overflow = 'hidden';
-        img.style.cssText = 'position:absolute;width:100%;left:0;top:-'+topOff.toFixed(3)+'%;display:block;cursor:zoom-in;';
+        var ww = (wrap && wrap.classList && wrap.classList.contains('mv-cell')) ? '100%' : 'var(--mania-mv-w,60%)';
+        img.style.cssText = 'width:'+ww+';height:auto;display:block;cursor:zoom-in;margin:0 auto 4px;'
+            + 'aspect-ratio:'+natW+'/'+natCropH.toFixed(2)+';'
+            + 'object-fit:cover;object-position:0 '+posP+'%;';
     }
 
     function openCropEditor() {
