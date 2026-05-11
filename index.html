@@ -2500,17 +2500,19 @@
     function _applyCrop(img, topPct, botPct) {
         if(topPct<=0 && botPct>=100) return;
         var wrap = img.parentElement;
+        if(!wrap) return;
         var natW = img.naturalWidth, natH = img.naturalHeight;
         if(!natW || !natH) return;
-        var dispW = wrap.offsetWidth || 860;
-        var scale = dispW / natW;
-        var fullH = natH * scale;
-        var visH = Math.round(fullH * (botPct - topPct) / 100);
-        var offTop = Math.round(fullH * topPct / 100);
-        wrap.style.height = visH + 'px';
+        // 픽셀 계산 없이 순수 비율만 사용 (offsetWidth=0 버그 방지)
+        var ar = natH / natW;                        // 이미지 세로/가로 비율
+        var visFrac = (botPct - topPct) / 100;       // 보여줄 비율
+        var topFrac = topPct / 100;
         wrap.style.position = 'relative';
         wrap.style.overflow = 'hidden';
-        img.style.cssText = 'width:100%;display:block;position:absolute;top:-'+offTop+'px;cursor:zoom-in;';
+        wrap.style.height = '0';
+        wrap.style.paddingTop = (ar * visFrac * 100).toFixed(3) + '%'; // 컨테이너 높이
+        var topOffset = topPct > 0 ? -(topFrac / visFrac * 100).toFixed(3) + '%' : '0';
+        img.style.cssText = 'position:absolute;width:100%;top:'+topOffset+';cursor:zoom-in;';
     }
 
     function openCropEditor() {
