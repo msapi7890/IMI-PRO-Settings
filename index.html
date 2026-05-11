@@ -2565,6 +2565,55 @@
     // ===== 페이지범위 1회 마이그레이션 =====
     // 해킹머니_해킹아이템: 147페이지(구매이후재판매 내용) 포함 + cropBottom=44
     // 롤백: 147페이지 상단 해킹머니 내용 제거 → cropTop=44
+    (function _splitBundledNotices(){
+        db.ref('_migrations/split_notices_v1').once('value',function(ms){
+            if(ms.val()) return;
+            var ref=db.ref('notices_mania');
+            var _d=function(y,m,d,h,mi){
+                return new Date(y,m-1,d,h||9,mi||0).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
+            };
+            var items={};
+            // 2026.03 공지 6건
+            var k1=new Date(2026,2,4,9,0).getTime();
+            items[k1]={date:'2026. 3. 4.',content:'[2026.03.04] 오류_[정상적인 경로를 이용해주세요. er 005] 수정\n\n자택 연락처 정확하지 않을 시 물품 등록 및 신청할 때 발생되는 오류 수정 완료'};
+            var k2=new Date(2026,2,5,9,0).getTime();
+            items[k2]={date:'2026. 3. 5.',content:'[2026.03.05] 모바일 메인 화면 변경'};
+            var k3=new Date(2026,2,5,10,0).getTime();
+            items[k3]={date:'2026. 3. 5.',content:'[2026.03.05] APP 무한 로딩 발생 및 계정물품 채팅창 오류 수정\n\n3/4일 해당 오류 수정되어 구글/원스토어/갤럭시스토어에 배포\n앱 리뷰글에도 버전 업데이트 완료 답변 처리되었으며,\n동일한 현상 발생되는 경우 회원이 고객센터로 문의할 수 있으니 업무 시 참고 바랍니다.'};
+            var k4=new Date(2026,2,9,9,0).getTime();
+            items[k4]={date:'2026. 3. 9.',content:'[2026.03.09] PC/모바일 아이디/비번찾기 시 [본인 명의 휴대폰 인증] 상단 노출'};
+            var k5=new Date(2026,2,9,11,50).getTime();
+            items[k5]={date:'2026. 3. 9.',content:'[2026.03.09] 비거래 숨김 해제 가능\n\n적용 : 3월 9일 11:50분경\n비거래 숨김 처리 시 3시간 이후 숨김 해제 가능\n(자동 해제는 아니며, 해제 가능 상태로 변경)\n\n- 비거래 숨김 시 재등록 불가\n- 비거래 숨김 시 자동재등록 사용자의 경우 숨김 상태 유지되며 재등록 됨.'};
+            var k6=new Date(2026,2,10,9,0).getTime();
+            items[k6]={date:'2026. 3. 10.',content:'[2026.03.10] 모바일 > 이전 종료내역 노출 적용'};
+            // 2026.04 공지 2건
+            var k7=new Date(2026,3,7,9,0).getTime();
+            items[k7]={date:'2026. 4. 7.',content:'[2026.04.07] 상품등록 - 수량 입력 개선\n\n1. 기존 단위 선택(만/억/조) 기능 삭제\n- 수량 입력 시 한국어 단위(만/억/조) 자동 변환 표기\n예) 12,345,678,900,000 → 12조 3,456억\n\n2. 시세 있는 게임 상품 등록 개선\n① 분할 선택 시 거래 단위 기본값 제공 - 고객이 수정 가능\n예) 아이온2 - 100만, 리니지클래식 - 1만\n② 거래 금액 인풋 필드 상단에 시세 표현\n③ 게임머니 명칭 통일 : "개"\n④ 시세 대비 100배 이상, 이하인 경우 상품 등록 불가\n- 상품 등록시 등록 불가 얼럿으로 처리.\n- 문구 : "시세 대비 과도하게 벗어난 가격은 등록할 수 없습니다. 수량 또는 금액을 다시 확인해 주세요."\n- 게임[패스오브엑자일] 의 경우 시세 노출부분이 제외됨.\n\n※ 공지사항에는 1번 항목만 게시되어있습니다.\n시세있는 게임 상품 등록 개선은 고객이 직접 이용 시에 개선 체감이 가능하니 참고해주시면 감사하겠습니다.'};
+            var k8=new Date(2026,3,8,10,57).getTime();
+            items[k8]={date:'2026. 4. 8.',content:'[2026.04.08] 마일리지 결제 입금대기 삭제(04/08 오전 10시 57분경 적용)\n\n마일리지 결제 시 입금대기(30분)를 악용해 판매를 방해하는 문제를 개선\n\n주요 변경 내용\n- (기존) 마일리지 잔액 부족 여부와 무관하게 구매신청 시 30분 입금대기 생성\n- (변경) 마일리지 잔액 부족 시 즉시 얼럿 표시 → 입금대기 미생성\n- 얼럿 문구: "마일리지가 부족합니다 충전 후 사용하세요"'};
+
+            ref.once('value',function(s){
+                var all=s.val()||{};
+                var updates={};
+                // 새 공지 추가
+                Object.keys(items).forEach(function(k){
+                    var it=items[k];
+                    updates[k]={title:it.content.split('\n')[0].substring(0,35),content:it.content,date:it.date};
+                });
+                // 기존 번들 공지(홈페이지 적용 안내) 삭제
+                Object.keys(all).forEach(function(id){
+                    var t=all[id].title||'';
+                    if(t.indexOf('홈페이지 적용 안내')!==-1&&(t.indexOf('2026.04')!==-1||t.indexOf('2026.03')!==-1)){
+                        updates[id]=null;
+                    }
+                });
+                ref.update(updates,function(err){
+                    if(!err) db.ref('_migrations/split_notices_v1').set(Date.now());
+                });
+            });
+        });
+    })();
+
     (function _migratePageRanges(){
         var _m='manual_page_ranges/mania/';
         db.ref(_m+'해킹머니_해킹아이템').once('value',function(s){
