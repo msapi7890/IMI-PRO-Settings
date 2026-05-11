@@ -69,8 +69,8 @@
         /* Ticker + Bell */
         #urgentTicker { display:flex; align-items:center; gap:8px; background:var(--bg-card); border-bottom:2px solid var(--border-ui); padding:5px 10px; overflow:hidden; }
         .ticker-label { font-size:calc(var(--ticker-font,11.5px) * 0.87); font-weight:900; color:#ef4444; white-space:nowrap; letter-spacing:0.05em; flex-shrink:0; background:rgba(239,68,68,0.12); padding:2px 6px; border-radius:5px; }
-        #tickerInner { flex:1; overflow:hidden; height:var(--ticker-inner-h,28px); position:relative; }
-        #tickerTrack { display:inline-flex; align-items:center; height:100%; gap:28px; white-space:nowrap; animation:tickerScroll 22s linear infinite; }
+        #tickerInner { flex:1; overflow:hidden; height:var(--ticker-inner-h,28px); position:relative; min-width:0; }
+        #tickerTrack { display:inline-flex; align-items:center; height:100%; gap:28px; white-space:nowrap; }
         .ticker-item { font-size:var(--ticker-font,11.5px); font-weight:800; cursor:pointer; color:var(--text-main); transition:color 0.15s; }
         .ticker-item:hover { color:#ef4444; text-decoration:underline; }
         .ticker-sep { opacity:0.3; font-size:var(--ticker-font,11.5px); }
@@ -836,7 +836,7 @@
         </div>
         <!-- 긴급공지 티커 -->
         <div id="urgentTicker">
-            <div id="tickerContent" style="display:flex;align-items:center;gap:8px;flex:1;overflow:hidden;">
+            <div id="tickerContent" style="display:flex;align-items:center;gap:8px;flex:1;overflow:hidden;min-width:0;">
                 <span class="ticker-label" onclick="openUrgentHistory()" style="cursor:pointer;" title="전체 긴급공지 내역 보기">🚨 긴급공지</span>
                 <div id="tickerInner"><span id="tickerTrack"></span></div>
                 <button onclick="openUrgentCreate()" style="flex-shrink:0;font-size:10px;font-weight:900;padding:2px 8px;border-radius:6px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;white-space:nowrap;transition:0.15s;" onmouseover="this.style.background='#ef4444';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='#ef4444'">+ 등록</button>
@@ -2585,7 +2585,8 @@
     }
 
     function escHtml(t){
-        return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if(t==null)return'';
+        return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     /* ── 메모 패드 (플로팅 스티커) ── */
@@ -3401,7 +3402,8 @@
             track.style.animation='none';
             return;
         }
-        track.style.animation='';
+        var duration=Math.max(15, Math.min(120, items.length*5));
+        track.style.animation='tickerScroll '+duration+'s linear infinite';
         var html='';
         items.forEach(function(item,i){
             html+='<span class="ticker-item" onclick="openUrgentDetail(\''+item.id+'\')">📌 '+escHtml(item.title)+'</span>';
@@ -4073,10 +4075,14 @@
     }
     function closeUrgentCreateModal(){
         document.getElementById('urgentCreateModal').classList.add('hidden');
+        _urgentSaving=false;
     }
+    var _urgentSaving=false;
     function saveUrgentNotice(){
+        if(_urgentSaving)return;
         var content=document.getElementById('urgentInput').value.trim();
         if(!content)return;
+        _urgentSaving=true;
         var now=Date.now();
         var durEl=document.querySelector('input[name="urgentDuration"]:checked');
         var hours=durEl?parseInt(durEl.value):48;
@@ -4093,6 +4099,7 @@
             db.ref('notices_'+currentMode).child(String(now)).set(noticeObj);
         }
         closeUrgentCreateModal();
+        setTimeout(function(){_urgentSaving=false;},1500);
     }
     function saveNotice(){
         var content=document.getElementById('editContent').value.trim(); if(!content) return;
