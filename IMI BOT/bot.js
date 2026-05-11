@@ -286,11 +286,7 @@
                 at: Date.now()
             }
         });
-        chrome.runtime.sendMessage({
-            type: 'FIREBASE_PUSH',
-            path: '/urgent_notices',
-            data: { content, createdAt: Date.now(), expiresAt: Date.now() + 86400000, isMonitorAlert: true }
-        });
+        /* urgent_notices 직접 쓰기 제거됨 - 모니터링 알림은 monitor_flash_state로만 전달 */
     }
 
     // --- 메인 스캔 루프 ---

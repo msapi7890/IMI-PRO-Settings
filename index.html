@@ -74,7 +74,7 @@
         .ticker-item { font-size:var(--ticker-font,11.5px); font-weight:800; cursor:pointer; color:var(--text-main); transition:color 0.15s; }
         .ticker-item:hover { color:#ef4444; text-decoration:underline; }
         .ticker-sep { opacity:0.3; font-size:var(--ticker-font,11.5px); }
-        @keyframes tickerScroll { 0%{transform:translateX(100vw)} 100%{transform:translateX(-100%)} }
+        @keyframes tickerScroll { 0%{transform:translateX(var(--ticker-start,100%))} 100%{transform:translateX(-100%)} }
         #bellBtn { position:relative; background:none; border:1.5px solid var(--border-ui); border-radius:8px; cursor:pointer; font-size:16px; padding:3px 7px; transition:0.15s; color:var(--text-main); }
         #bellBtn:hover { border-color:var(--active-focus-color); transform:scale(1.05); }
         #bellBadge { position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; font-size:9px; font-weight:900; border-radius:99px; min-width:16px; height:16px; display:flex; align-items:center; justify-content:center; padding:0 3px; pointer-events:none; }
@@ -404,7 +404,7 @@
             </div>
             <button onclick="closeUrgentHistory()" style="font-size:26px;opacity:0.3;cursor:pointer;background:none;border:none;line-height:1;color:var(--text-main);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
-        <div id="urgentHistoryModalList" style="flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-content:start;"></div>
+        <div id="urgentHistoryModalList" style="flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column;"></div>
     </div>
 </div>
 
@@ -821,7 +821,7 @@
         </div>
     </aside>
 
-    <section id="chatSection" class="flex-1 flex flex-col relative bg-[var(--bg-chat)]" style="min-height:0;">
+    <section id="chatSection" class="flex-1 flex flex-col relative bg-[var(--bg-chat)]" style="min-height:0;min-width:0;">
         <div class="p-2 border-b-2 border-[var(--border-ui)] flex flex-col gap-2 bg-[var(--bg-chat)]">
             <!-- 채팅방 탭 (링크 대신 탭 전환) -->
             <div id="linkArea" style="display:flex;gap:6px;">
@@ -3396,20 +3396,24 @@
     function updateTicker(){
         var items=getPinnedNotices();
         var track=document.getElementById('tickerTrack');
+        var inner=document.getElementById('tickerInner');
         if(!track)return;
         if(items.length===0){
             track.innerHTML='<span style="font-size:11px;opacity:0.4;font-weight:700;">등록된 긴급 공지 없음</span>';
             track.style.animation='none';
+            track.style.removeProperty('--ticker-start');
             return;
         }
-        var duration=Math.max(15, Math.min(120, items.length*5));
-        track.style.animation='tickerScroll '+duration+'s linear infinite';
         var html='';
-        items.forEach(function(item,i){
-            html+='<span class="ticker-item" onclick="openUrgentDetail(\''+item.id+'\')">📌 '+escHtml(item.title)+'</span>';
+        items.forEach(function(item){
+            html+='<span class="ticker-item" onclick="openUrgentDetail(\''+item.id+'\')">📌 '+escHtml(item.title||'')+'</span>';
             html+='<span class="ticker-sep">◆</span>';
         });
         track.innerHTML=html;
+        var containerW=(inner?inner.clientWidth:0)||400;
+        track.style.setProperty('--ticker-start', containerW+'px');
+        var duration=Math.max(15, Math.min(120, items.length*5));
+        track.style.animation='tickerScroll '+duration+'s linear infinite';
     }
     function getBellSeenKey(){return 'bell_seen_urgent';}
     function getBellSeen(){try{return JSON.parse(localStorage.getItem(getBellSeenKey())||'[]');}catch(e){return[];}}
@@ -3467,14 +3471,25 @@
     }
     function renderUrgentHistoryModal(){
         var hist=document.getElementById('urgentHistoryModalList');
-        var all=Object.entries(urgentNotices).sort(function(a,b){return (b[1].timestamp||0)-(a[1].timestamp||0);});
+        hist.innerHTML='';
+        var all=Object.entries(urgentNotices).sort(function(a,b){return (b[1].timestamp||b[1].createdAt||0)-(a[1].timestamp||a[1].createdAt||0);});
+        /* 툴바 */
+        var toolbar=document.createElement('div');
+        toolbar.style.cssText='position:sticky;top:0;z-index:2;background:var(--bg-card);display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1.5px solid var(--border-ui);flex-shrink:0;';
+        toolbar.innerHTML='<input type="checkbox" id="urgentSelectAll" style="cursor:pointer;accent-color:#ef4444;width:15px;height:15px;" onchange="toggleSelectAllUrgent(this.checked)">'
+            +'<label for="urgentSelectAll" style="font-size:12px;font-weight:700;cursor:pointer;color:var(--text-main);">전체 선택</label>'
+            +'<span id="urgentSelectedCount" style="font-size:11px;opacity:0.55;font-weight:700;">0개 선택</span>'
+            +'<button onclick="deleteSelectedUrgentNotices()" style="margin-left:auto;padding:5px 14px;border-radius:8px;font-size:12px;font-weight:900;background:#ef4444;color:#fff;border:none;cursor:pointer;transition:0.15s;" onmouseover="this.style.background=\'#dc2626\'" onmouseout="this.style.background=\'#ef4444\'">🗑 선택 삭제</button>';
+        hist.appendChild(toolbar);
         if(all.length===0){
-            hist.style.display='flex'; hist.style.flexDirection='column'; hist.style.alignItems='center'; hist.style.justifyContent='center';
-            hist.innerHTML='<div style="text-align:center;opacity:0.4;font-size:13px;font-weight:700;padding:40px 0;">등록된 긴급공지 내역이 없습니다.</div>';
+            var empty=document.createElement('div');
+            empty.style.cssText='flex:1;display:flex;align-items:center;justify-content:center;opacity:0.4;font-size:13px;font-weight:700;';
+            empty.textContent='등록된 긴급공지 내역이 없습니다.';
+            hist.appendChild(empty);
             return;
         }
-        hist.style.display='grid'; hist.style.flexDirection=''; hist.style.alignItems=''; hist.style.justifyContent='';
-        hist.innerHTML='';
+        var grid=document.createElement('div');
+        grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px;align-content:start;';
         all.forEach(function(e){
             var id=e[0]; var n=e[1];
             var active=isUrgentActive(n);
@@ -3483,20 +3498,53 @@
             var remaining=getUrgentRemaining(n);
             var borderColor=isPermanent?'#8b5cf6':active?'#ef4444':'var(--border-ui)';
             var card=document.createElement('div');
-            card.style.cssText='background:var(--bg-chat);border:2px solid '+borderColor+';border-radius:12px;padding:12px 14px;cursor:pointer;transition:0.18s;display:flex;flex-direction:column;justify-content:space-between;min-height:110px;opacity:'+(active?'1':'0.5')+';';
+            card.style.cssText='position:relative;background:var(--bg-chat);border:2px solid '+borderColor+';border-radius:12px;padding:10px 12px 10px 10px;cursor:pointer;transition:0.18s;display:flex;flex-direction:column;justify-content:space-between;min-height:110px;opacity:'+(active?'1':'0.5')+';';
             card.onmouseover=function(){this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.12)';};
             card.onmouseout=function(){this.style.transform='';this.style.boxShadow='';};
-            card.onclick=function(){openUrgentDetail(id);};
-            /* 상태 뱃지 */
+            card.onclick=function(ev){if(ev.target.type==='checkbox')return;openUrgentDetail(id);};
+            /* 체크박스 */
+            var cb=document.createElement('input');
+            cb.type='checkbox'; cb.dataset.urgentId=id;
+            cb.style.cssText='position:absolute;top:8px;right:8px;cursor:pointer;accent-color:#ef4444;width:15px;height:15px;z-index:1;';
+            cb.onclick=function(ev){ev.stopPropagation();updateUrgentSelectedCount();};
+            card.appendChild(cb);
+            /* 뱃지 */
             var badge='<span style="font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;background:'+(isPermanent?'rgba(139,92,246,0.15)':active?'rgba(239,68,68,0.12)':'var(--border-ui)')+';color:'+(isPermanent?'#8b5cf6':active?'#ef4444':'var(--text-sub)')+';">'+remaining+'</span>';
             var tickerBadge=showInTicker&&active?'<span style="font-size:9px;font-weight:900;padding:2px 7px;border-radius:4px;background:rgba(59,191,248,0.15);color:var(--active-focus-color);">티커노출</span>':'';
-            card.innerHTML='<div>'
-                +'<div style="display:flex;gap:5px;margin-bottom:7px;flex-wrap:wrap;">'+badge+tickerBadge+'</div>'
-                +'<div style="font-size:12.5px;font-weight:900;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+(isPermanent?'♾️ ':active?'🚨 ':'')+ escHtml(n.title)+'</div>'
-                +'</div>'
-                +'<div style="font-size:10px;opacity:0.4;font-weight:700;margin-top:8px;">'+escHtml(n.date||'')+'</div>';
-            hist.appendChild(card);
+            var inner=document.createElement('div');
+            inner.innerHTML='<div style="display:flex;gap:5px;margin-bottom:7px;flex-wrap:wrap;padding-right:18px;">'+badge+tickerBadge+'</div>'
+                +'<div style="font-size:12.5px;font-weight:900;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+(isPermanent?'♾️ ':active?'🚨 ':'')+escHtml(n.title||n.content||'')+'</div>';
+            var dateEl=document.createElement('div');
+            dateEl.style.cssText='font-size:10px;opacity:0.4;font-weight:700;margin-top:8px;';
+            dateEl.textContent=n.date||'';
+            card.appendChild(inner);
+            card.appendChild(dateEl);
+            grid.appendChild(card);
         });
+        hist.appendChild(grid);
+    }
+    function toggleSelectAllUrgent(checked){
+        document.querySelectorAll('input[data-urgent-id]').forEach(function(cb){cb.checked=checked;});
+        updateUrgentSelectedCount();
+    }
+    function updateUrgentSelectedCount(){
+        var all=document.querySelectorAll('input[data-urgent-id]');
+        var checked=document.querySelectorAll('input[data-urgent-id]:checked').length;
+        var el=document.getElementById('urgentSelectedCount');
+        if(el) el.textContent=checked+'개 선택';
+        var sa=document.getElementById('urgentSelectAll');
+        if(sa){sa.checked=checked===all.length&&all.length>0;sa.indeterminate=checked>0&&checked<all.length;}
+    }
+    function deleteSelectedUrgentNotices(){
+        var cbs=document.querySelectorAll('input[data-urgent-id]:checked');
+        if(!cbs.length){alert('삭제할 공지를 선택하세요.');return;}
+        if(!confirm(cbs.length+'개의 긴급공지를 삭제하시겠습니까?'))return;
+        cbs.forEach(function(cb){
+            var id=cb.dataset.urgentId;
+            db.ref('urgent_notices').child(id).remove();
+            delete urgentNotices[id];
+        });
+        updateTicker(); updateBellBadge(); renderUrgentHistoryModal();
     }
     /* --- 상세 모달 --- */
     function openUrgentDetail(id){
