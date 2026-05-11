@@ -2614,6 +2614,31 @@
         });
     })();
 
+    (function _addMarchNotices(){
+        db.ref('_migrations/march_notices_v1').once('value',function(ms){
+            if(ms.val()) return;
+            var ref=db.ref('notices_mania');
+            var u={};
+            function n(ts,date,content){u[ts]={title:content.split('\n')[0].substring(0,35),content:content,date:date};}
+            // 3.10 기존 항목 내용 업데이트 + 신규 항목
+            n(new Date(2026,2,10,9,0).getTime(),'2026. 3. 10.','[2026.03.10] 모바일 > 이전 종료내역 노출 적용\n\n모바일 > 고객센터 > 거래사고신고 > 거래종료건\n\n이전 판매종료내역\n이전 구매종료내역');
+            n(new Date(2026,2,10,10,0).getTime(),'2026. 3. 10.','[2026.03.10] 모바일 메인 하단 사업자정보노출 방식 변경');
+            n(new Date(2026,2,11,9,0).getTime(),'2026. 3. 11.','[2026.03.11] 거래 취소율 하락 목적으로 일부 변경\n\n① 판매자 거래 취소 경고 문구 변경 (*팝니다, 삽니다 모두 적용)\n- 기존 : 거래를 취소하겠습니까?\n- 변경 : 거래를 취소하겠습니까?\n[주의] 잦은 거래 취소로 인해 취소율이 높아질 경우, 서비스 이용 정책에 따라 이용 제재를 받을 수 있습니다.\n\n② [분할물품] 판, 구매 등록 상품 보유 수량 변동 시점 변경\n- 기존 : 거래 종료 시 차감 (중복 구매 노출 위험 존재)\n- 변경 : 거래 중 상태(물품 점유)시 즉시 차감 (중복 신청 방지) / 관리자도 동일\nㄴ취소 시 원복 로직은 기존과 동일');
+            n(new Date(2026,2,16,9,0).getTime(),'2026. 3. 16.','[2026.03.16] 물품검색란 내 [팝니다/삽니다] 노출 변경');
+            n(new Date(2026,2,17,9,0).getTime(),'2026. 3. 17.','[2026.03.17] 상품 제목 특문 미노출 적용 및 상점명 추가\n\n1. 상품 제목 특문 미노출\n- 상품 등록 시 제목에 특문 및 연속되는 자음모음 등 입력불가\n- 영문 대소문자 / 한글 / 숫자 / 기호 [ . , + ~ % / ] 6개 이외 모두 비허용\n- 제외된 특수문자/이모티콘은 띄어쓰기로 대체\n→ 가급적 한글 텍스트 위주로 제목 입력을 권유 드립니다.\n- 적용시점에서 이전 등록된 상품 제목도 모두 특문 등 미노출 처리\n- 일괄등록 시 수량오류로 등록 불가 문의 시, 파일 내 제목 특문 여부 확인\n\n2. 상점명\n- 제목에 특문 등 입력 불가로 의한 대체 강조 기능인 \'상점명\' 설정 기능 추가\n- 한글 기준 최대 6자리 입력 가능, 이모티콘/특수 문자 이용 가능\n- 신규 등록 : 상품 등록 시 제목 옆 [상점명 설정하기] / 마이룸 > 상점명 관리\n- 상점명 변경은 [마이룸 > 상점명 관리]에서만 가능\n- 게임 당 1개 / 전체게임으로 총 5개 까지 상점명 설정 가능\n- 해당 게임내 이미 등록된 상점명으로는 설정 불가\n- 상점명 미적용 시 노출된 (-) 부분은 신용등급만 보이도록 수정 완료');
+            n(new Date(2026,2,17,10,0).getTime(),'2026. 3. 17.','[2026.03.17] 출금계좌 예금주 공백 오류 수정\n\n출금계좌 예금주명 등록 시 앞뒤 공백 저장 안됨, 글자 중간 공백은 가능.');
+            n(new Date(2026,2,18,9,0).getTime(),'2026. 3. 18.','[2026.03.18] 종료영역 및 서버 노출 방식 개선\n\n1. 실시간 거래 종료 영역 노출 방식 개선\n- 기존 [제목 / 금액] 노출 방식을 [게임명 / 서버명 / 상품 종류 / 금액] 구조로 변경 (좌/우 2개 단위로 노출)\n- 게임명 및 서버명이 6자를 초과하는 경우 (...)로 축약 표시\n- 금액은 최대 1억까지 표시\n\n2. 게임 검색 시 서버 노출 방식 개선\n- 서버 목록은 검색 화면에서 1줄만 노출되도록 변경\n- 기본 노출 서버는 거래가 많은 서버 순으로 우선 노출\n- 추가 서버 목록은 [전체 서버 보기 v] 클릭 시 전체 확인 가능하도록 개선\n* 채널이 있는 게임의 경우, 전체 서버 보기 시 채널 정보까지 함께 노출\n- 그 외 검색 항목은 [필터 전체보기 v] 클릭 시 확인 가능');
+            n(new Date(2026,2,19,9,0).getTime(),'2026. 3. 19.','[2026.03.19] 검색 정렬 기본값 및 보상제도 문구 변경\n\n1. 낮은가격순 검색 정렬\n- 물품 낮은 가격순, 높은 가격순, 최근 등록순 조회 시 검색 기본값이 [거래전체 → 거래대기]로 변경\n\n2. 100% 보상제도 문구 추가\n고객센터 > 보상제도 > 보상이 불가능한 경우 9번 항목 하단 문구 추가\n(물품 종류가 [기타]인 경우, 해당 금액은 산정 대상에서 제외)');
+            n(new Date(2026,2,24,9,0).getTime(),'2026. 3. 24.','[2026.03.24] 채팅창 인수/인계 간편 조치\n\n- 채팅창에서 [인수/인계] 버튼 클릭 시 페이지 이동 없이 채팅창에서 즉시 반영되는 기능\n- 예외\n① 삽니다 - 인수 - 결제인증 필요 시에는 페이지 이동이 있음.\n② 계정거래 - 전자계약서 서명 필요한 경우 페이지 이동 있음\n(게스트, 선물 계정은 전자계약서 서명 없음)');
+            n(new Date(2026,2,24,10,0).getTime(),'2026. 3. 24.','[2026.03.24] 상점명 관련 알아두기 적용\n\n상점명 관련으로 홈페이지 내 알아두기가 추가');
+            n(new Date(2026,2,26,9,0).getTime(),'2026. 3. 26.','[2026.03.26] 거래 관련 메시지(SMS/알림톡) 발송 변경\n\n[기존]\nSMS (X), 알림톡 (X) ---> SMS으로 발송\nSMS (O), 알림톡 (X) ---> SMS으로 발송\nSMS (O), 알림톡 (O) ---> 알림톡으로 발송\nSMS (X), 알림톡 (O) ---> 알림톡으로 발송\n\n[변경]\nSMS (O), 알림톡 (O) ---> SMS으로 발송\nSMS (X), 알림톡 (O) ---> 알림톡으로 발송\nSMS (X), 알림톡 (X) ---> SMS으로 발송\nSMS (O), 알림톡 (X) ---> SMS으로 발송\n※ 자세한 내용은 이메일 (첨부파일) 확인 해주세요.');
+            n(new Date(2026,2,31,9,0).getTime(),'2026. 3. 31.','[2026.03.31] 채팅 개선 내용\n\n1. 채팅 거래 상태 안내문구 추가\n입금 전과 입금 후 상태를 쉽게 구분할 수 있도록 채팅방 상단에 안내 문구와 색상 표시를 추가했습니다.\n\n2. 채팅방 노출 정책 개선\n- 동일 상품에 여러 채팅방이 있는 경우, 결제 완료 이후에는 실제 거래가 진행 중인 채팅방만 활성 상태로 보이며\n그 외 미입금 채팅방은 회색으로 비활성 처리됩니다.\n- 사전 채팅을 했더라도 실제 거래당사자가 아닌 경우에는 실제 거래 상태값(거래중, 거래완료, 거래취소)은 노출되지 않습니다.\n해당 상품이 거래불가로 표시됩니다.');
+            ref.update(u,function(err){
+                if(!err) db.ref('_migrations/march_notices_v1').set(Date.now());
+            });
+        });
+    })();
+
     (function _migratePageRanges(){
         var _m='manual_page_ranges/mania/';
         db.ref(_m+'해킹머니_해킹아이템').once('value',function(s){
@@ -4372,7 +4397,10 @@
     function saveNotice(){
         var content=document.getElementById('editContent').value.trim(); if(!content) return;
         var urlVal=document.getElementById('editUrl').value.trim();
-        var dateStr=new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
+        // 기존 공지 수정 시 원래 날짜 유지 (새 공지 등록 시에만 현재 날짜 사용)
+        var existingDate = currentEditId && allNotices[currentMode] && allNotices[currentMode][currentEditId]
+            ? allNotices[currentMode][currentEditId].date : null;
+        var dateStr = existingDate || new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
         var obj={title:content.split('\n')[0].substring(0,35),content:content,date:dateStr};
         if(urlVal) obj.url=urlVal;
         db.ref('notices_'+currentMode).child(currentEditId||Date.now()).set(obj);
