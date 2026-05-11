@@ -176,6 +176,12 @@
         .assist-placeholder { opacity: 0.3; font-style: italic; font-size: 11px; }
         .assist-loading { opacity: 0.5; font-size: 11px; }
         .copy-btn { display: block; width: 100%; padding: 6px; border-radius: 7px; border: 2px solid var(--border-ui); font-size: 11px; font-weight: 800; cursor: pointer; background: transparent; color: var(--text-sub); transition: 0.15s; margin-top: 6px; }
+        mark.terms-hi { background:#fbbf24; color:#1e293b; border-radius:2px; padding:0 1px; }
+        mark.terms-hi.cur { background:#f97316; outline:2px solid #f97316; color:#1e293b; }
+        #termsContent h2 { font-size:1.1em; font-weight:900; color:var(--active-focus-color); margin:22px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--border-ui); }
+        #termsContent h3 { font-size:1em; font-weight:900; margin:14px 0 5px; color:var(--text-main); }
+        #termsContent p { margin:3px 0; line-height:1.85; }
+        #termsContent hr { border:none; border-top:1.5px solid var(--border-ui); margin:14px 0; }
         .copy-btn:hover { border-color: var(--active-focus-color); color: var(--active-focus-color); }
         .copy-btn.copied { border-color: #22c55e !important; color: #22c55e !important; }
         /* AI 도우미 높이 제한 */
@@ -773,9 +779,11 @@
     <div class="modal-content relative shadow-2xl p-8 rounded-2xl w-[90vw] max-w-[750px] max-h-[90vh] overflow-y-auto bg-[var(--bg-card)] border-2 border-[var(--border-ui)]">
         <div class="absolute top-5 right-8 text-4xl cursor-pointer opacity-30 hover:opacity-100" onclick="closeModal()">×</div>
         <div id="viewMode">
-            <span id="modalDate" class="text-sm font-black mb-2 block text-[var(--active-focus-color)]">날짜...</span>
+            <span id="modalDate" class="text-sm font-black mb-1 block text-[var(--active-focus-color)]">날짜...</span>
+            <span id="viewUpdatedAt" class="hidden text-xs opacity-50 mb-2 block"></span>
             <h4 id="viewTitle" class="text-xl font-black mb-4 border-b pb-4 leading-tight"></h4>
-            <div id="viewContent" class="mb-4 text-sm font-medium leading-relaxed" style="max-height:50vh;overflow-y:auto;"></div>
+            <div id="viewContent" class="mb-4 text-sm font-medium leading-relaxed" style="max-height:45vh;overflow-y:auto;"></div>
+            <div id="viewImgArea" class="mb-4"></div>
             <div id="viewUrlWrap" class="hidden mb-4 px-3 py-2 rounded-xl border-2 border-[var(--border-ui)] text-xs font-bold break-all">
                 🔗 <a id="viewUrl" href="#" target="_blank" rel="noopener" style="color:var(--active-focus-color);text-decoration:underline;"></a>
             </div>
@@ -788,7 +796,15 @@
             </div>
         </div>
         <div id="editMode" class="hidden">
-            <textarea id="editContent" class="w-full h-[340px] p-5 bordered-input mb-3 text-base font-bold" placeholder="내용 입력..."></textarea>
+            <textarea id="editContent" class="w-full h-[280px] p-5 bordered-input mb-3 text-base font-bold" placeholder="내용 입력..."></textarea>
+            <div style="margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                    <label for="noticeImgInput" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;padding:5px 12px;border-radius:8px;border:1.5px solid var(--border-ui);background:var(--bg-card);transition:0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📎 이미지 첨부</label>
+                    <input type="file" id="noticeImgInput" accept="image/*" multiple style="display:none;">
+                    <span style="font-size:10px;opacity:0.45;">또는 텍스트 영역에서 Ctrl+V 로 붙여넣기</span>
+                </div>
+                <div id="noticeImgPreviews" style="display:flex;flex-wrap:wrap;gap:6px;min-height:0;"></div>
+            </div>
             <input type="url" id="editUrl" class="w-full px-4 py-2.5 bordered-input mb-5 text-sm font-bold rounded-xl" placeholder="관련 URL (선택사항, https://...)">
             <div class="flex justify-end gap-4">
                 <button onclick="switchToViewMode()" class="text-sm font-bold opacity-40">취소</button>
@@ -798,15 +814,41 @@
     </div>
 </div>
 
+<!-- 이용약관 모달 -->
+<div id="termsModal" class="modal hidden fixed inset-0 z-[3500] bg-black/60 backdrop-blur-sm flex items-center justify-center" onclick="if(event.target===this)closeTermsModal()">
+    <div style="position:relative;width:96vw;max-width:1300px;height:88vh;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:20px;box-shadow:0 16px 48px rgba(0,0,0,0.5);overflow:hidden;">
+        <div style="padding:14px 20px 0;flex-shrink:0;border-bottom:2px solid var(--border-ui);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:14px;font-weight:900;letter-spacing:0.04em;">📜 이용약관</span>
+                <button onclick="closeTermsModal()" style="font-size:22px;opacity:0.3;background:none;border:none;cursor:pointer;font-weight:900;transition:0.15s;padding:0;line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
+            </div>
+            <div class="mon-tabs" style="border-bottom:none;margin:0 -20px;">
+                <button id="termTab1" class="mon-tab mon-tab-active" onclick="switchTermsTab(1)" style="font-size:11px;">아이템매니아 서비스 이용약관</button>
+                <button id="termTab2" class="mon-tab" onclick="switchTermsTab(2)" style="font-size:11px;">아이템거래 서비스 이용약관</button>
+            </div>
+            <div style="padding:10px 0 8px;display:flex;align-items:center;gap:6px;">
+                <input id="termsSearchInput" type="text" placeholder="🔍 약관 내 검색 (Enter: 다음, Shift+Enter: 이전)..." style="flex:1;padding:7px 12px;border-radius:8px;border:2px solid var(--border-ui);background:var(--bg-card);color:var(--text-main);font-size:12px;font-weight:700;outline:none;transition:0.15s;" oninput="_termsSearch()" onfocus="this.style.borderColor='var(--active-focus-color)'" onblur="this.style.borderColor='var(--border-ui)'" onkeydown="if(event.key==='Enter'){event.preventDefault();_termsNavMatch(event.shiftKey?-1:1);}">
+                <span id="termsMatchInfo" style="font-size:11px;font-weight:700;opacity:0.55;white-space:nowrap;min-width:56px;text-align:center;"></span>
+                <button onclick="_termsNavMatch(-1)" title="이전 (Shift+Enter)" style="padding:5px 9px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:12px;transition:0.15s;color:var(--text-main);" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">▲</button>
+                <button onclick="_termsNavMatch(1)" title="다음 (Enter)" style="padding:5px 9px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:12px;transition:0.15s;color:var(--text-main);" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">▼</button>
+            </div>
+        </div>
+        <div id="termsContent" style="flex:1;overflow-y:auto;padding:16px 24px 24px;font-size:0.9em;line-height:1.85;font-weight:500;color:var(--text-main);word-break:keep-all;"></div>
+    </div>
+</div>
+
 <header>
     <div class="h-left">
         <h1 style="font-size:18px;font-weight:900;font-style:italic;letter-spacing:0.06em;background:linear-gradient(135deg,#0284c7 0%,#3abff8 50%,#db2777 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;user-select:none;">✦ IMI PRO ✦</h1>
     </div>
     <div class="h-center" style="position:relative; justify-content:flex-start;">
-        <div id="syncStatusBadge" onclick="checkAppStatus()" class="px-4 py-1 rounded-lg text-[10px] font-black cursor-pointer uppercase shadow-sm active:scale-95">CLAUDE LIVE</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div id="syncStatusBadge" onclick="checkAppStatus()" class="rounded-lg text-[10px] font-black cursor-pointer uppercase shadow-sm active:scale-95" style="padding:0 16px;height:32px;display:flex;align-items:center;">CLAUDE LIVE</div>
+            <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
+            <button onclick="openTermsModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📜 이용약관</button>
+        </div>
         <div id="liveClock" onclick="openScheduleModal()" title="직원 스케쥴 확인" style="position:absolute;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=1;this.style.textDecoration='underline'" onmouseout="this.style.opacity=0.65;this.style.textDecoration='none'"></div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-            <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 10px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
             <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 10px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
             <button id="bellBtn" onclick="openBellModal()" style="position:relative;background:none;border:1.5px solid var(--border-ui);border-radius:8px;cursor:pointer;font-size:16px;padding:5px 10px;height:32px;transition:0.15s;color:var(--text-main);display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">🔔<span id="bellBadge" class="hidden" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">0</span></button>
             <button onclick="clearCurrentChat()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;" onmouseover="this.style.background='#ef4444';this.style.color='#fff';this.style.borderColor='#ef4444'" onmouseout="this.style.background='none';this.style.color='var(--text-main)';this.style.borderColor='var(--border-ui)'">🧹 채팅비우기</button>
@@ -863,7 +905,7 @@
             <!-- 채팅방 탭 (링크 대신 탭 전환) -->
             <div id="linkArea" style="display:flex;gap:6px;">
                 <button id="maniaLink" onclick="switchChatTab(1)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">📚 매뉴얼</button>
-                <button id="bayLink" onclick="switchChatTab(2)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">💬 상담 템플릿</button>
+                <button id="bayLink" onclick="switchChatTab(2)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">❓ 고객 예상 QNA</button>
             </div>
             <!-- 모드 버튼 -->
             <div class="flex gap-2">
@@ -892,8 +934,8 @@
         <div id="chatRoom2" style="flex:1;display:none;flex-direction:column;min-height:0;">
             <div id="csChatBox" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;"></div>
             <div class="chat-input-area">
-                <input type="text" id="csInput" class="bordered-input shadow-sm" placeholder="예: 현금영수증 안내 템플릿 만들어주세요" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askCS();}">
-                <button onclick="askCS()" id="csAskBtn" class="px-12 py-3 rounded-xl font-black text-white shadow-lg transition active:scale-95">생성</button>
+                <input type="text" id="csInput" class="bordered-input shadow-sm" placeholder="예: 환불 취소 관련 예상 질문 알려줘" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askCS();}">
+                <button onclick="askCS()" id="csAskBtn" class="px-12 py-3 rounded-xl font-black text-white shadow-lg transition active:scale-95">분석</button>
             </div>
         </div>
     </section>
@@ -2410,20 +2452,24 @@
             }
         }
 
-        // 카테고리 검색 (매니아 전용: 일반/사고)
-        if(currentMode==='mania'&&(kw==='일반'||kw==='사고')){
-            var _isSago=kw==='사고';
+        // 카테고리 검색 (매니아 전용: 일반/충전/결제/사고)
+        if(currentMode==='mania'&&(kw==='일반'||kw==='충전'||kw==='결제'||kw==='사고')){
+            var _catLabel = kw==='충전'?'충전':kw==='결제'?'결제':kw;
             var _catList=titles.filter(function(t){
                 var pr=PAGE_RANGES[normalizeKey(t)];
-                return _isSago ? (pr&&pr.start>=139) : (!pr||pr.start<139);
+                if(kw==='사고')  return pr&&pr.start>=139;
+                if(kw==='충전')  return pr&&pr.start>=99&&pr.start<=127;
+                if(kw==='결제')  return pr&&pr.start>=128&&pr.start<=134;
+                // 일반: 페이지 없음 OR p1~p98 OR p135~p138 (가상계좌충전체크필터/휴면마일리지)
+                return !pr||pr.start<99||(pr.start>=135&&pr.start<=138);
             });
             if(_catList.length){
-                var _ch='<strong>📂 '+escHtml(kw)+' 카테고리 전체 ('+_catList.length+'건):</strong><div class="choice-card-wrap">';
+                var _ch='<strong>📂 '+escHtml(_catLabel)+' 카테고리 전체 ('+_catList.length+'건):</strong><div class="choice-card-wrap">';
                 _catList.forEach(function(t){_ch+="<button class='choice-card' onclick='showContentById(\""+t.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(t)+"</button>";});
                 _ch+='</div>';
                 botD.innerHTML=_ch;
             } else {
-                botD.innerHTML='<span>'+escHtml(kw)+' 카테고리 항목을 찾을 수 없습니다.</span>';
+                botD.innerHTML='<span>'+escHtml(_catLabel)+' 카테고리 항목을 찾을 수 없습니다.</span>';
             }
             document.getElementById('chatBox').scrollTop=99999;
             return;
@@ -2666,7 +2712,7 @@
                 botD.innerHTML=content
                     ?'<div class="mt-card"><div class="mt-header">\uD83D\uDCCB '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content)+'</pre>'+kwHtml2+'</div>'
                     :"\uD83D\uDCED \uD574\uB2F9 \uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
-                if(content){ loadKeywords(title, botD); _appendRelatedNotices(title, botD); }
+                if(content){ loadKeywords(title, botD); _appendRelatedNotices(title, botD); _appendTemplateBtn(title, botD); }
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
                 return;
@@ -2692,6 +2738,7 @@
                     var content=manualIdx[title];
                     botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content||'내용 없음')+'</pre></div>';
                     _appendRelatedNotices(title, botD);
+                    _appendTemplateBtn(title, botD);
                     document.getElementById('chatBox').scrollTop=99999;
                     return;
                 }
@@ -2699,37 +2746,54 @@
                 window[imgKey]=urls;
                 var _cT=(range&&range.cropTop!=null)?Number(range.cropTop):0;
                 var _cB=(range&&range.cropBottom!=null)?Number(range.cropBottom):100;
-                window._currentCropData={dbPath:dbPath,cropTop:_cT,cropBottom:_cB,imgUrl:urls[0]||''};
+                var _cPS=(range&&range.start!=null)?Number(range.start):null;
+                window._currentCropData={dbPath:dbPath,cropTop:_cT,cropBottom:_cB,pageStart:_cPS,imgUrl:urls[0]||''};
                 var kwHtml=buildKeywordBar(title);
                 var pgHtml='';
+                var _pgLabel=function(i,tot){ return _cPS ? 'p.'+(+_cPS+i) : (i+1)+'/'+tot; };
                 if(currentMode==='bay'){
-                    var bd=urls.slice(0,3);
-                    if(bd.length===1){
-                        pgHtml='<div class="mt-pages bay-pages"><img src="'+bd[0]+'" loading="lazy" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                    var tot=urls.length;
+                    var _bayCell=function(u,i){
+                        return '<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\','+i+')">'
+                            +'<span class="mv-num">'+_pgLabel(i,tot)+'</span>'
+                            +'<img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
+                    };
+                    if(tot===1){
+                        pgHtml='<div style="margin:8px auto 0;width:var(--bay-mv-w,65%);max-width:100%;">'
+                            +'<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\',0)">'
+                            +'<span class="mv-num">'+_pgLabel(0,1)+'</span>'
+                            +'<img src="'+urls[0]+'" loading="lazy" style="width:100%;display:block;border-radius:4px;" onerror="this.style.display=\'none\'"></div></div>';
+                    } else if(tot<=3){
+                        pgHtml='<div class="bay-multiview">'+urls.map(_bayCell).join('')+'</div>';
                     } else {
-                        pgHtml='<div class="bay-multiview">'+bd.map(function(u,i){
-                            return '<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span><img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
+                        pgHtml='<div class="bay-multiview" style="flex-wrap:wrap;">'+urls.map(function(u,i){
+                            return '<div class="mv-cell" style="flex:0 0 calc(50% - 3px);" onclick="openImgModal(\''+imgKey+'\','+i+')">'
+                                +'<span class="mv-num">'+_pgLabel(i,tot)+'</span>'
+                                +'<img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
                         }).join('')+'</div>';
                     }
                 } else {
-                    var md=urls; // 전체 페이지 표시 (이전 slice(0,4) 제거)
-                    // 멀티페이지: cropTop=첫페이지만, cropBottom=마지막페이지만 적용
+                    var md=urls;
                     function _maniaCell(u,i){
                         var ct=i===0?_cT:0, cb=i===md.length-1?_cB:100;
                         var hc=ct>0||cb<100;
                         return '<div class="mv-cell"'+(hc?' style="overflow:hidden;position:relative;"':'')
-                            +' onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span>'
+                            +' onclick="openImgModal(\''+imgKey+'\','+i+')">'
+                            +'<span class="mv-num">'+_pgLabel(i,md.length)+'</span>'
                             +'<img src="'+u+'" loading="lazy"'+(hc?' style="width:100%;display:block;" onload="_applyCrop(this,'+ct+','+cb+')"':'')
                             +' onerror="this.style.display=\'none\'"></div>';
                     }
                     if(md.length===1){
                         if(_cT>0||_cB<100){
-                            pgHtml='<div class="mt-pages" style="overflow:hidden;position:relative;">'
-                                +'<img src="'+md[0]+'" loading="lazy" style="width:100%;display:block;cursor:zoom-in;"'
-                                +' onload="_applyCrop(this,'+_cT+','+_cB+')"'
-                                +' onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                            pgHtml='<div style="margin:8px auto 0;width:var(--mania-mv-w,60%);max-width:100%;">'
+                                +'<div class="mv-cell" style="overflow:hidden;position:relative;" onclick="openImgModal(\''+imgKey+'\',0)">'
+                                +'<span class="mv-num">'+_pgLabel(0,1)+'</span>'
+                                +'<img src="'+md[0]+'" loading="lazy" style="width:100%;display:block;" onload="_applyCrop(this,'+_cT+','+_cB+')" onerror="this.style.display=\'none\'"></div></div>';
                         } else {
-                            pgHtml='<div class="mt-pages"><img src="'+md[0]+'" loading="lazy" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                            pgHtml='<div style="margin:8px auto 0;width:var(--mania-mv-w,60%);max-width:100%;">'
+                                +'<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\',0)">'
+                                +'<span class="mv-num">'+_pgLabel(0,1)+'</span>'
+                                +'<img src="'+md[0]+'" loading="lazy" style="width:100%;display:block;border-radius:4px;cursor:zoom-in;" onerror="this.style.display=\'none\'"></div></div>';
                         }
                     } else if(md.length===2){
                         pgHtml='<div class="mania-2col">'+md.map(_maniaCell).join('')+'</div>';
@@ -2740,6 +2804,7 @@
                 botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div>'+pgHtml+kwHtml+'</div>';
                 loadKeywords(title, botD);
                 _appendRelatedNotices(title, botD);
+                _appendTemplateBtn(title, botD);
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
             });
@@ -2799,6 +2864,33 @@
     function escHtml(t){
         if(t==null)return'';
         return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /* ── 매뉴얼 탭: 템플릿 생성 버튼 ── */
+    function _appendTemplateBtn(title, botD){
+        var btn=document.createElement('button');
+        btn.textContent='📝 답변 템플릿 생성';
+        btn.style.cssText='margin-top:8px;width:100%;padding:9px 0;border-radius:8px;border:2px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;font-size:11px;font-weight:900;transition:0.15s;';
+        btn.addEventListener('mouseenter',function(){if(!btn.disabled){btn.style.background='var(--active-focus-color)';btn.style.color='#fff';}});
+        btn.addEventListener('mouseleave',function(){if(!btn.disabled){btn.style.background='none';btn.style.color='var(--active-focus-color)';}});
+        btn.addEventListener('click',function(){
+            if(btn.disabled)return;
+            btn.disabled=true; btn.style.opacity='0.5'; btn.textContent='생성 중...';
+            _reqTemplate(title);
+        });
+        botD.appendChild(btn);
+    }
+    function _reqTemplate(title){
+        if(!CLAUDE_API_KEY){alert('⚠️ Claude API 키를 먼저 설정해주세요.');return;}
+        var idx=currentMode==='bay'?BAY_MANUAL_INDEX:MANUAL_INDEX;
+        var val=idx[title]||'';
+        if(typeof val==='object') val=val.text||val.content||'';
+        addMsg('📝 템플릿 생성: '+title,'user');
+        var lid='L'+Date.now();
+        addMsg('<span style="opacity:0.5;font-style:italic;">템플릿 생성 중...</span>','bot',lid);
+        var botEl=document.getElementById(lid); if(!botEl)return;
+        var botD=botEl.querySelector('.bubble');
+        _generateCSTemplate(title,val,title,botEl,botD);
     }
 
     /* ── 메모 패드 (플로팅 스티커) ── */
@@ -3357,6 +3449,37 @@
     }
 
     var _mUrls=[], _mIdx=0, _mZoom=1.0, _mTX=0, _mTY=0, _mCropTop=0, _mCropBot=100, _mTotalUrls=0;
+    var _noticeImgFiles=[], _noticeExistingImgs=[];
+    function _genImgKey(){return 'img_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+    function _addNoticeImgFile(file){
+        var key=_genImgKey();
+        var reader=new FileReader();
+        reader.onload=function(e){_noticeImgFiles.push({file:file,key:key,dataUrl:e.target.result});_renderNoticeImgPreviews();};
+        reader.readAsDataURL(file);
+    }
+    function _removeNoticeImg(key){
+        _noticeImgFiles=_noticeImgFiles.filter(function(x){return x.key!==key;});
+        _noticeExistingImgs=_noticeExistingImgs.filter(function(x){return x.key!==key;});
+        _renderNoticeImgPreviews();
+    }
+    function _renderNoticeImgPreviews(){
+        var c=document.getElementById('noticeImgPreviews'); if(!c) return;
+        c.innerHTML='';
+        function makePreview(src,key,isnew){
+            var div=document.createElement('div');
+            div.style.cssText='position:relative;display:inline-block;';
+            var img=document.createElement('img');
+            img.src=src;
+            img.style.cssText='width:80px;height:60px;object-fit:cover;border-radius:6px;border:2px solid '+(isnew?'var(--active-focus-color)':'var(--border-ui)')+';';
+            var btn=document.createElement('button');
+            btn.textContent='×';
+            btn.style.cssText='position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border:none;border-radius:99px;width:18px;height:18px;font-size:12px;line-height:1;cursor:pointer;font-weight:900;padding:0;';
+            btn.addEventListener('click',function(e){e.stopPropagation();_removeNoticeImg(key);});
+            div.appendChild(img); div.appendChild(btn); c.appendChild(div);
+        }
+        _noticeExistingImgs.forEach(function(x){makePreview(x.url,x.key,false);});
+        _noticeImgFiles.forEach(function(x){makePreview(x.dataUrl,x.key,true);});
+    }
     var _mDrag={active:false,sx:0,sy:0,ox:0,oy:0};
     var _modalCropGen=0;
 
@@ -3504,18 +3627,31 @@
         }
         var topHits=scored.filter(function(e){return e.s>1;}).slice(0,5);
         if(topHits.length===0){
-            botD.innerHTML='<span style="font-size:11px;opacity:0.55;">매뉴얼에서 관련 항목을 찾지 못했습니다. 키워드를 바꿔서 다시 시도해 주세요.</span>';
+            // 매뉴얼에 없어도 공지에서 찾으면 QNA 생성
+            var _qw=qLow.split(/\s+/).filter(function(w){return w.length>=2;});
+            var _noticesObj=allNotices[currentMode]||{};
+            var _noticeHit=Object.keys(_noticesObj).some(function(id){
+                var n=_noticesObj[id]; if(!n||typeof n!=='object')return false;
+                var hay=((n.title||'')+(n.content||'')).toLowerCase();
+                return _qw.some(function(w){return hay.indexOf(w)>=0;});
+            });
+            if(_noticeHit){
+                _csPendingQ=q;
+                await _generateQnA(q,'',q,botEl,botD);
+            } else {
+                botD.innerHTML='<span style="font-size:11px;opacity:0.55;">매뉴얼과 공지에서 관련 항목을 찾지 못했습니다. 키워드를 바꿔서 다시 시도해 주세요.</span>';
+            }
             var box2=document.getElementById('csChatBox'); if(box2)box2.scrollTop=99999;
             return;
         }
         /* 1개 또는 별칭 강제 → 바로 생성 */
         if(topHits.length===1||_aliasKey){
             _csPendingQ=q;
-            await _generateCSTemplate(topHits[0].k,topHits[0].v,q,botEl,botD);
+            await _generateQnA(topHits[0].k,topHits[0].v,q,botEl,botD);
         } else {
             /* 여러 항목 → 선택 버튼 */
             _csPendingQ=q;
-            var h='<div style="font-size:11px;font-weight:700;opacity:0.7;margin-bottom:8px;">관련 항목 '+topHits.length+'개를 찾았습니다.<br>어떤 항목의 템플릿을 작성할까요?</div>';
+            var h='<div style="font-size:11px;font-weight:700;opacity:0.7;margin-bottom:8px;">관련 항목 '+topHits.length+'개를 찾았습니다.<br>어떤 항목의 예상 QNA를 뽑을까요?</div>';
             h+='<div style="display:flex;flex-direction:column;gap:5px;">';
             topHits.forEach(function(e){
                 h+='<button onclick="pickCSTemplate(\''+e.k.replace(/\\/g,'\\\\').replace(/\'/g,"\\'")+'\',this)" style="text-align:left;padding:8px 12px;border-radius:8px;border:2px solid var(--border-ui);background:var(--bg-card);cursor:pointer;font-size:11px;font-weight:700;color:var(--text-main);transition:0.15s;" onmouseover="this.style.borderColor=\'var(--active-focus-color)\';this.style.color=\'var(--active-focus-color)\'" onmouseout="this.style.borderColor=\'var(--border-ui)\';this.style.color=\'var(--text-main)\'">▶ '+escHtml(e.k)+'</button>';
@@ -3532,10 +3668,10 @@
         if(btn){var p=btn.parentElement;if(p)p.querySelectorAll('button').forEach(function(b){b.disabled=true;b.style.opacity='0.4';});btn.style.opacity='1';btn.style.borderColor='var(--active-focus-color)';btn.style.color='var(--active-focus-color)';}
         addCSMsg(key,'user');
         var lid='csL'+Date.now();
-        addCSMsg('<span style="opacity:0.5;font-style:italic;">템플릿 생성 중...</span>','bot',lid);
+        addCSMsg('<span style="opacity:0.5;font-style:italic;">QNA 분석 중...</span>','bot',lid);
         var botEl=document.getElementById(lid); if(!botEl)return;
         var botD=botEl.querySelector('.bubble');
-        await _generateCSTemplate(key,val,_csPendingQ||key,botEl,botD);
+        await _generateQnA(key,val,_csPendingQ||key,botEl,botD);
         var box=document.getElementById('csChatBox'); if(box)box.scrollTop=99999;
     }
     async function _generateCSTemplate(key,val,q,botEl,botD){
@@ -3547,12 +3683,99 @@
             if(!res.ok){var err=await res.json();botD.innerHTML='⚠️ 오류: '+(err.error&&err.error.message?err.error.message:res.status);return;}
             var data=await res.json();
             var txt=data.content[0].text;
-            botD.style.whiteSpace='pre-wrap';
-            botD.textContent=txt;
             var copyBtn=document.createElement('button');
-            copyBtn.className='copy-btn'; copyBtn.style.marginTop='6px'; copyBtn.textContent='📋 템플릿 복사';
+            copyBtn.className='copy-btn';
+            copyBtn.style.cssText='margin-top:8px;display:inline-block;width:auto;padding:5px 16px;font-size:0.8em;';
+            copyBtn.textContent='📋 템플릿 복사';
             copyBtn.onclick=function(){navigator.clipboard.writeText(txt).then(function(){copyBtn.textContent='✅ 복사됨';copyBtn.classList.add('copied');setTimeout(function(){copyBtn.textContent='📋 템플릿 복사';copyBtn.classList.remove('copied');},2000);});};
-            botEl.appendChild(copyBtn);
+            var pre=document.createElement('pre');
+            pre.style.cssText='white-space:pre-wrap;font-family:inherit;font-size:0.9em;line-height:1.75;margin:0 0 4px;padding:0;border:none;background:transparent;color:var(--text-main);word-break:break-word;';
+            pre.textContent=txt;
+            botD.innerHTML='';
+            botD.appendChild(pre);
+            botD.appendChild(copyBtn);
+        }catch(e){botD.innerHTML='⚠️ 네트워크 오류: '+e.message;}
+    }
+
+    /* ── 고객 예상 QNA 생성 ── */
+    function _renderQnA(txt){
+        // Q: 와 A: 사이에 빈 줄이 있어도 하나의 블록으로 합침
+        var normalized=txt
+            .replace(/\n{3,}/g,'\n\n')
+            .replace(/(Q\d*[：:．.][^\n]+)\n\n(A\d*[：:．.])/gi,'$1\n$2');
+        var blocks=normalized.split(/\n{2,}/).map(function(b){return b.trim();}).filter(Boolean);
+        var num=0;
+        var html='<div style="display:flex;flex-direction:column;gap:14px;">';
+        blocks.forEach(function(block){
+            var qm=block.match(/^Q\d*[：:．.]\s*(.+?)(?:\n|$)/i);
+            var am=block.match(/A\d*[：:．.]\s*([\s\S]+)$/i);
+            if(qm&&am){
+                num++;
+                html+='<div style="border:2px solid var(--border-ui);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">'
+                    // Q row
+                    +'<div style="padding:0.7em 1em;background:var(--active-focus-color);display:flex;align-items:flex-start;gap:0.6em;">'
+                    +'<span style="flex-shrink:0;background:rgba(255,255,255,0.25);color:#fff;border-radius:6px;padding:0.1em 0.45em;font-size:0.85em;font-weight:900;letter-spacing:0.04em;line-height:1.5;">Q'+(num)+'</span>'
+                    +'<span style="color:#fff;font-size:1em;font-weight:900;line-height:1.55;word-break:keep-all;">'+escHtml(qm[1].trim())+'</span>'
+                    +'</div>'
+                    // A row
+                    +'<div style="padding:0.75em 1em 0.85em;display:flex;align-items:flex-start;gap:0.6em;background:var(--bg-card);">'
+                    +'<span style="flex-shrink:0;color:var(--active-focus-color);font-size:0.85em;font-weight:900;border:1.5px solid var(--active-focus-color);border-radius:6px;padding:0.1em 0.4em;line-height:1.5;margin-top:0.05em;">A</span>'
+                    +'<span style="font-size:0.95em;font-weight:700;line-height:1.75;white-space:pre-wrap;color:var(--text-main);word-break:keep-all;">'+escHtml(am[1].trim())+'</span>'
+                    +'</div>'
+                    +'</div>';
+            } else {
+                html+='<div style="font-size:0.85em;white-space:pre-wrap;opacity:0.6;padding:0.4em 0;">'+escHtml(block)+'</div>';
+            }
+        });
+        html+='</div>';
+        return html;
+    }
+    async function _generateQnA(key,val,q,botEl,botD){
+        botD.innerHTML='<span style="opacity:0.5;font-style:italic;font-size:12px;">매뉴얼 + 공지 분석 중...</span>';
+        var siteName=currentMode==='mania'?'아이템매니아':'아이템베이';
+        var valStr=typeof val==='object'?(val.text||val.content||''):String(val||'');
+
+        // 관련 공지 수집: 매뉴얼 키 기준 + 검색어 기준 합산
+        var noticesObj=allNotices[currentMode]||{};
+        var seenIds=new Set();
+        var relatedArr=[];
+        // 1) 매뉴얼 제목 기준 관련 공지
+        _getRelatedNotices(key).forEach(function(n){
+            if(!seenIds.has(n.id)){seenIds.add(n.id);relatedArr.push(n);}
+        });
+        // 2) 검색어 단어 기준 추가 매칭
+        var qWords=q.toLowerCase().split(/\s+/).filter(function(w){return w.length>=2;});
+        Object.keys(noticesObj).forEach(function(id){
+            if(seenIds.has(id))return;
+            var n=noticesObj[id]; if(!n||typeof n!=='object')return;
+            var hay=((n.title||'')+(n.content||'')).toLowerCase();
+            if(qWords.some(function(w){return hay.indexOf(w)>=0;})){
+                seenIds.add(id);
+                relatedArr.push({id:id,title:n.title||'',date:n.date||'',_ts:_parseDateNum(n)});
+            }
+        });
+        relatedArr.sort(function(a,b){return(b._ts||0)-(a._ts||0);});
+        var topNotices=relatedArr.slice(0,6);
+        var noticeCtx='';
+        if(topNotices.length){
+            noticeCtx='\n\n[관련 공지 — 매뉴얼보다 최신 정책이 있으면 공지 기준으로 우선 적용]\n';
+            topNotices.forEach(function(n){
+                var full=noticesObj[n.id];
+                if(full&&full.content) noticeCtx+='■ '+n.title+' ('+n.date+')\n'+full.content+'\n\n';
+            });
+        }
+
+        var sys='당신은 '+siteName+' 고객센터 상담원입니다.\n아래 자료는 내부 실무자용 매뉴얼입니다. 이 내용을 바탕으로, 실제 고객이 문의했을 때 상담원이 고객에게 직접 안내하는 답변 형식의 예상 QNA를 6~8개 작성하세요.\n공지에 더 최신 정책이 있으면 공지 내용을 우선 적용하세요.\n\n[내부 실무 매뉴얼]\n# '+key+'\n'+valStr+noticeCtx+'\n[작성 규칙]\n- 반드시 다음 형식으로 출력: Q: 질문내용\nA: 답변내용\n- 각 QNA 사이는 반드시 빈 줄 하나로 구분\n- Q와 A는 같은 블록 안에 연속으로 작성 (Q/A 사이에 빈 줄 없이)\n- Q는 실제 고객이 문의하는 말투로 (예: "~하면 어떻게 되나요?", "~할 수 있나요?")\n- A는 고객에게 직접 말하는 2인칭 안내문으로 작성 (예: "~하시면 됩니다", "~해드립니다")\n- 매뉴얼의 내부 처리 절차는 고객 입장의 행동 안내로 변환 (예: "담당자가 확인" → "고객센터에 접수하시면 담당팀에서 확인 후 처리해드립니다")\n- 단계가 있는 경우 번호로 순서를 안내\n- 고객이 직접 할 수 있는 것과 문의가 필요한 것을 명확히 구분\n- 제공된 자료에 없는 내용 추가 금지\n- 다양한 케이스 커버 (기본 절차, 예외 상황, 오류, 기간/조건 등)\n- 주석·설명 없이 QNA 목록만 출력';
+        try{
+            var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':CLAUDE_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1800,system:sys,messages:[{role:'user',content:'[주제] '+key+'\n[검색어] '+q}]})});
+            if(!res.ok){var err=await res.json();botD.innerHTML='⚠️ 오류: '+(err.error&&err.error.message?err.error.message:res.status);return;}
+            var data=await res.json();
+            var txt=data.content[0].text;
+            var srcTag=topNotices.length
+                ?'<div style="font-size:0.75em;opacity:0.55;margin-bottom:10px;font-weight:700;">📚 매뉴얼 + 📢 관련 공지 '+topNotices.length+'건 참고</div>'
+                :'<div style="font-size:0.75em;opacity:0.55;margin-bottom:10px;font-weight:700;">📚 매뉴얼 참고</div>';
+            botD.innerHTML=srcTag+_renderQnA(txt);
+            var box=document.getElementById('csChatBox'); if(box)box.scrollTop=99999;
         }catch(e){botD.innerHTML='⚠️ 네트워크 오류: '+e.message;}
     }
 
@@ -4301,9 +4524,27 @@
     function openViewModal(id){
         var n=allNotices[currentMode][id]; currentEditId=id;
         document.getElementById('modalDate').innerText="📅 "+n.date;
+        var updEl=document.getElementById('viewUpdatedAt');
+        if(updEl){
+            if(n.updatedAt){updEl.textContent='✏️ 최종 수정: '+n.updatedAt;updEl.classList.remove('hidden');}
+            else{updEl.classList.add('hidden');}
+        }
         document.getElementById('viewTitle').innerText=n.title;
         document.getElementById('viewTitle').style.color='var(--active-focus-color)';
         document.getElementById('viewContent').innerHTML=renderNoticeContent(n.content);
+        var imgArea=document.getElementById('viewImgArea');
+        if(imgArea){
+            if(n.images&&n.images.length){
+                imgArea.innerHTML='';
+                n.images.forEach(function(url,i){
+                    var img=document.createElement('img');
+                    img.src=url;
+                    img.style.cssText='max-width:100%;border-radius:8px;margin-bottom:6px;cursor:zoom-in;display:block;';
+                    img.addEventListener('click',function(){openImgModal(n.images,i);});
+                    imgArea.appendChild(img);
+                });
+            } else { imgArea.innerHTML=''; }
+        }
         var urlWrap=document.getElementById('viewUrlWrap');
         var urlEl=document.getElementById('viewUrl');
         if(n.url&&typeof n.url==='string'&&n.url.trim()&&n.url!=='undefined'){
@@ -4344,6 +4585,7 @@
         currentEditId=null;
         document.getElementById('editContent').value="";
         document.getElementById('editUrl').value="";
+        _noticeImgFiles=[]; _noticeExistingImgs=[]; _renderNoticeImgPreviews();
         switchToEditMode();
         document.getElementById('noticeModal').classList.remove('hidden');
     }
@@ -4352,8 +4594,16 @@
         document.getElementById('editMode').classList.remove('hidden');
         if(currentEditId){
             var n=allNotices[currentMode][currentEditId];
+            document.getElementById('editContent').value=(n&&n.content)?n.content:'';
             document.getElementById('editUrl').value=(n&&n.url&&n.url!=='undefined')?n.url:'';
+            _noticeImgFiles=[];
+            _noticeExistingImgs=(n&&n.images&&Array.isArray(n.images))
+                ?n.images.map(function(url,i){return{url:url,key:'ex_'+i+'_'+Date.now()};})
+                :[];
+        } else {
+            _noticeImgFiles=[]; _noticeExistingImgs=[];
         }
+        _renderNoticeImgPreviews();
     }
     function switchToViewMode(){
         document.getElementById('editMode').classList.add('hidden');
@@ -4397,14 +4647,34 @@
     function saveNotice(){
         var content=document.getElementById('editContent').value.trim(); if(!content) return;
         var urlVal=document.getElementById('editUrl').value.trim();
-        // 기존 공지 수정 시 원래 날짜 유지 (새 공지 등록 시에만 현재 날짜 사용)
         var existingDate = currentEditId && allNotices[currentMode] && allNotices[currentMode][currentEditId]
             ? allNotices[currentMode][currentEditId].date : null;
         var dateStr = existingDate || new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
         var obj={title:content.split('\n')[0].substring(0,35),content:content,date:dateStr};
         if(urlVal) obj.url=urlVal;
-        db.ref('notices_'+currentMode).child(currentEditId||Date.now()).set(obj);
-        closeModal();
+        if(currentEditId) obj.updatedAt=new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        var saveKey=currentEditId||String(Date.now());
+        var existingUrls=_noticeExistingImgs.map(function(x){return x.url;});
+        var btn=document.getElementById('saveBtn');
+        if(_noticeImgFiles.length===0){
+            if(existingUrls.length>0) obj.images=existingUrls;
+            db.ref('notices_'+currentMode).child(saveKey).set(obj);
+            closeModal();
+        } else {
+            if(btn){btn.disabled=true;btn.textContent='업로드 중...';}
+            var uploads=_noticeImgFiles.map(function(item){
+                var ref=storage.ref('notice_images/'+saveKey+'_'+item.key);
+                return ref.put(item.file).then(function(){return ref.getDownloadURL();});
+            });
+            Promise.all(uploads).then(function(newUrls){
+                obj.images=existingUrls.concat(newUrls);
+                db.ref('notices_'+currentMode).child(saveKey).set(obj);
+                closeModal();
+            }).catch(function(err){
+                alert('이미지 업로드 실패: '+err.message);
+                if(btn){btn.disabled=false;btn.textContent='저장 완료';}
+            });
+        }
     }
     function clearCSChat(){
         var box=document.getElementById('csChatBox');
@@ -4586,6 +4856,506 @@
         var el=document.getElementById('liveClock');
         if(el) el.textContent=y+'.'+mo+'.'+d+' ('+wd+') '+hh+':'+mm+':'+ss;
     }
+    /* ══════════════════════════════════════════
+       📜 이용약관 모달
+    ══════════════════════════════════════════ */
+    var _TERMS = {
+        service: `## 제 1 장 총칙
+
+### 제 1 조 (목적)
+이 약관은 ㈜아이엠아이가 제공하는 아이템매니아 및 관련 제반 서비스의 이용조건 및 절차에 관한 회사와 회원간의 권리·의무 및 책임사항을 규정합니다.
+
+### 제 2 조 (약관의 명시, 설명과 개정)
+- 약관은 회사 사이트에 게시되며, 회원가입으로 동의가 발생합니다.
+- 개정 시 적용일자 **7일 이전** 공지 (회원 불리 사항은 **30일 이전**)
+- 거부 의사 표시 없으면 동의로 간주
+- 개정 미동의 시 이용계약 해지 가능
+
+### 제 3 조 (약관 외 준칙)
+약관 미규정 사항은 전자상거래 소비자보호법, 약관규제법, 공정거래위원회 지침 준용
+
+### 제 4 조 (용어의 정의)
+- **회원**: 약관 승인하고 가입한 자
+- **아이디**: 회원 식별용 문자/숫자 조합
+- **판매자**: 물품 판매 의사로 등록한 회원
+- **구매자**: 물품 구매 의사로 등록한 회원
+- **자율거래**: 회사의 참여 없이 판매자와 구매자가 약속장소를 통해 거래하는 것
+
+---
+
+## 제 2 장 서비스 이용 신청 및 승낙
+
+### 제 5 조 (이용계약의 성립)
+- 회원정보 기입 후 약관 동의로 가입 신청
+- 회사의 승낙이 회원에게 도달한 시점에 성립
+- 실명 아닌 가입자는 법적 보호 미받음
+- **만 19세 미만은 게임아이템거래 서비스 이용이 제한될 수 있음**
+- 유료컨텐츠 청약철회: 공급받은 날로부터 3월 이내, 사실을 안 날로부터 30일 이내 가능
+
+### 제 6 조 (이용신청)
+- 온라인 양식에 기재하여 신청
+- 거짓 정보 기입 시 **서비스 일시정지, 영구정지, 계약해지** 가능
+
+### 제 7 조 (회원정보 사용에 대한 동의 및 이용신청의 승낙)
+① 회원정보 사용에 대한 동의:
+- 회사는 계약 이행, 서비스제공 목적으로 개인정보 이용
+- 제휴사에 정보 제공 가능 (사전 공지 및 동의 필수)
+- 광고 알림 동의자에게만 발송 가능
+- 회원은 개인정보 열람·수정 가능
+
+② 이용신청의 승낙 거절 대상:
+- 실명 아닌 경우, 타인 명의 사용, 허위 기재
+- 사회 안녕질서 저해 목적
+- 제재 받은 이용자
+
+### 제 8 조 (이용계약의 중지 및 해지)
+① 계약 종료는 회원 또는 회사 해지로 발생
+
+② 회원 해지 신청:
+- 온라인으로 해지 신청, 회사는 **5일 후 처리**
+- 해지 전 모든 판매·구매 절차 완료, 철회, 취소 필요
+- 거래분쟁 발생 시 해결까지 탈퇴 제한
+
+③ 회사의 서비스 제한/중지/해지 대상:
+- 타인 ID·비밀번호 도용
+- 서비스 운영 고의 방해
+- 허위 내용 등록
+- 공공질서·미풍양속 저해 내용 유포
+- 타인 명예 손상, 불이익 제공
+- 안정적 운영 방해를 위한 대량 정보·광고 전송
+- 컴퓨터 바이러스 유포
+- 타인 개인정보·ID·비밀번호 부정 사용
+- 음란물 게재, 음란사이트 링크
+- 동일 사용자의 이중등록
+- 지적재산권 침해
+- 약관 및 이용조건 위반
+- 범죄 결부 행위
+- 관계 법령 위배
+
+④ 서비스 제한 절차:
+- 회사는 사유, 일시, 기간을 정하여 서면, 전화, 메시지로 통지
+- 긴급 필요 시 과정 없이 제한 가능
+- 통지받은 회원은 이의 신청 가능
+
+### 제 9 조 (회원정보의 변경)
+- 개인정보 수정 화면으로 열람·수정 가능
+- **실명, 생년월일, 성별, 아이디 등은 수정 불가**
+- 변경사항 미통지로 인한 불이익은 회사 책임 아님
+
+---
+
+## 제 3 장 회원의 의무
+
+### 제 10 조 (회원 아이디와 비밀번호 관리)
+- 아이디·비밀번호 관리 책임은 회원에게 있음
+- 부정 사용 발견 시 **즉시 회사 통지 필수**
+- 통지 미비로 인한 불이익은 회사 책임 아님
+
+### 제 11 조 (정보의 제공)
+회사는 전자우편·서신우편으로 아래 정보 제공 가능 (거부 가능):
+- 아이템거래 관련 서비스
+- 상품권몰 관련 서비스
+- 이벤트·행사 관련 서비스
+
+### 제 12 조 (커뮤니티 서비스 이용에 대한 회원의 의무)
+금지 행위:
+- 음란·폭력·혐오·차별·불법정보 게시물 작성·요청
+- 광고·영리목적 글 무단 게시, 도배성 게시
+- 타인 개인정보 동의 없이 수집·공개
+- 운영진·관리자 사칭, 타인 명의 도용
+- 주민등록번호·계좌번호 등 개인정보 게시
+- 관계 법령·약관 위반
+
+---
+
+## 제 4 장 서비스 이용 총칙
+
+### 제 13 조 (서비스의 종류)
+- 아이템거래 (판매, 구매, 정보검색)
+- 상품권몰 서비스 등
+- 회사 사정에 따라 수시 변경 가능
+
+### 제 14 조 (서비스 내용의 공지 및 변경)
+변경 시 통상 **7일 이전** 공지
+
+### 제 15 조 (서비스의 유지 및 중지)
+① 서비스는 연중무휴 24시간 원칙 (정기점검 제외)
+
+중지 가능 사유:
+- 설비 보수·공사로 인한 부득이한 경우
+- 기간통신사업자의 서비스 중지
+- 제휴업체 등 제3자의 서비스 중지
+- 기타 불가항력
+
+### 제 16 조 (회원의 결제 이용 제한)
+제한 대상:
+- 월간 결제 이용금액이 과도한 경우
+- 판매자와 구매자가 동일인으로 판단되는 경우
+- 결제서비스 제공사의 요청
+- 회사 운영정책상 필요
+
+---
+
+## 제 5 장 콘텐츠 서비스
+
+### 제 17 조 (상품권매장 서비스)
+- 핀번호를 이용한 상품권·선불카드, 모바일, 디지털 콘텐츠 판매
+- **원칙적으로 환불 및 취소 불가**
+
+### 제 18 조 (마일리지)
+① 마일리지는 홈페이지 내 한정 사용, 다른 지불수단 불가, 1:1로 현금 환불 가능
+② 거래 종료 시 판매대금을 마일리지로 적립 원칙
+③ 회사는 이벤트 등으로 임의로 마일리지 부여 가능
+④ 부여 마일리지는 회사 사정으로 취소 가능
+⑤ 이벤트 마일리지는 현금 환불 제한·금지 가능 (구매 사용은 가능)
+⑥ **회원 탈퇴 또는 서비스 이용계약 해지 시 마일리지는 전액 환불 원칙**
+   - PG수수료 등으로 **2,000원 이상** 시에만 환불 가능
+   - 환불계좌 없으면 삭제 가능
+⑦ 탈퇴 또는 해지 시 이벤트 마일리지는 전액 삭제
+⑧ 마일리지에 금융이자 지급 의무 없음
+⑩ 회원 충전 마일리지 사용 기간은 **충전일로부터 5년**
+
+### 제 19 조 (쇼핑 POINT)
+- 물품 구매 또는 이벤트응모로 쇼핑 POINT 부여
+- 탈퇴 또는 해지 시 쇼핑 POINT 모두 삭제
+- 서비스 종료 시 최소 30일 전까지 고지
+
+---
+
+## 제 6 장 커뮤니티 서비스
+
+### 제 20 조 (커뮤니티 서비스)
+회원 상호간 또는 회원과 회사가 제공하는 온라인 게시판·댓글·메시지로 의견·정보 교환
+
+### 제 21 조 (게시물의 저작권 귀속 및 이용)
+- 회사 작성 저작물의 저작권은 회사에 귀속
+- 회원 게시물의 저작권은 원칙적으로 게시자에게 귀속
+- 회사는 서비스 운영, 전시, 전송, 배포, 홍보 목적으로 무상 이용 가능
+
+### 제 22 조 (게시물의 삭제 및 이용제한)
+삭제·비공개 가능 게시물:
+- 허위 또는 과장 광고 내용
+- 타인 권리 침해, 명예 훼손, 모욕
+- 불법물 게시, 홍보, 사이트 링크
+- 반복적·대량 도배성 게시
+- 범죄행위, 갈등 유발, 불법 조장
+- 운영규칙·약관 위반
+
+---
+
+## 제 7 장 개인 정보 보호
+
+### 제 23 조 (회원정보 사용에 대한 동의)
+① 개인정보는 회사의 개인정보 보호정책 적용 (가입으로 동의)
+③ 신상정보 변경 시 즉시 수정 (ID·이름·생년월일·성별 제외)
+⑥ **이용계약 해지 시 개인정보는 복구·재생 불가능한 방법으로 파기**
+
+보존 예외 (법령에 따른 보관):
+- 부정이용 방지를 위해 탈퇴자 최소 개인정보를 일방향 암호화하여 **6개월 보관**
+- 부정이용자·서비스 정보 부당 이용자는 탈퇴 후 **1년 보관**
+
+---
+
+## 제 8 장 손해배상 및 면책조항
+
+### 제 24 조 (손해배상)
+- 회사는 매매 규칙을 벗어난 거래로 발생한 일체 사고에 책임 아님
+- 판매자·구매자 과실로 인한 분쟁은 회사 책임 아님
+- 제휴사 피해는 제휴사 약관 준용
+
+### 제 25 조 (면책조항)
+책임 면제 사항:
+- 전시, 사변, 천재지변 또는 이에 준하는 국가 비상 사태
+- 이용자 고의 또는 과실로 인한 손해
+- 타 기간통신사업자 전기통신서비스 장애
+- 이용자 게시·전송 자료 내용에 관한 사항
+- 게임개발·서비스 업체 불량 또는 정기 서버 점검으로 물품 전달 하자
+
+### 제 26 조 (대리 및 보증의 부인)
+- 회사는 판매·구매 회원을 대리할 권한 없음
+- 판매 또는 구매와 관련하여 판매의사·구매의사의 사실·진위·적법성 보증 아님
+
+### 제 27 조 (관할법원 및 준거법)
+- 분쟁 발생 시 회사 본사 소재지 관할 법원으로 해결
+- 소송에는 대한민국 법 적용
+
+### 제 28 조 (기타)
+회사는 정당한 의견·불만을 반영하고 피해를 보상처리하기 위해 고객감동센터 운영
+
+**[부칙]**
+- **2025년 11월 18일**부터 적용
+- 2025년 06월 01일부터 시행되던 종전 약관 대체`,
+
+        trade: `## 제 1 조 (목적)
+이 약관은 ㈜아이엠아이가 운영하는 물품게시판을 통하여 제공하는 아이템거래 관련 서비스를 이용함에 있어 회사와 회원과의 권리·의무 및 책임사항을 정하는 것을 목적으로 합니다.
+
+## 제 2 조 (정의)
+- **서비스**: 회사가 제공하는 아이템거래 중개서비스 및 제반 서비스
+- **판매자**: 물품을 판매할 의사로 회사가 온라인 제공 양식에 맞추어 등록하거나 신청한 회원
+- **구매자**: 물품을 구매할 의사로 회사가 온라인 제공 양식에 맞추어 등록하거나 신청한 회원
+- **자율거래**: 물품 전달 과정에서 회사 참여 없이 판매자와 구매자가 약속장소를 통해 거래하는 것
+
+## 제 3 조 (약관의 명시와 설명 및 개정)
+- 미규정 사항은 아이템매니아 서비스 이용약관 준용
+- 개정 시 적용일자 **7일 이전** 공지 (회원 불리 사항은 **30일 이전**)
+- 거부 의사 표시 없으면 동의로 간주
+
+## 제 4 조 (서비스의 제공)
+제공 서비스:
+- 아이템거래 (판매, 구매, 정보검색)
+- 자율거래 지원
+- 상품 정보검색, 마케팅·광고
+
+**회사는 시스템 운영·관리하며, 이용자 거래·제공 정보에 대한 책임은 해당 이용자** (회사 책임 아님)
+
+## 제 5 조 (서비스이용)
+승낙 거절 대상:
+- 이전 회원자격 상실자
+- 등록 내용에 허위·기재누락·오기
+- **만 19세 미만의 청소년**
+
+## 제 6 조 (이용 해지 및 자격 상실 등)
+① 회원은 언제든 해지 요청 가능 (회사는 **5일 후 처리**)
+   - **해지 전 모든 판매·구매 절차 완료, 철회, 취소 필요**
+   - 해지 후에도 과실로 인한 손해에 책임
+
+② 이용자격 제한·정지 사유:
+- 허위 내용 등록
+- 채무를 기일에 미지급
+- 타인 이용 방해, 타인 정보 도용
+- 법령·약관 위반 또는 공서양속 반하는 행위
+- 타인 개인정보 도용·임의사용, 허위 연락처, 고의 두절
+- 영업행위 고의 방해
+- 복제품·해킹물품·판매목적 아닌 물품 등록
+- 실제 판매·구매 의사 없이 등록 또는 신청 후 거부
+- **서비스 정보로 직거래 유도**
+
+## 제 7 조 (거래점수/신용등급)
+- 거래 안전성·신뢰성 위해 거래점수 부과
+- 등급: **VIP, 플래티넘, 골드, 실버, 일반**
+- 초기 점수는 0점 (일반등급)
+- 판매 1건당 거래점수 1점 상승
+- 구매 1건당 거래점수 1점 상승
+
+## 제 8 조 (벌점)
+벌점 부과 사유:
+- 비정상적인 거래 진행
+- 판매거부
+- 구매거부
+- 기타 회사 판단
+
+## 제 9 조 (물품등록/구매등록)
+① 물품 판매·구매를 위해 회사 물품등록 양식 따라 등록
+② **물품 설명은 거짓 없어야 하며, 허위등록으로 인한 손해는 회원 부담**
+④ 거래방법은 자율거래 (안전한 거래를 위해 약관상 의무 준수)
+⑦ **출금계좌정보(예금주, 은행명, 계좌번호)를 정확히 입력, 예금주는 판매자 성명과 동일**
+   (동일하지 않을 경우 회사는 출금 보류)
+
+판매 제한 물품 (매매불가):
+- 소유·거래 금지 물품
+- 불법 개인정보 거래
+- 불법 사설서버, OEM 소프트웨어, 복제품, 장물
+- 홍보용 무료·할인 상품권, 습득물
+- 불법 성인물, 불법 복제 소프트웨어
+- 군용품 (군복, 대검, 망원경 등)
+- 신고받은 불법물건, 기타 회사 판단 불가 물품
+
+물품등록정보 수정:
+- **거래진행 후에는 물품정보 추가·사진 변경 불가**
+- **부가서비스 취소 불가, 추가만 가능**
+
+계약 성립:
+- 판매자 등록 물품에 대해 구매자가 신청 후 대금 결제 시 계약 성립
+- 구매자 등록 물품에 대해 판매자가 신청 후 구매자가 대금 결제 시 계약 성립
+
+판매자 의무·책임:
+- 등록 물품에 대해 입금완료 구매자에게 **판매 의무** (위반 시 판매거부 벌점)
+- 물품 등록 정보에 대한 문의에 성실히 답변
+- **등록 물품이 해킹·사기아이템 또는 금지 물품일 경우 모든 민·형사 책임**
+
+## 제 10 조 (거래진행)
+① 구매자:
+   - 구매하고자 하는 물품 선택 후 회사가 정한 시간 안에 입금
+   - **현금 결제 시 입금수수료 또는 PG사 결제수수료는 구매자 부담, 환불 불가**
+
+② 판매자 물품 전달:
+   - 구매자 입금 확인 후 물품을 안전하게 인계할 의무
+   - **거래 진행 시 회사 제공 연락수단(매니아채팅 등) 이용 필수**
+   - 다른 수단 또는 제3자 협의로 인한 문제는 회사 책임 아님
+   - 판매자 물품 전달했으나 게임서버 이상으로 구매자 미수령 시: **즉시 회사로 대금지급 중지신청** (신청 미비 또는 회사 지급 후 신청 시 회사 책임 아님)
+
+④ 물품대금 판매자 송금:
+   - 구매자가 [물품인수 확인] 클릭 시 회사는 **거래금액에서 수수료를 제외한 금액**을 판매자에게 적립
+
+⑤ 반품·환불:
+   - 회사 판매자 대금 지급 전이면 구매자는 환불 요청 가능 (회사는 **판매자 동의 시에만 진행**)
+   - 판매자는 정당한 반품 요구를 들어줄 의무
+   - **인수확인 후 회사는 개입 아님** (거래당사자 개별 해결)
+
+⑥ 구매자 의무:
+   - 물품 구매의사 밝혔을 경우 물품대금 결제
+   - 판매자 판매거부 시 즉시 회사에 통보
+
+⑦ 판매자 의무:
+   - 구매자 입금여부·거래정보를 정확히 확인 후 물품 전달
+   - **판매 취소는 회사 대금 지급 이전까지 가능** (벌점 가능, 지급 후 취소 불가)
+   - 구매자 정당 취소·반품에 대해 들어줄 의무
+
+## 제 11 조 (구매거부/판매거부의 신고, 신청 및 처리 절차)
+거래 마감 후 상대방의 구매거부·판매거부 행위를 신고 가능
+
+판매취소 신고 요건:
+- 구매자 정당 이유 없는 거부
+- 입금확인 후 구매자 연락 안 됨 또는 연락처 불량
+- 구매자 정해진 시간 안에 미입금
+
+구매취소 신고 요건:
+- 판매자 판매거부 의사
+- 입금확인 후 판매자 연락 안 됨 또는 연락처 불량
+- 판매자 물품 전달 약속 후 미전달
+- 판매자 등록 거래방법 외 다른 방법 강요
+
+## 제 12 조 (구매안전서비스)
+① **회사는 구매자가 지급하는 결제대금을 예치하고 거래완료 후 물품대금을 판매자에게 지급함으로써 구매자의 안전을 도모**
+
+거래 자동종료:
+- 계약 성립 후 구매자가 인수확인·취소·환불 등에 대한 의사표시 없을 시 회사는 통지 후 의사표시 요청
+- **통지일로부터 24시간 내 미의사표시 시 회사는 자동인수확인 가능**
+- **자동인수확인 후 구매자는 미수령·취소·반품·환불 등으로 회사에 이의 제기 불가** (판매자와 개별 해결)
+
+## 제 13 조 (아이템거래 서비스 이용제한)
+
+**서비스 제한** (로그인 외 서비스 이용 불가)
+정지사유: 명의(연락처) 미확인 / 해킹·사기 사고 발생 / 사고회원 관련자 / 상습적인 비거래 물품 등록 / 결제보안 연속 5회 오류 / 탈퇴 신청
+정지효력: 로그인 이외의 거래, 충전, 출금 불가
+
+**로그인 제한**
+정지사유: 비밀번호 연속 5회 오류 / 해킹·사기 사고 발생 / 명의도용으로 의심되는 경우
+정지효력: 로그인 불가
+
+**일부 서비스 제한**
+- 구매/판매/송금 등 특정 서비스 부분 제한 (관리자 판단)
+
+## 제 14 조 (책임제한)
+- 천재지변 또는 이에 준하는 불가항력으로 인한 서비스 제공 불가 시 책임 면제
+- 회원 귀책사유로 인한 서비스 장애는 책임 아님
+- **회사는 사이버 거래장소를 제공하는 통신판매중개자로 회원간 거래행위에서 발생되는 사기 등 문제에 책임 아님**
+
+## 제 15 조 (개별약관)
+- 회사는 특정 서비스에 관하여 개별약관을 정하여 사전 공지 가능
+- 개별약관 동의 시 우선 적용, 이 약관은 보충적 효력
+
+## 제 16 조 (수수료)
+① 구매 시 수수료 없음
+
+② **판매 시 수수료:**
+- 거래금액의 **5%**
+- 기본 수수료 **1,000원**
+- **최대 수수료 금액은 47,000원을 넘지 않음**
+
+③ 수수료는 거래 정상 종료 시 판매자에게 부과
+
+## 제 17 조 (수수료 부과 방법)
+거래 정상 종료 후 판매자 적립 시 제16조 수수료를 제외하고 적립
+
+## 제 18 조 (수수료 부과의 예외)
+① 회사가 수수료 미부과로 결정한 거래는 미부과
+② **구매자가 [물품인수확인] 클릭하여 물품대금이 판매자에게 송금된 후에 반품이나 환불될 경우에도 징수된 수수료는 환불 불가**
+
+**[부칙]**
+- **2025년 12월 24일**부터 적용
+- 2020년 5월 1일부터 시행되던 종전 약관 대체`
+    };
+
+    var _termsCurrentTab = 1;
+    var _termsMatchIdx = 0;
+
+    function openTermsModal(){
+        document.getElementById('termsModal').classList.remove('hidden');
+        document.getElementById('termsSearchInput').value = '';
+        document.getElementById('termsMatchInfo').textContent = '';
+        switchTermsTab(1);
+        setTimeout(function(){document.getElementById('termsSearchInput').focus();}, 150);
+    }
+    function closeTermsModal(){
+        document.getElementById('termsModal').classList.add('hidden');
+    }
+    function switchTermsTab(n){
+        _termsCurrentTab = n;
+        [1,2].forEach(function(i){
+            document.getElementById('termTab'+i).classList.toggle('mon-tab-active', i===n);
+        });
+        _termsRender();
+    }
+    function _termsMdToHtml(md){
+        var html = '';
+        md.split('\n').forEach(function(line){
+            var t = line.trim();
+            if(!t){ html += '<p style="margin:0;height:0.4em;"></p>'; return; }
+            if(t.startsWith('## ')){
+                html += '<h2>'+escHtml(t.slice(3))+'</h2>';
+            } else if(t.startsWith('### ')){
+                html += '<h3>'+escHtml(t.slice(4))+'</h3>';
+            } else if(t === '---'){
+                html += '<hr>';
+            } else {
+                var indent = line.match(/^(\s*)/)[1].length;
+                var padL = indent > 0 ? 'padding-left:'+(indent*8)+'px;' : '';
+                var processed = escHtml(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                html += '<p style="margin:2px 0;'+padL+'">'+processed+'</p>';
+            }
+        });
+        return html;
+    }
+    function _termsRender(){
+        var md = _termsCurrentTab === 1 ? _TERMS.service : _TERMS.trade;
+        var html = _termsMdToHtml(md);
+        var term = document.getElementById('termsSearchInput').value.trim();
+        document.getElementById('termsContent').innerHTML = html;
+        if(term) _termsHighlight(term);
+    }
+    function _termsHighlight(term){
+        var content = document.getElementById('termsContent');
+        var re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+        var tw = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, null, false);
+        var nodes = [];
+        var node;
+        while((node = tw.nextNode())) nodes.push(node);
+        nodes.forEach(function(n){
+            if(!re.test(n.textContent)) return;
+            re.lastIndex = 0;
+            var frag = document.createDocumentFragment();
+            var last = 0, m;
+            while((m = re.exec(n.textContent)) !== null){
+                if(m.index > last) frag.appendChild(document.createTextNode(n.textContent.slice(last, m.index)));
+                var mark = document.createElement('mark');
+                mark.className = 'terms-hi';
+                mark.textContent = m[0];
+                frag.appendChild(mark);
+                last = re.lastIndex;
+            }
+            if(last < n.textContent.length) frag.appendChild(document.createTextNode(n.textContent.slice(last)));
+            n.parentNode.replaceChild(frag, n);
+        });
+        var marks = content.querySelectorAll('mark.terms-hi');
+        document.getElementById('termsMatchInfo').textContent = marks.length ? '1/'+marks.length+' 일치' : '없음';
+        _termsMatchIdx = 0;
+        if(marks.length){ marks[0].classList.add('cur'); marks[0].scrollIntoView({behavior:'smooth',block:'center'}); }
+    }
+    function _termsSearch(){
+        _termsMatchIdx = 0;
+        _termsRender();
+    }
+    function _termsNavMatch(dir){
+        var marks = document.getElementById('termsContent').querySelectorAll('mark.terms-hi');
+        if(!marks.length) return;
+        marks[_termsMatchIdx].classList.remove('cur');
+        _termsMatchIdx = (_termsMatchIdx + dir + marks.length) % marks.length;
+        marks[_termsMatchIdx].classList.add('cur');
+        marks[_termsMatchIdx].scrollIntoView({behavior:'smooth',block:'center'});
+        document.getElementById('termsMatchInfo').textContent = (_termsMatchIdx+1)+'/'+marks.length+' 일치';
+    }
+
     window.onload = function(){
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
@@ -4663,9 +5433,26 @@
         document.getElementById('userInput').addEventListener('keydown',function(e){
             if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();ask();}
         });
+        // 공지 이미지 첨부 — 파일 선택
+        document.getElementById('noticeImgInput').addEventListener('change',function(e){
+            Array.from(e.target.files).forEach(function(f){_addNoticeImgFile(f);});
+            e.target.value='';
+        });
+        // 공지 이미지 첨부 — 붙여넣기 (Ctrl+V)
+        document.getElementById('editContent').addEventListener('paste',function(e){
+            var items=e.clipboardData&&e.clipboardData.items; if(!items) return;
+            for(var i=0;i<items.length;i++){
+                if(items[i].type.indexOf('image')===0){
+                    e.preventDefault();
+                    _addNoticeImgFile(items[i].getAsFile());
+                    return;
+                }
+            }
+        });
         // ESC로 공지 모달 닫기
         document.addEventListener('keydown',function(e){
             if(e.key==='Escape'){
+                if(!document.getElementById('termsModal').classList.contains('hidden')){closeTermsModal();return;}
                 if(!document.getElementById('noticeModal').classList.contains('hidden')){closeModal();}
                 else if(!document.getElementById('allNoticesModal').classList.contains('hidden')){closeAllNoticesModal();}
                 document.getElementById('imgModal').classList.remove('open');
