@@ -438,6 +438,43 @@
     </div>
 </div>
 
+<!-- 이미지 크롭 에디터 모달 -->
+<div id="cropEditorModal" class="hidden fixed inset-0 z-[6000] bg-black/70 backdrop-blur-sm flex items-center justify-center" onclick="if(event.target===this)closeCropEditor()">
+    <div style="position:relative;background:var(--bg-card);border-radius:18px;border:2px solid var(--active-focus-color);width:min(96vw,660px);max-height:92vh;display:flex;flex-direction:column;padding:20px;gap:14px;box-shadow:0 12px 50px rgba(0,0,0,0.4);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+            <div>
+                <div style="font-size:14px;font-weight:900;">✂️ 이미지 영역 설정</div>
+                <div style="font-size:10px;opacity:0.45;margin-top:3px;">슬라이더로 보여줄 영역의 위·아래를 설정하고 저장하세요</div>
+            </div>
+            <button onclick="closeCropEditor()" style="font-size:24px;opacity:0.3;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
+        </div>
+        <div style="display:flex;gap:16px;flex-shrink:0;">
+            <label style="flex:1;font-size:11px;font-weight:900;">
+                ▲ 위쪽 시작 <span id="cropEditorTopVal" style="color:var(--active-focus-color);font-size:13px;">0</span>%
+                <input type="range" id="cropEditorTopSlider" min="0" max="98" value="0" oninput="updateCropPreview()" style="width:100%;margin-top:5px;accent-color:var(--active-focus-color);">
+            </label>
+            <label style="flex:1;font-size:11px;font-weight:900;">
+                ▼ 아래쪽 끝 <span id="cropEditorBotVal" style="color:var(--active-focus-color);font-size:13px;">100</span>%
+                <input type="range" id="cropEditorBotSlider" min="2" max="100" value="100" oninput="updateCropPreview()" style="width:100%;margin-top:5px;accent-color:var(--active-focus-color);">
+            </label>
+        </div>
+        <div style="flex:1;overflow-y:auto;min-height:100px;">
+            <div id="cropEditorPreview" style="position:relative;border:2px solid var(--border-ui);border-radius:10px;overflow:hidden;line-height:0;">
+                <img id="cropEditorImg" style="width:100%;display:block;" onload="updateCropPreview()">
+                <div id="cropEditorTopDim" style="position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                <div id="cropEditorBotDim" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;"></div>
+                <div id="cropEditorTopLine" style="position:absolute;left:0;right:0;height:3px;background:#3abff8;pointer-events:none;box-shadow:0 0 8px #3abff8;"></div>
+                <div id="cropEditorBotLine" style="position:absolute;left:0;right:0;height:3px;background:#3abff8;pointer-events:none;box-shadow:0 0 8px #3abff8;"></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button onclick="saveCropSettings()" style="flex:1;padding:10px;font-size:12px;font-weight:900;border-radius:10px;border:none;background:var(--active-focus-color);color:#fff;cursor:pointer;">💾 저장</button>
+            <button onclick="resetCropSettings()" style="padding:10px 14px;font-size:12px;font-weight:900;border-radius:10px;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;">↩️ 초기화</button>
+            <button onclick="closeCropEditor()" style="padding:10px 14px;font-size:12px;font-weight:900;border-radius:10px;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;">취소</button>
+        </div>
+    </div>
+</div>
+
 <!-- 직원 스케쥴 모달 -->
 <div id="scheduleModal" class="hidden fixed inset-0 z-[9500] bg-black/70 backdrop-blur-sm flex items-center justify-center" onclick="if(event.target===this)closeScheduleModal()">
     <div style="position:relative;background:var(--bg-card);border-radius:14px;border:2px solid var(--border-ui);width:calc(100vw - 14px);height:calc(100vh - 14px);display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
@@ -2457,6 +2494,74 @@
         setTimeout(function(){document.getElementById('userInput').focus();},200);
     }
 
+    // ===== 이미지 크롭 시스템 =====
+    window._currentCropData = {dbPath:'', cropTop:0, cropBottom:100, imgUrl:''};
+
+    function _applyCrop(img, topPct, botPct) {
+        if(topPct<=0 && botPct>=100) return;
+        var wrap = img.parentElement;
+        var natW = img.naturalWidth, natH = img.naturalHeight;
+        if(!natW || !natH) return;
+        var dispW = wrap.offsetWidth || 860;
+        var scale = dispW / natW;
+        var fullH = natH * scale;
+        var visH = Math.round(fullH * (botPct - topPct) / 100);
+        var offTop = Math.round(fullH * topPct / 100);
+        wrap.style.height = visH + 'px';
+        wrap.style.position = 'relative';
+        wrap.style.overflow = 'hidden';
+        img.style.cssText = 'width:100%;display:block;position:absolute;top:-'+offTop+'px;cursor:zoom-in;';
+    }
+
+    function openCropEditor() {
+        var d = window._currentCropData || {};
+        if(!d.imgUrl){ alert('이미지가 있는 항목에서만 사용할 수 있습니다.'); return; }
+        var modal = document.getElementById('cropEditorModal');
+        if(!modal) return;
+        document.getElementById('cropEditorImg').src = d.imgUrl;
+        document.getElementById('cropEditorTopSlider').value = d.cropTop || 0;
+        document.getElementById('cropEditorBotSlider').value = (d.cropBottom !== undefined) ? d.cropBottom : 100;
+        updateCropPreview();
+        modal.classList.remove('hidden');
+    }
+    function closeCropEditor() {
+        document.getElementById('cropEditorModal').classList.add('hidden');
+    }
+    function updateCropPreview() {
+        var top = parseInt(document.getElementById('cropEditorTopSlider').value);
+        var bot = parseInt(document.getElementById('cropEditorBotSlider').value);
+        if(bot <= top){ bot = Math.min(top + 2, 100); document.getElementById('cropEditorBotSlider').value = bot; }
+        document.getElementById('cropEditorTopVal').textContent = top;
+        document.getElementById('cropEditorBotVal').textContent = bot;
+        document.getElementById('cropEditorTopDim').style.height = top + '%';
+        document.getElementById('cropEditorBotDim').style.height = (100 - bot) + '%';
+        document.getElementById('cropEditorTopLine').style.top = top + '%';
+        document.getElementById('cropEditorBotLine').style.top = bot + '%';
+    }
+    function saveCropSettings() {
+        var d = window._currentCropData || {};
+        if(!d.dbPath){ alert('저장 경로가 없습니다.'); return; }
+        var top = parseInt(document.getElementById('cropEditorTopSlider').value);
+        var bot = parseInt(document.getElementById('cropEditorBotSlider').value);
+        db.ref(d.dbPath).update({cropTop: top, cropBottom: bot}, function(err){
+            if(err){ alert('저장 실패: ' + err.message); return; }
+            d.cropTop = top; d.cropBottom = bot;
+            closeCropEditor();
+            alert('✅ 저장됐습니다. 다시 검색하면 적용됩니다.');
+        });
+    }
+    function resetCropSettings() {
+        if(!confirm('크롭 설정을 초기화하시겠습니까? (전체 페이지가 다시 표시됩니다)')) return;
+        var d = window._currentCropData || {};
+        if(!d.dbPath) return;
+        db.ref(d.dbPath).update({cropTop: 0, cropBottom: 100}, function(){
+            d.cropTop = 0; d.cropBottom = 100;
+            closeCropEditor();
+            alert('초기화됐습니다.');
+        });
+    }
+    // ===== 크롭 시스템 끝 =====
+
     function showContent(title,botD,manualIdx){
         if(!manualIdx) manualIdx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         botD.innerHTML='<div style="text-align:center;padding:20px;opacity:0.5">\uD83D\uDCC4 \uBD88\uB7EC\uC624\uB294 \uC911...</div>';
@@ -2501,6 +2606,9 @@
                 }
                 var imgKey='_imgs_'+Date.now();
                 window[imgKey]=urls;
+                var _cT=(range&&range.cropTop!=null)?Number(range.cropTop):0;
+                var _cB=(range&&range.cropBottom!=null)?Number(range.cropBottom):100;
+                window._currentCropData={dbPath:dbPath,cropTop:_cT,cropBottom:_cB,imgUrl:urls[0]||''};
                 var kwHtml=buildKeywordBar(title);
                 var pgHtml='';
                 if(currentMode==='bay'){
@@ -2515,7 +2623,14 @@
                 } else {
                     var md=urls.slice(0,4);
                     if(md.length===1){
-                        pgHtml='<div class="mt-pages"><img src="'+md[0]+'" loading="lazy" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                        if(_cT>0||_cB<100){
+                            pgHtml='<div class="mt-pages" style="overflow:hidden;position:relative;">'
+                                +'<img src="'+md[0]+'" loading="lazy" style="width:100%;display:block;cursor:zoom-in;"'
+                                +' onload="_applyCrop(this,'+_cT+','+_cB+')"'
+                                +' onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                        } else {
+                            pgHtml='<div class="mt-pages"><img src="'+md[0]+'" loading="lazy" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div>';
+                        }
                     } else if(md.length===2){
                         pgHtml='<div class="mania-2col">'+md.map(function(u,i){
                             return '<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\','+i+')"><span class="mv-num">'+(i+1)+'</span><img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
@@ -4207,6 +4322,9 @@
             '<button class="kw-save-btn" onclick="saveKeywords(\''+eid+'\')">\uC800\uC7A5</button>' +
             '</div>' +
             '<div class="kw-hint">\uC27C\uD45C(,)\uB85C \uAD6C\uBD84\uD558\uC5EC \uC5EC\uB7EC \uAC1C \uB3D9\uC2DC \uC785\uB825 \uAC00\uB2A5</div>' +
+            '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-ui);">' +
+            '<button onclick="openCropEditor()" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;border:1.5px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;opacity:0.55;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.55">\u2702\uFE0F \uC774\uBBF8\uC9C0 \uC601\uC5ED \uC124\uC815</button>' +
+            '</div>' +
             '</div>';
     }
 
@@ -4425,6 +4543,7 @@
                 else if(!document.getElementById('bellModal').classList.contains('hidden'))closeBellModal();
                 else if(!document.getElementById('logPanel').classList.contains('hidden'))closeLogPanel();
                 else if(!document.getElementById('monitorModal').classList.contains('hidden'))closeMonitorModal();
+                else if(!document.getElementById('cropEditorModal').classList.contains('hidden'))closeCropEditor();
                 // 가장 앞의 플로팅 메모 닫기
                 var topZ=-1, topId=null;
                 _memos.forEach(function(m){
