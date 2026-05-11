@@ -745,8 +745,7 @@ function switchLogTab(n) {
 }
 
 function loadMonitorLog() {
-    var cutoff = Date.now() - 3600000;
-    // 차단 목록 먼저 조회 → 이미 제외된 항목 버튼 비활성 처리
+    var cutoff = Date.now() - 86400000; // 24시간
     db.ref('/imi_blocked').once('value', function(blockedSnap) {
         var blockedList = blockedSnap.val() || [];
         if (!Array.isArray(blockedList)) blockedList = [];
@@ -773,7 +772,21 @@ function loadMonitorLog() {
                 return;
             }
             if (empty) empty.style.display = 'none';
-            if (list) list.innerHTML = entries.map(function(entry) {
+
+            // 시간대별 그룹화
+            var hourGroups = {};
+            var hourOrder = [];
+            entries.forEach(function(entry) {
+                var dt = new Date(entry.data.at);
+                var hKey = dt.getFullYear() + '-'
+                    + String(dt.getMonth() + 1).padStart(2, '0') + '-'
+                    + String(dt.getDate()).padStart(2, '0') + ' '
+                    + String(dt.getHours()).padStart(2, '0');
+                if (!hourGroups[hKey]) { hourGroups[hKey] = []; hourOrder.push(hKey); }
+                hourGroups[hKey].push(entry);
+            });
+
+            function _renderEntry(entry) {
                 var d = entry.data;
                 var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
                 var rows = (d.itemRows || []).map(function(it) {
@@ -803,7 +816,25 @@ function loadMonitorLog() {
                     + '</div>'
                     + '<div style="display:flex;flex-direction:column;gap:5px;">' + rows + '</div>'
                     + '</div>';
-            }).join('');
+            }
+
+            var html = '';
+            hourOrder.forEach(function(hKey, idx) {
+                var groupEntries = hourGroups[hKey];
+                var parts = hKey.split(' ');
+                var label = parts[0] + ' ' + parseInt(parts[1]) + '시';
+                html += '<details ' + (idx === 0 ? 'open' : '') + ' style="border:2px solid var(--border-ui);border-radius:12px;margin-bottom:8px;overflow:hidden;">'
+                    + '<summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-weight:900;font-size:12px;background:var(--bg-body);user-select:none;list-style:none;">'
+                    + '<span style="flex:1;">🕐 ' + label + '</span>'
+                    + '<span style="font-size:11px;font-weight:700;color:#ef4444;">' + groupEntries.length + '건</span>'
+                    + '</summary>'
+                    + '<div style="padding:10px 10px 2px;">'
+                    + groupEntries.map(_renderEntry).join('')
+                    + '</div>'
+                    + '</details>';
+            });
+
+            if (list) list.innerHTML = html;
         });
     });
 }
