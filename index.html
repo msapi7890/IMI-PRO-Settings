@@ -308,7 +308,7 @@
     <button class="im-zoom-btn" onclick="zoomImg(0.25)">&#43;</button>
   </div>
   <span class="im-nav im-prev" onclick="event.stopPropagation();moveImg(-1)">&#8249;</span>
-  <img id="imgModalImg" src="" alt="">
+  <div id="imgModalWrap"><img id="imgModalImg" src="" alt=""></div>
   <span class="im-nav im-next" onclick="event.stopPropagation();moveImg(1)">&#8250;</span>
   <div class="im-info" id="imgPageInfo"></div>
 </div>
@@ -3285,21 +3285,26 @@
         document.getElementById('chatBox').scrollTop=99999;
     }
 
-    var _mUrls=[], _mIdx=0, _mZoom=1.0, _mTX=0, _mTY=0;
+    var _mUrls=[], _mIdx=0, _mZoom=1.0, _mTX=0, _mTY=0, _mCropTop=0, _mCropBot=100, _mTotalUrls=0;
     var _mDrag={active:false,sx:0,sy:0,ox:0,oy:0};
+    var _modalCropGen=0;
 
     function openImgModal(keyOrArr,idx){
         var urls=(typeof keyOrArr==='string')?window[keyOrArr]:keyOrArr;
         if(!urls||!urls.length) return;
-        _mUrls=urls; _mIdx=idx||0; _mZoom=1.0; _mTX=0; _mTY=0; _updateModal();
+        _mUrls=urls; _mIdx=idx||0; _mZoom=1.0; _mTX=0; _mTY=0; _mTotalUrls=urls.length;
+        var cd=window._currentCropData||{};
+        _mCropTop=cd.cropTop||0; _mCropBot=(cd.cropBottom!==undefined)?cd.cropBottom:100;
+        _updateModal();
         document.getElementById('imgModal').classList.add('open');
         document.addEventListener('keydown',_modalKey);
     }
     function _applyTransform(){
+        var wrap=document.getElementById('imgModalWrap');
+        if(!wrap) return;
+        wrap.style.transform='translate('+_mTX+'px,'+_mTY+'px) scale('+_mZoom+')';
         var img=document.getElementById('imgModalImg');
-        if(!img) return;
-        img.style.transform='translate('+_mTX+'px,'+_mTY+'px) scale('+_mZoom+')';
-        img.style.cursor=_mZoom>1?'grab':'default';
+        if(img) img.style.cursor=_mZoom>1?'grab':'default';
     }
     function _updateModal(){
         var img=document.getElementById('imgModalImg');
@@ -3309,6 +3314,34 @@
         document.querySelectorAll('#imgModal .im-nav').forEach(function(n){
             n.style.display=_mUrls.length>1?'':'none';
         });
+        _applyModalCrop();
+    }
+    function _applyModalCrop(){
+        var img=document.getElementById('imgModalImg');
+        var wrap=document.getElementById('imgModalWrap');
+        if(!img||!wrap) return;
+        var gen=++_modalCropGen;
+        // 첫 페이지만 cropTop, 마지막 페이지만 cropBot 적용
+        var cTop=(_mIdx===0)?_mCropTop:0;
+        var cBot=(_mIdx===_mTotalUrls-1)?_mCropBot:100;
+        if(cTop<=0&&cBot>=100){ wrap.style.cssText=''; img.style.cssText=''; return; }
+        function apply(){
+            if(_modalCropGen!==gen) return;
+            var natW=img.naturalWidth, natH=img.naturalHeight;
+            if(!natW||!natH) return;
+            var cropH=natH*(cBot-cTop)/100;
+            var aspect=natW/cropH;
+            var maxW=window.innerWidth*0.92, maxH=window.innerHeight*0.92;
+            var dispW,dispH;
+            if(maxW/maxH>=aspect){ dispH=maxH; dispW=maxH*aspect; }
+            else{ dispW=maxW; dispH=maxW/aspect; }
+            var fullImgH=dispW/natW*natH;
+            var offY=fullImgH*cTop/100;
+            wrap.style.cssText='position:relative;overflow:hidden;width:'+dispW.toFixed(0)+'px;height:'+dispH.toFixed(0)+'px;border-radius:10px;';
+            img.style.cssText='position:absolute;width:'+dispW.toFixed(0)+'px;height:auto;left:0;top:-'+offY.toFixed(0)+'px;max-width:none;max-height:none;';
+        }
+        if(img.complete&&img.naturalWidth){ apply(); }
+        else{ img.addEventListener('load',apply,{once:true}); }
     }
     function moveImg(dir){ _mIdx=(_mIdx+dir+_mUrls.length)%_mUrls.length; _mZoom=1.0; _mTX=0; _mTY=0; _updateModal(); }
     function zoomImg(d){
@@ -4532,7 +4565,7 @@
             setInterval(checkUpdate, 120000);
         })();
         // 이미지 모달 드래그 이동
-        var _imgEl=document.getElementById('imgModalImg');
+        var _imgEl=document.getElementById('imgModalWrap');
         if(_imgEl){
             _imgEl.addEventListener('mousedown',function(e){
                 if(_mZoom<=1) return;
@@ -4550,8 +4583,8 @@
         document.addEventListener('mouseup',function(){
             if(!_mDrag.active) return;
             _mDrag.active=false;
-            var img=document.getElementById('imgModalImg');
-            if(img) img.style.cursor=_mZoom>1?'grab':'default';
+            var wrap=document.getElementById('imgModalWrap');
+            if(wrap) wrap.style.cursor=_mZoom>1?'grab':'default';
         });
         document.getElementById('userInput').addEventListener('keydown',function(e){
             if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();ask();}
