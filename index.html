@@ -2476,6 +2476,7 @@
                 return;
             }
             var start=range.start, end=range.end;
+            if(end < start){ end = start; db.ref(dbPath).update({end:end}); } // end<start 오류 자동 수정
             var promises=[];
             for(var p=start;p<=end;p++){
                 (function(pg){
