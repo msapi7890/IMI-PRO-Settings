@@ -373,7 +373,7 @@
                 <button onclick="closeUserMgmtModal()" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;font-weight:900;">×</button>
             </div>
             <div style="display:flex;gap:0;margin:0 -22px;">
-                <button id="umTab1" onclick="_umSwitchTab(1)" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;background:none;color:#3abff8;border-bottom:2px solid #3abff8;cursor:pointer;">🟢 접속 현황</button>
+                <button id="umTab1" onclick="_umSwitchTab(1)" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;background:none;color:#3abff8;border-bottom:2px solid #3abff8;cursor:pointer;">👥 멤버 목록</button>
                 <button id="umTab2" onclick="_umSwitchTab(2)" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;background:none;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;">⏳ 승인 대기 <span id="umPendingCnt" style="background:#ef4444;color:#fff;border-radius:99px;padding:0 5px;font-size:10px;display:none;"></span></button>
                 <button id="umTab3" onclick="_umSwitchTab(3)" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;background:none;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;">🏷 팀 관리</button>
             </div>
@@ -1272,7 +1272,6 @@
     }
 
     // 로그인 성공 처리
-    var _presenceInterval = null;
     function _authGrant(user){
         _currentUser = user;
         _lockHide();
@@ -1290,16 +1289,6 @@
         if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
-        // 접속 현황 heartbeat
-        function _beat(){
-            _authFetch('imi_presence/'+_ukey(user.name)+'.json', 'PUT', {name:user.name, team:(user.team||''), ts:Date.now()});
-        }
-        _beat();
-        if(_presenceInterval) clearInterval(_presenceInterval);
-        _presenceInterval = setInterval(_beat, 60000);
-        window.addEventListener('beforeunload', function(){
-            _authFetch('imi_presence/'+_ukey(user.name)+'.json', 'DELETE');
-        });
     }
 
     // 로그아웃
@@ -1420,25 +1409,20 @@
         menu.style.display = '';
 
         var users     = await _authFetch('imi_users.json') || {};
-        var presence  = await _authFetch('imi_presence.json') || {};
         var teamsData = await _umLoadTeams();
         var teamNames = Object.keys(teamsData);
 
-        var now = Date.now(), ONLINE_MS = 3*60*1000;
-        function isOn(k){ var p=presence[k]; return p&&(now-p.ts)<ONLINE_MS; }
-
         var approved = Object.entries(users)
             .filter(function(e){ return e[1].approved; })
-            .map(function(e){ return Object.assign({_key:e[0], _on:isOn(e[0])}, e[1]); });
+            .map(function(e){ return Object.assign({_key:e[0]}, e[1]); });
 
-        var onCnt = approved.filter(function(u){ return u._on; }).length;
         var isAdmin = _currentUser && _currentUser.role === 'admin';
 
-        // 헤더 (접속현황 + 톱니바퀴)
+        // 헤더 (멤버 수 + 톱니바퀴)
         var h = '<div style="padding:9px 14px 8px;border-bottom:1px solid var(--border-ui);display:flex;align-items:center;justify-content:space-between;">'
             + '<div style="display:flex;align-items:center;gap:6px;">'
-            +   '<span style="font-size:10px;font-weight:900;color:#94a3b8;letter-spacing:0.03em;">접속 현황</span>'
-            +   '<span style="font-size:10px;font-weight:700;"><span style="color:#22c55e;">&#x25cf;</span> <strong style="color:#e2e8f0;">'+onCnt+'</strong><span style="color:#475569;"> / '+approved.length+'</span></span>'
+            +   '<span style="font-size:10px;font-weight:900;color:#94a3b8;letter-spacing:0.03em;">멤버</span>'
+            +   '<span style="font-size:10px;font-weight:700;color:#e2e8f0;">'+approved.length+'명</span>'
             + '</div>'
             + '<button onclick="_umToggleSettings(event)" title="설정" style="width:24px;height:24px;border-radius:6px;border:1px solid transparent;background:none;color:#64748b;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:0.1s;" onmouseover="this.style.background=\'var(--bg-body)\';this.style.color=\'var(--text-main)\'" onmouseout="this.style.background=\'none\';this.style.color=\'#64748b\'">&#x2699;</button>'
             + '</div>';
@@ -1479,7 +1463,7 @@
                     if(pMems.length === 0){
                         h += '<span style="font-size:9px;color:#334155;">없음</span>';
                     } else {
-                        pMems.sort(function(a,b){ return b._on-a._on; }).forEach(function(u){
+                        pMems.forEach(function(u){
                             h += _umUserChip(u);
                         });
                     }
@@ -1490,7 +1474,7 @@
                 if(noPart.length > 0){
                     noPart.forEach(function(u){ shownKeys[u._key]=1; });
                     h += '<div style="padding-left:10px;margin-bottom:3px;display:flex;flex-wrap:wrap;gap:4px;">';
-                    noPart.sort(function(a,b){ return b._on-a._on; }).forEach(function(u){ h += _umUserChip(u); });
+                    noPart.forEach(function(u){ h += _umUserChip(u); });
                     h += '</div>';
                 }
             } else {
@@ -1500,7 +1484,7 @@
                 if(teamMems.length === 0){
                     h += '<span style="font-size:9px;color:#334155;">멤버 없음</span>';
                 } else {
-                    teamMems.sort(function(a,b){ return b._on-a._on; }).forEach(function(u){ h += _umUserChip(u); });
+                    teamMems.forEach(function(u){ h += _umUserChip(u); });
                 }
                 h += '</div>';
             }
@@ -1513,7 +1497,7 @@
             h += '<div style="padding:6px 14px 4px;border-top:1px solid var(--border-ui);margin-top:4px;">'
                 + '<div style="font-size:10px;color:#475569;font-weight:700;margin-bottom:4px;">미배정</div>'
                 + '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-            noTeam.sort(function(a,b){ return b._on-a._on; }).forEach(function(u){ h += _umUserChip(u); });
+            noTeam.forEach(function(u){ h += _umUserChip(u); });
             h += '</div></div>';
         }
 
@@ -1522,12 +1506,8 @@
         setTimeout(function(){ document.addEventListener('click', _hideUserMenu, {once:true}); }, 10);
     }
     function _umUserChip(u){
-        var bg   = u._on ? 'background:#1e293b;border-color:#334155;' : 'background:transparent;border-color:#1e293b;';
-        var nameC = u._on ? '#e2e8f0' : '#475569';
-        var dotC  = u._on ? '#22c55e' : '#334155';
-        return '<span style="'+bg+'border:1px solid;border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center;gap:3px;">'
-            + '<span style="color:'+dotC+';font-size:7px;">&#x25cf;</span>'
-            + '<span style="color:'+nameC+';">'+escHtml(u.name)+'</span>'
+        return '<span style="background:#1e293b;border:1px solid #334155;border-radius:5px;padding:2px 7px;font-size:10px;display:inline-flex;align-items:center;">'
+            + '<span style="color:#e2e8f0;">'+escHtml(u.name)+'</span>'
             + '</span>';
     }
     function _umToggleSettings(e){
@@ -2341,16 +2321,11 @@
         content.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">로딩 중...</div>';
 
         var users     = await _authFetch('imi_users.json') || {};
-        var presence  = await _authFetch('imi_presence.json') || {};
         var teamsData = await _umLoadTeams();
         var teamNames = Object.keys(teamsData);
 
-        var now = Date.now();
-        var ONLINE_MS = 3 * 60 * 1000;
-        function isOnline(key){ var p = presence[key]; return p && (now - p.ts) < ONLINE_MS; }
-
         var list = Object.entries(users).map(function(e){
-            return Object.assign({_key:e[0], _online: isOnline(e[0])}, e[1]);
+            return Object.assign({_key:e[0]}, e[1]);
         });
         var pending  = list.filter(function(u){ return !u.approved; });
         var approved = list.filter(function(u){ return u.approved; });
@@ -2378,19 +2353,13 @@
 
         var h = '';
 
-        // ── 탭 1: 접속현황 ─────────────────────────────────────
+        // ── 탭 1: 멤버 목록 ─────────────────────────────────────
         if(_umCurrentTab === 1){
-            var online  = approved.filter(function(u){ return u._online; });
-            var offline = approved.filter(function(u){ return !u._online; });
-            var sorted  = online.concat(offline);
+            h += '<div style="font-size:11px;color:#64748b;margin-bottom:10px;">전체 '+approved.length+'명</div>';
 
-            h += '<div style="font-size:11px;color:#64748b;margin-bottom:10px;">온라인 '+online.length+'명 / 전체 '+approved.length+'명</div>';
-
-            sorted.forEach(function(u){
+            approved.forEach(function(u){
                 var isMe = _currentUser && u.name === _currentUser.name;
-                var dot = u._online
-                    ? '<span style="color:#22c55e;font-size:10px;flex-shrink:0;">&#x25cf;</span>'
-                    : '<span style="color:#334155;font-size:10px;flex-shrink:0;">&#x25cf;</span>';
+                var dot = '';
                 var roleBadge = u.role==='admin'
                     ? '<span style="background:#7c3aed;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;flex-shrink:0;">관리자</span>'
                     : u.role==='subadmin'
@@ -2479,8 +2448,7 @@
                     parts.forEach(function(part){
                         var pMems = teamMembers.filter(function(u){ return u.part === part; });
                         var chips = pMems.map(function(u){
-                            return '<span style="background:#1e293b;border:1px solid #334155;border-radius:5px;padding:2px 7px;font-size:10px;color:#94a3b8;display:inline-flex;align-items:center;gap:3px;">'
-                                + (u._online?'<span style="color:#22c55e;font-size:7px;">&#x25cf;</span>':'<span style="color:#334155;font-size:7px;">&#x25cf;</span>')
+                            return '<span style="background:#1e293b;border:1px solid #334155;border-radius:5px;padding:2px 7px;font-size:10px;color:#94a3b8;display:inline-flex;align-items:center;">'
                                 + escHtml(u.name)+'</span>';
                         }).join(' ');
                         h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 10px;border-left:2px solid #0284c7;margin-bottom:5px;">'
@@ -2494,8 +2462,7 @@
                     // 파트 미배정 멤버
                     if(noPartMems.length > 0){
                         var noChips = noPartMems.map(function(u){
-                            return '<span style="background:#1e293b;border:1px solid #1e293b;border-radius:5px;padding:2px 7px;font-size:10px;color:#475569;display:inline-flex;align-items:center;gap:3px;">'
-                                + (u._online?'<span style="color:#22c55e;font-size:7px;">&#x25cf;</span>':'<span style="color:#334155;font-size:7px;">&#x25cf;</span>')
+                            return '<span style="background:#1e293b;border:1px solid #1e293b;border-radius:5px;padding:2px 7px;font-size:10px;color:#475569;display:inline-flex;align-items:center;">'
                                 + escHtml(u.name)+'</span>';
                         }).join(' ');
                         h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 10px;border-left:2px solid #1e293b;margin-bottom:5px;">'
