@@ -169,6 +169,41 @@ async function stopAll() {
     await syncStatus();
 }
 
+async function startSelected(ruleIds) {
+    const rules = await getRules();
+    for (const rule of rules) {
+        rule.enabled = (ruleIds || []).includes(rule.id);
+    }
+    await saveRules(rules);
+    await store.set('imi_active', true);
+    const tabMap = await getTabMap();
+    for (const rule of rules.filter(r => !r.enabled)) {
+        const tabId = tabMap[rule.id];
+        if (tabId) { try { await chrome.tabs.remove(tabId); } catch(e) {} delete tabMap[rule.id]; }
+    }
+    for (const rule of rules.filter(r => r.enabled)) {
+        if (tabMap[rule.id]) { try { await chrome.tabs.get(tabMap[rule.id]); continue; } catch(e) {} }
+        const tab = await chrome.tabs.create({ url: rule.url, active: false });
+        tabMap[rule.id] = tab.id;
+    }
+    await saveTabMap(tabMap);
+    await syncStatus();
+}
+
+// Firebase 제어 채널: 웹에서 bot_cmd 쓰면 여기서 읽고 실행
+async function checkBotCmd() {
+    const cmd = await fireGet('/bot_cmd');
+    if (!cmd || !cmd.ts) return;
+    const lastHandled = await store.get('imi_cmd_ts').then(v => v || 0);
+    if (cmd.ts <= lastHandled) return;
+    await store.set('imi_cmd_ts', cmd.ts);
+    if (cmd.cmd === 'stop') {
+        await stopAll();
+    } else if (cmd.cmd === 'start' && Array.isArray(cmd.ruleIds)) {
+        await startSelected(cmd.ruleIds);
+    }
+}
+
 // 탭이 닫히면 맵에서 제거
 chrome.tabs.onRemoved.addListener(async (tabId) => {
     const tabMap = await getTabMap();
@@ -206,6 +241,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         if (await isActive()) await startAll();
     }
     if (alarm.name === 'imi_rule_sync') {
+        await checkBotCmd(); // 웹 제어 채널 확인 (최대 1분 지연)
         await syncRulesFromFirebase();
         // 차단 목록도 Firebase 기준으로 덮어씀 (차단 해제 반영)
         const remoteBlocked = await fireGetBlocked();
@@ -216,6 +252,9 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
 });
+
+// 서비스워커 시작 시 밀린 명령 즉시 처리
+checkBotCmd().catch(() => {});
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -442,29 +481,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     // 웹에서 체크된 규칙만 시작
     if (msg.type === 'START_SELECTED') {
-        (async () => {
-            const rules = await getRules();
-            for (const rule of rules) {
-                rule.enabled = (msg.ruleIds || []).includes(rule.id);
-            }
-            await saveRules(rules);
-            await store.set('imi_active', true);
-            const tabMap = await getTabMap();
-            // 비활성 규칙 탭 닫기
-            for (const rule of rules.filter(r => !r.enabled)) {
-                const tabId = tabMap[rule.id];
-                if (tabId) { try { await chrome.tabs.remove(tabId); } catch(e) {} delete tabMap[rule.id]; }
-            }
-            // 활성 규칙 탭 열기
-            for (const rule of rules.filter(r => r.enabled)) {
-                if (tabMap[rule.id]) { try { await chrome.tabs.get(tabMap[rule.id]); continue; } catch(e) {} }
-                const tab = await chrome.tabs.create({ url: rule.url, active: false });
-                tabMap[rule.id] = tab.id;
-            }
-            await saveTabMap(tabMap);
-            await syncStatus();
-            sendResponse({ ok: true });
-        })();
+        startSelected(msg.ruleIds).then(() => sendResponse({ ok: true }));
         return true;
     }
     if (msg.type === 'START_ALL')   { startAll().then(() => sendResponse({ ok: true })); return true; }

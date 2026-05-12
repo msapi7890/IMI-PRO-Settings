@@ -25,7 +25,10 @@ function toggleBotFromWeb() {
     var btn = document.getElementById('monBotToggleBtn');
     if (btn) btn.disabled = true;
     if (_botStatus && _botStatus.active) {
-        _sendToBot({ type: 'STOP_ALL' });
+        // Firebase 제어 채널에 중지 명령 기록 → 모든 확장프로그램이 1분 내 감지
+        db.ref('bot_cmd').set({ cmd: 'stop', ts: Date.now() });
+        // 로컬 확장프로그램에는 즉시 전송
+        if (_botBridgeConnected) _sendToBot({ type: 'STOP_ALL' });
     } else {
         // 체크된 규칙 ID 수집
         var rules = (_botStatus && _botStatus.rules) || [];
@@ -40,7 +43,10 @@ function toggleBotFromWeb() {
             if (btn) btn.disabled = false;
             return;
         }
-        _sendToBot({ type: 'START_SELECTED', ruleIds: checkedIds });
+        // Firebase 제어 채널에 시작 명령 기록
+        db.ref('bot_cmd').set({ cmd: 'start', ruleIds: checkedIds, ts: Date.now() });
+        // 로컬 확장프로그램에는 즉시 전송
+        if (_botBridgeConnected) _sendToBot({ type: 'START_SELECTED', ruleIds: checkedIds });
     }
     setTimeout(function() { if (btn) btn.disabled = false; }, 2000);
 }
@@ -57,23 +63,16 @@ function _updateBotToggleBtn() {
     btn.style.display = '';
 
     var active = _botStatus && _botStatus.active;
-    if (_botStatus) {
-        if (active) {
-            btn.textContent = '⏸ 봇 중지';
-            btn.style.background = '#ef4444';
-            btn.style.color = '#fff';
-        } else {
-            btn.textContent = '▶ 봇 시작';
-            btn.style.background = '#22c55e';
-            btn.style.color = '#fff';
-        }
-        btn.disabled = false;
-    } else if (!_botBridgeConnected) {
-        btn.textContent = '확장프로그램 필요';
-        btn.disabled = true;
-        btn.style.background = '#334155';
-        btn.style.color = '#94a3b8';
+    if (active) {
+        btn.textContent = '⏸ 봇 중지';
+        btn.style.background = '#ef4444';
+        btn.style.color = '#fff';
+    } else {
+        btn.textContent = '▶ 봇 시작';
+        btn.style.background = '#22c55e';
+        btn.style.color = '#fff';
     }
+    btn.disabled = false;
 }
 
 // Firebase에서 봇 상태 실시간 구독
