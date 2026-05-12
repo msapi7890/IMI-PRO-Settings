@@ -355,8 +355,8 @@
             <button onclick="closeManualFilesModal()" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;font-weight:900;">&#x00d7;</button>
         </div>
         <div id="mfTabBar" style="display:flex;flex-shrink:0;border-bottom:1px solid #334155;">
-            <button id="mfTab1" onclick="_mfSwitchTab(1)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #0284c7;background:#0f172a;color:#0284c7;cursor:pointer;">&#x1f4c2; 파일 목록</button>
-            <button id="mfTab2" onclick="_mfSwitchTab(2)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;display:none;">&#x1f4c4; 매뉴얼 관리</button>
+            <button id="mfTab1" onclick="_mfSwitchTab(1)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #f59e0b;background:#0f172a;color:#f59e0b;cursor:pointer;display:none;">&#x1f4c4; 매뉴얼 관리</button>
+            <button id="mfTab2" onclick="_mfSwitchTab(2)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">&#x1f4c2; 파일 목록</button>
         </div>
         <div id="mfContent" style="flex:1;overflow-y:auto;padding:16px 20px;">
             <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">로딩 중...</div>
@@ -1570,26 +1570,28 @@
     function _isPrivileged(){ return _currentUser && (_currentUser.role==='admin'||_currentUser.role==='subadmin'); }
 
     function openManualFilesModal(){
-        var tab2 = document.getElementById('mfTab2');
-        if(tab2) tab2.style.display = _isPrivileged() ? '' : 'none';
+        var tab1 = document.getElementById('mfTab1');
+        if(tab1) tab1.style.display = _isPrivileged() ? '' : 'none';
         document.getElementById('manualFilesModal').style.display='flex';
-        _mfSwitchTab(1);
+        // 관리자·부관리자: 매뉴얼 관리(탭1) 기본, 일반: 파일 목록(탭2) 기본
+        _mfSwitchTab(_isPrivileged() ? 1 : 2);
     }
     function closeManualFilesModal(){
         document.getElementById('manualFilesModal').style.display='none';
     }
     function _mfSwitchTab(n){
+        // 탭1 = 매뉴얼 관리(#f59e0b), 탭2 = 파일 목록(#0284c7)
+        var cols = {1:'#f59e0b', 2:'#0284c7'};
         [1,2].forEach(function(i){
             var btn = document.getElementById('mfTab'+i);
             if(!btn) return;
             var active = i===n;
-            var col = i===1 ? '#0284c7' : '#f59e0b';
-            btn.style.borderBottomColor = active ? col : 'transparent';
+            btn.style.borderBottomColor = active ? cols[i] : 'transparent';
             btn.style.background = active ? '#0f172a' : '#1e293b';
-            btn.style.color = active ? col : '#475569';
+            btn.style.color = active ? cols[i] : '#475569';
         });
-        if(n===1) _renderManualFiles();
-        else _renderManualMgmt();
+        if(n===1) _renderManualMgmt();
+        else _renderManualFiles();
     }
 
     function _mfFileRow(f, priv){
@@ -1615,68 +1617,29 @@
         if(!wrap) return;
         wrap.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">로딩 중...</div>';
 
-        var priv  = _isPrivileged();
-        var isAdm = _currentUser && _currentUser.role==='admin';
+        var priv = _isPrivileged();
 
         var raw = await _authFetch('imi_manual_files.json');
         var files = raw ? Object.entries(raw).map(function(e){ return Object.assign({id:e[0]},e[1]); }) : [];
 
         var approved = files.filter(function(f){ return f.status==='approved'; })
                             .sort(function(a,b){ return (b.approvedAt||b.uploadedAt)-(a.approvedAt||a.uploadedAt); });
-        var pending  = files.filter(function(f){ return f.status==='pending'; })
-                            .sort(function(a,b){ return b.uploadedAt-a.uploadedAt; });
 
         var maniaFiles = approved.filter(function(f){ return !f.mode||f.mode==='mania'; });
         var bayFiles   = approved.filter(function(f){ return f.mode==='bay'; });
 
         var h = '';
 
-        // ── 업로드 (관리자/부관리자) ──
-        if(priv){
-            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">';
-            h += '<div style="font-size:11px;font-weight:900;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;">파일 등록</div>';
-            // 모드 선택
-            h += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
-            h += '<button id="mfModeBtn_mania" onclick="_mfSetMode(\'mania\')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #0284c7;background:#0284c7;color:#fff;font-size:11px;font-weight:900;cursor:pointer;">매니아</button>';
-            h += '<button id="mfModeBtn_bay"   onclick="_mfSetMode(\'bay\')"   style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;">베이</button>';
-            h += '</div>';
-            h += '<input type="text" id="mfTitle" placeholder="파일 제목 (비워두면 파일명 사용)" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:8px;">';
-            h += '<label style="display:block;padding:7px 14px;border-radius:8px;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-            h += '&#x1f4e4; 파일 선택 후 업로드';
-            h += '<input type="file" id="mfFileInput" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc,.hwp,.pptx,.ppt,.txt" style="display:none;" onchange="_uploadManualFile()">';
-            h += '</label>';
-            h += '<div id="mfUploadProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;"></div>';
-            h += '</div>';
-        }
-
-        // ── 검토 대기 (관리자만) ──
-        if(isAdm && pending.length>0){
-            h += '<div style="margin-bottom:14px;">';
-            h += '<div style="font-size:11px;font-weight:900;color:#f59e0b;margin-bottom:8px;">&#x23f3; 승인 대기 '+pending.length+'건</div>';
-            pending.forEach(function(f){
-                var dt = new Date(f.uploadedAt).toLocaleDateString('ko');
-                h += '<div style="background:#1c1917;border:1.5px solid rgba(245,158,11,0.25);border-radius:10px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-                h += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#e2e8f0;">'+escHtml(f.title||f.fileName)+'</div>';
-                h += '<div style="font-size:10px;color:#64748b;margin-top:2px;">'+escHtml(f.uploadedBy)+' · '+dt+'</div></div>';
-                h += '<a href="'+escHtml(f.downloadURL)+'" target="_blank" style="padding:4px 10px;border-radius:7px;background:#0284c7;color:#fff;font-size:10px;font-weight:700;text-decoration:none;flex-shrink:0;">보기</a>';
-                h += '<button onclick="_approveManualFile(\''+f.id+'\')" style="padding:4px 10px;border-radius:7px;background:#22c55e;color:#fff;font-size:10px;font-weight:700;border:none;cursor:pointer;flex-shrink:0;">승인</button>';
-                h += '<button onclick="_deleteManualFile(\''+f.id+'\',\''+escHtml(f.storagePath||'')+'\')" style="padding:4px 8px;border-radius:7px;background:none;border:1px solid #334155;color:#64748b;font-size:10px;cursor:pointer;flex-shrink:0;">삭제</button>';
-                h += '</div>';
-            });
-            h += '</div>';
-        }
-
-        // ── 섹션별 파일 목록 ──
+        // ── 섹션별 파일 목록 (다운로드 전용) ──
         var sections = [
             {key:'mania', label:'📌 아이템매니아', color:'#0284c7', files:maniaFiles},
             {key:'bay',   label:'📌 아이템베이',   color:'#e85d04', files:bayFiles}
         ];
-        var total = approved.length;
-        if(total===0){
+        if(!approved.length){
             h += '<div style="text-align:center;padding:30px 0;color:#334155;font-size:12px;">등록된 파일이 없습니다.</div>';
         } else {
             sections.forEach(function(sec){
-                if(sec.files.length===0) return;
+                if(!sec.files.length) return;
                 h += '<div style="margin-bottom:14px;">';
                 h += '<div style="font-size:11px;font-weight:900;color:'+sec.color+';margin-bottom:8px;border-left:3px solid '+sec.color+';padding-left:8px;">'+sec.label+' '+sec.files.length+'개</div>';
                 sec.files.forEach(function(f){ h += _mfFileRow(f, priv); });
