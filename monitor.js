@@ -15,7 +15,13 @@ function _sendToBot(msg) {
     window.postMessage(Object.assign({ __imiBot: true }, msg), '*');
 }
 
+function _isBotPrivileged(){
+    return typeof _currentUser !== 'undefined' && _currentUser &&
+           (_currentUser.role === 'admin' || _currentUser.role === 'subadmin');
+}
+
 function toggleBotFromWeb() {
+    if(!_isBotPrivileged()){ alert('관리자 또는 부관리자만 봇을 제어할 수 있습니다.'); return; }
     var btn = document.getElementById('monBotToggleBtn');
     if (btn) btn.disabled = true;
     if (_botStatus && _botStatus.active) {
@@ -42,8 +48,15 @@ function toggleBotFromWeb() {
 function _updateBotToggleBtn() {
     var btn = document.getElementById('monBotToggleBtn');
     if (!btn) return;
+
+    // 관리자/부관리자만 봇 제어 버튼 표시
+    if (!_isBotPrivileged()) {
+        btn.style.display = 'none';
+        return;
+    }
+    btn.style.display = '';
+
     var active = _botStatus && _botStatus.active;
-    // Firebase에서 봇 상태를 수신하면 버튼 활성화 (브릿지 연결 여부와 무관)
     if (_botStatus) {
         if (active) {
             btn.textContent = '⏸ 봇 중지';
@@ -112,14 +125,16 @@ function _renderBotStatus() {
         ruleList.innerHTML = '<div style="text-align:center;padding:18px 0;opacity:0.35;font-size:12px;font-style:italic;">등록된 규칙이 없습니다</div>';
         return;
     }
+    var canCtrl = _isBotPrivileged();
     ruleList.innerHTML = rules.map(function(r) {
         var runColor = (r.enabled && r.tabOpen) ? '#22c55e' : (r.enabled ? '#f59e0b' : '#94a3b8');
         var runLabel = (r.enabled && r.tabOpen) ? '● 감시중' : (r.enabled ? '○ 대기' : '■ 비활성');
         var chkId = 'ruleChk_' + r.id;
+        var chkDisabled = canCtrl ? '' : 'disabled';
         return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
-            + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;">'
-            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' style="width:15px;height:15px;cursor:pointer;accent-color:var(--active-focus-color);">'
+            + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canCtrl?'pointer':'default')+';flex:1;min-width:0;">'
+            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' ' + chkDisabled + ' style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
             + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
@@ -697,7 +712,8 @@ document.addEventListener('click', function(e) {
         if (!Array.isArray(list)) list = [];
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
-            list.push(title ? { key: key, title: title } : key);
+            var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
+            list.push({ key: key, title: title, addedBy: addedBy, addedAt: Date.now() });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -717,7 +733,8 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
         if (!Array.isArray(list)) list = [];
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
-            list.push(title ? { key: key, title: title } : key);
+            var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
+            list.push({ key: key, title: title, addedBy: addedBy, addedAt: Date.now() });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -855,10 +872,13 @@ function loadBlockedItems() {
         container.innerHTML = list.map(function(item, i) {
             var key   = typeof item === 'object' ? (item.key   || '') : item;
             var title = typeof item === 'object' ? (item.title || '') : '';
+            var addedBy = typeof item === 'object' ? (item.addedBy || '') : '';
+            var addedAt = typeof item === 'object' && item.addedAt ? new Date(item.addedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
                 + '<div style="flex:1;min-width:0;">'
                 + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>' : '')
                 + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(key) + '</div>'
+                + (addedBy ? '<div style="font-size:10px;opacity:0.45;margin-top:2px;">✍️ ' + _esc(addedBy) + (addedAt ? ' · ' + addedAt : '') + '</div>' : '')
                 + '</div>'
                 + '<button onclick="unblockItem(' + i + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
                 + '</div>';

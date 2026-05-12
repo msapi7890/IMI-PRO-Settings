@@ -90,13 +90,13 @@
         #bellModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; }
         #bellModal.hidden { display:none !important; }
         #bellModal .bell-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.45); }
-        #bellModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(94vw,420px); max-height:70vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
+        #bellModal .bell-box { position:relative; background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); padding:20px; width:min(96vw,620px); max-height:86vh; display:flex; flex-direction:column; gap:12px; box-shadow:0 8px 40px rgba(0,0,0,0.25); }
         #urgentCreateModal { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; }
         #urgentCreateModal.hidden { display:none !important; }
         #bellModal .bell-title { font-size:15px; font-weight:900; }
-        #bellModal .bell-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; }
-        .bell-notice-item { background:var(--bg-chat); border:2px solid var(--border-ui); border-radius:10px; padding:10px 12px; cursor:pointer; transition:0.15s; }
-        .bell-notice-item:hover { border-color:var(--active-focus-color); }
+        #bellModal .bell-list { overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:8px; min-height:0; }
+        .bell-notice-item { background:var(--bg-chat); border:1.5px solid var(--border-ui); border-radius:12px; padding:11px 13px; cursor:pointer; transition:0.15s; border-left-width:4px; }
+        .bell-notice-item:hover { transform:translateY(-1px); box-shadow:0 3px 12px rgba(0,0,0,0.12); }
         .bell-notice-title { font-size:13px; font-weight:900; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .bell-notice-date { font-size:10px; font-weight:700; opacity:0.45; margin-top:4px; }
 
@@ -270,14 +270,21 @@
             <input type="password" id="lockPwInput" placeholder="비밀번호" autocomplete="current-password"
                 style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'" onkeydown="if(event.key==='Enter')_authSubmit()">
             <div id="lockErrMsg" style="display:none;text-align:center;margin-bottom:10px;font-size:12px;font-weight:700;color:#f87171;"></div>
-            <button onclick="_authSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;margin-top:4px;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">로그인</button>
-            <div style="text-align:center;margin-top:16px;font-size:12px;color:#64748b;">
-                계정이 없으신가요? <span onclick="_showLockRegister()" style="color:#3abff8;cursor:pointer;font-weight:700;">회원가입 신청</span>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;padding:0 2px;">
+                <input type="checkbox" id="lockRememberChk" style="width:14px;height:14px;accent-color:#3abff8;cursor:pointer;">
+                <label for="lockRememberChk" style="font-size:11px;color:#64748b;font-weight:700;cursor:pointer;user-select:none;">아이디·비밀번호 기억</label>
+            </div>
+            <button onclick="_authSubmit()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">로그인</button>
+            <div style="text-align:center;margin-top:14px;font-size:12px;color:#64748b;display:flex;justify-content:space-between;padding:0 2px;">
+                <span onclick="_showLockFindPw()" style="color:#94a3b8;cursor:pointer;font-weight:700;">비밀번호 찾기</span>
+                <span onclick="_showLockRegister()" style="color:#3abff8;cursor:pointer;font-weight:700;">회원가입 신청</span>
             </div>
         </div>
         <!-- 회원가입 뷰 -->
         <div id="lockRegisterView" style="display:none;">
             <input type="text" id="lockRegName" placeholder="이름 (2자 이상)" autocomplete="off"
+                style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
+            <input type="text" id="lockRegEmpId" placeholder="사번" autocomplete="off"
                 style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
             <input type="password" id="lockRegPw" placeholder="비밀번호 (6자 이상)" autocomplete="new-password"
                 style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
@@ -286,6 +293,26 @@
             <div id="lockRegErr" style="display:none;text-align:center;margin-bottom:10px;font-size:12px;font-weight:700;color:#f87171;"></div>
             <button onclick="_authRegister()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;margin-top:4px;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">가입 신청</button>
             <div style="text-align:center;margin-top:10px;font-size:11px;color:#475569;line-height:1.7;">승인 후 로그인이 가능합니다</div>
+            <button onclick="_showLockLogin()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;border:1.5px solid #334155;background:none;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">← 로그인으로</button>
+        </div>
+        <!-- 비밀번호 찾기 뷰 -->
+        <div id="lockFindPwView" style="display:none;">
+            <div style="text-align:center;margin-bottom:18px;">
+                <div style="font-size:22px;margin-bottom:6px;">🔍</div>
+                <div style="font-size:13px;font-weight:900;color:#e2e8f0;">비밀번호 찾기</div>
+                <div style="font-size:11px;color:#475569;margin-top:4px;line-height:1.6;">가입 시 등록한 이름과 사번을 입력하세요</div>
+            </div>
+            <input type="text" id="lockFindName" placeholder="이름" autocomplete="off"
+                style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'">
+            <input type="text" id="lockFindEmpId" placeholder="사번" autocomplete="off"
+                style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:10px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:600;outline:none;transition:border-color 0.15s;margin-bottom:10px;display:block;" onfocus="this.style.borderColor='#3abff8'" onblur="this.style.borderColor='#334155'" onkeydown="if(event.key==='Enter')_authFindPw()">
+            <div id="lockFindErr" style="display:none;text-align:center;margin-bottom:10px;font-size:12px;font-weight:700;color:#f87171;"></div>
+            <div id="lockFindResult" style="display:none;background:#0f172a;border:1.5px solid #22c55e;border-radius:10px;padding:14px;margin-bottom:12px;text-align:center;">
+                <div style="font-size:11px;color:#64748b;margin-bottom:6px;">임시 비밀번호</div>
+                <div id="lockFindTmpPw" style="font-size:22px;font-weight:900;color:#22c55e;letter-spacing:0.15em;font-family:monospace;"></div>
+                <div style="font-size:10px;color:#475569;margin-top:8px;line-height:1.6;">위 비밀번호로 로그인 후<br>새 비밀번호로 변경하세요</div>
+            </div>
+            <button onclick="_authFindPw()" id="lockFindBtn" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">임시 비밀번호 발급</button>
             <button onclick="_showLockLogin()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;border:1.5px solid #334155;background:none;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">← 로그인으로</button>
         </div>
         <!-- 가입완료 뷰 -->
@@ -316,6 +343,23 @@
             <button onclick="_authChangePw()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;letter-spacing:0.04em;margin-top:4px;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">변경</button>
             <div id="lockChangeErr" style="display:none;text-align:center;margin-top:12px;font-size:12px;font-weight:700;color:#f87171;"></div>
             <button id="lockChangeCancelBtn" onclick="_authCancelChange()" style="width:100%;margin-top:8px;padding:11px;border-radius:10px;border:1.5px solid #334155;background:none;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;display:none;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- 파일매뉴얼 모달 -->
+<div id="manualFilesModal" style="display:none;position:fixed;inset:0;z-index:99980;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;" onclick="if(event.target===this)closeManualFilesModal()">
+    <div style="width:min(96vw,580px);max-height:88vh;background:#1e293b;border:2px solid #334155;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div style="padding:12px 20px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+            <span style="font-size:14px;font-weight:900;color:#e2e8f0;">&#x1f4c2; 파일 매뉴얼</span>
+            <button onclick="closeManualFilesModal()" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;font-weight:900;">&#x00d7;</button>
+        </div>
+        <div id="mfTabBar" style="display:flex;flex-shrink:0;border-bottom:1px solid #334155;">
+            <button id="mfTab1" onclick="_mfSwitchTab(1)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #0284c7;background:#0f172a;color:#0284c7;cursor:pointer;">&#x1f4c2; 파일 목록</button>
+            <button id="mfTab2" onclick="_mfSwitchTab(2)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;display:none;">&#x1f4c4; 매뉴얼 관리</button>
+        </div>
+        <div id="mfContent" style="flex:1;overflow-y:auto;padding:16px 20px;">
+            <div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">로딩 중...</div>
         </div>
     </div>
 </div>
@@ -466,6 +510,7 @@
                 <div id="udStatus" style="font-size:10px;font-weight:900;margin-bottom:6px;"></div>
                 <h3 id="udTitle" style="font-size:15px;font-weight:900;line-height:1.4;margin:0;"></h3>
                 <div id="udDate" style="font-size:10px;opacity:0.45;font-weight:700;margin-top:5px;"></div>
+                <div id="udAuthor" style="font-size:10px;opacity:0.45;font-weight:700;margin-top:3px;"></div>
             </div>
             <button onclick="closeUrgentDetail()" style="font-size:26px;opacity:0.3;cursor:pointer;background:none;border:none;line-height:1;color:var(--text-main);flex-shrink:0;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
@@ -823,7 +868,8 @@
         <div class="absolute top-5 right-8 text-4xl cursor-pointer opacity-30 hover:opacity-100" onclick="closeModal()">×</div>
         <div id="viewMode">
             <span id="modalDate" class="text-sm font-black mb-1 block text-[var(--active-focus-color)]">날짜...</span>
-            <span id="viewUpdatedAt" class="hidden text-xs opacity-50 mb-2 block"></span>
+            <span id="viewUpdatedAt" class="hidden text-xs opacity-50 mb-1 block"></span>
+            <span id="viewAuthor" class="hidden text-xs opacity-50 mb-2 block"></span>
             <h4 id="viewTitle" class="text-xl font-black mb-4 border-b pb-4 leading-tight"></h4>
             <div id="viewContent" class="mb-4 text-sm font-medium leading-relaxed" style="max-height:45vh;overflow-y:auto;"></div>
             <div id="viewImgArea" class="mb-4"></div>
@@ -898,7 +944,7 @@
                 <div id="authUserMenu" style="display:none;position:absolute;left:0;top:calc(100% + 6px);background:var(--bg-card);border:1.5px solid var(--border-ui);border-radius:14px;width:264px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9100;overflow:hidden;"></div>
             </div>
             <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
-            <button onclick="openTermsModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📜 이용약관</button>
+            <button onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼</button>
         </div>
         <div id="liveClock" onclick="openScheduleModal()" title="직원 스케쥴 확인" style="position:absolute;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=1;this.style.textDecoration='underline'" onmouseout="this.style.opacity=0.65;this.style.textDecoration='none'"></div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
@@ -917,7 +963,7 @@
 <main class="flex flex-1 overflow-hidden">
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
         <!-- 상단 섹션 (게임정보 + 홈페이지, 내용만큼만 차지) -->
-        <div style="flex:0 0 auto;overflow-y:auto;overflow-x:hidden;max-height:45%;">
+        <div style="flex:0 0 auto;overflow-y:auto;overflow-x:hidden;max-height:38%;">
             <div style="padding:10px 12px 8px; border-bottom:2px solid var(--border-ui); flex-shrink:0; display:flex; justify-content:space-between; align-items:center;">
                 <h3 class="text-[10px] font-black uppercase tracking-[0.25em] opacity-40 italic">💡 AI 도우미</h3>
                 <button onclick="openTmplMgr()" style="font-size:10px;font-weight:900;padding:3px 8px;border-radius:6px;border:1.5px solid var(--border-ui);opacity:0.6;transition:0.15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋 템플릿 관리</button>
@@ -931,6 +977,12 @@
                         <a id="homeLinkBay" href="https://www.itembay.com/intro" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:9px;border:2px solid var(--border-ui);text-decoration:none;transition:0.15s;background:var(--bg-card);" onmouseover="this.style.borderColor='var(--bay-color)';this.style.boxShadow='0 0 0 2px var(--bay-color)33'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.boxShadow=''"><img src="https://www.itembay.com/resources/image/main_ib4/logo_top.png" alt="아이템베이" style="height:28px;width:auto;object-fit:contain;max-width:100%;"></a>
                     </div>
                 </div>
+                <!-- 이용약관 -->
+                <div class="assist-section">
+                    <div style="padding:6px 8px;">
+                        <button onclick="openTermsModal()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:9px;border:1.5px solid var(--border-ui);background:var(--bg-body);color:var(--text-main);font-size:11px;font-weight:900;cursor:pointer;transition:0.15s;" onmouseover="this.style.borderColor='var(--active-focus-color)';this.style.color='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.color='var(--text-main)'">&#x1f4dc; 이용약관</button>
+                    </div>
+                </div>
                 <!-- 게임정보 -->
                 <div class="assist-section">
                     <div class="assist-sec-header">🎮 게임정보</div>
@@ -941,7 +993,7 @@
             </div>
         </div>
         <!-- 메모 패드 (나머지 공간 전부 차지) -->
-        <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div style="flex:1;display:flex;flex-direction:column;min-height:120px;overflow:hidden;">
             <div class="memo-sec-hdr" style="flex-shrink:0;">
                 <h3 style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;opacity:0.4;font-style:italic;">📝 내 메모</h3>
                 <button onclick="addMemo()" title="새 메모 추가" style="width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border-ui);font-size:16px;line-height:1;font-weight:900;opacity:0.55;transition:0.15s;background:transparent;color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.55">+</button>
@@ -1091,7 +1143,7 @@
         return Array.from(new Uint8Array(b)).map(function(v){ return v.toString(16).padStart(2,'0'); }).join('');
     }
     function _authLoadLocal(){
-        try{ return JSON.parse(localStorage.getItem('imi_auth')||'null'); }catch(e){ return null; }
+        try{ return JSON.parse(sessionStorage.getItem('imi_auth')||'null'); }catch(e){ return null; }
     }
     function _lockShow(){ document.body.classList.add('auth-pending'); }
     function _lockHide(){ document.body.classList.remove('auth-pending'); }
@@ -1111,7 +1163,7 @@
 
     // 화면 전환 헬퍼
     function _showLockView(id){
-        ['lockLoginView','lockRegisterView','lockRegDoneView','lockLoadingView','lockChangeView'].forEach(function(v){
+        ['lockLoginView','lockRegisterView','lockRegDoneView','lockLoadingView','lockChangeView','lockFindPwView'].forEach(function(v){
             var el=document.getElementById(v); if(el) el.style.display='none';
         });
         var el=document.getElementById(id); if(el) el.style.display='';
@@ -1120,11 +1172,19 @@
     function _showLockLogin(){
         _showLockView('lockLoginView');
         ['lockErrMsg'].forEach(function(id){ var e=document.getElementById(id); if(e) e.style.display='none'; });
+        try{
+            var rem=JSON.parse(localStorage.getItem('imi_remember')||'null');
+            if(rem&&rem.name){
+                var ne=document.getElementById('lockNameInput'); if(ne) ne.value=rem.name;
+                var pe=document.getElementById('lockPwInput');   if(pe) pe.value=rem.pw||'';
+                var ce=document.getElementById('lockRememberChk'); if(ce) ce.checked=true;
+            }
+        }catch(e){}
         setTimeout(function(){ var n=document.getElementById('lockNameInput'); if(n) n.focus(); }, 80);
     }
     function _showLockRegister(){
         _showLockView('lockRegisterView');
-        ['lockRegName','lockRegPw','lockRegPw2'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+        ['lockRegName','lockRegEmpId','lockRegPw','lockRegPw2'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
         var e=document.getElementById('lockRegErr'); if(e) e.style.display='none';
         setTimeout(function(){ var n=document.getElementById('lockRegName'); if(n) n.focus(); }, 80);
     }
@@ -1169,18 +1229,31 @@
         if(!user){ errEl.textContent='존재하지 않는 이름입니다'; errEl.style.display=''; return; }
         if(user.pw_hash !== hash){ errEl.textContent='비밀번호가 올바르지 않습니다'; errEl.style.display=''; document.getElementById('lockPwInput').value=''; return; }
         if(!user.approved){ errEl.textContent='승인 대기 중입니다. 관리자의 승인을 기다려 주세요.'; errEl.style.display=''; return; }
-        localStorage.setItem('imi_auth', JSON.stringify({name:name, role:user.role, hash:hash, at:Date.now()}));
+        // 아이디·비밀번호 기억
+        var chk=document.getElementById('lockRememberChk');
+        if(chk&&chk.checked){ localStorage.setItem('imi_remember',JSON.stringify({name:name,pw:pw})); }
+        else { localStorage.removeItem('imi_remember'); }
+        // 세션 저장 (브라우저 닫으면 로그아웃)
+        sessionStorage.setItem('imi_auth', JSON.stringify({name:name, role:user.role, hash:hash, at:Date.now()}));
+        // 월 1회 비밀번호 변경 체크 (30일)
+        var MONTH_MS=30*86400000;
+        if(!user.pw_changed_at || Date.now()-user.pw_changed_at>MONTH_MS){
+            _currentUser={name:name, role:user.role};
+            _showLockChange('🔒 매월 비밀번호 변경이 필요합니다\n현재 비밀번호를 입력 후 새 비밀번호를 설정하세요.', false);
+            return;
+        }
         _authGrant({name:name, role:user.role});
     }
 
     // 회원가입
     async function _authRegister(){
-        var name = (document.getElementById('lockRegName').value||'').trim();
-        var pw   = document.getElementById('lockRegPw').value||'';
-        var pw2  = document.getElementById('lockRegPw2').value||'';
+        var name  = (document.getElementById('lockRegName').value||'').trim();
+        var empId = (document.getElementById('lockRegEmpId').value||'').trim();
+        var pw    = document.getElementById('lockRegPw').value||'';
+        var pw2   = document.getElementById('lockRegPw2').value||'';
         var errEl = document.getElementById('lockRegErr');
         errEl.style.display='none';
-        if(!name||!pw||!pw2){ errEl.textContent='모든 항목을 입력해주세요'; errEl.style.display=''; return; }
+        if(!name||!empId||!pw||!pw2){ errEl.textContent='모든 항목을 입력해주세요'; errEl.style.display=''; return; }
         if(name.length < 2){ errEl.textContent='이름은 2자 이상이어야 합니다'; errEl.style.display=''; return; }
         if(pw.length < 6){ errEl.textContent='비밀번호는 6자 이상이어야 합니다'; errEl.style.display=''; return; }
         if(pw !== pw2){ errEl.textContent='비밀번호가 일치하지 않습니다'; errEl.style.display=''; return; }
@@ -1189,9 +1262,9 @@
         var allUsers = await _authFetch('imi_users.json');
         var isFirst = !allUsers || Object.keys(allUsers).length === 0;
         var hash = await _sha256(pw);
-        await _authFetch('imi_users/'+_ukey(name)+'.json', 'PUT', {name:name, pw_hash:hash, role:isFirst?'admin':'user', approved:isFirst, created_at:Date.now()});
+        await _authFetch('imi_users/'+_ukey(name)+'.json', 'PUT', {name:name, emp_id:empId, pw_hash:hash, role:isFirst?'admin':'user', approved:isFirst, created_at:Date.now(), pw_changed_at:Date.now()});
         if(isFirst){
-            localStorage.setItem('imi_auth', JSON.stringify({name:name, role:'admin', hash:hash, at:Date.now()}));
+            sessionStorage.setItem('imi_auth', JSON.stringify({name:name, role:'admin', hash:hash, at:Date.now()}));
             _authGrant({name:name, role:'admin'});
         } else {
             _showLockRegDone();
@@ -1208,11 +1281,15 @@
         var badge = document.getElementById('authUserBadge');
         if(badge) badge.style.display='';
         var nameDisp = document.getElementById('authUserNameDisp');
-        if(nameDisp) nameDisp.textContent = user.name + (user.role==='admin' ? ' 👑' : '');
+        if(nameDisp) nameDisp.textContent = user.name + (user.role==='admin' ? ' 👑' : user.role==='subadmin' ? ' ★' : '');
         var adminItem = document.getElementById('authAdminMenuItem');
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
         // 승인 대기 감시
         if(user.role === 'admin') _authWatchPending();
+        // 봇 버튼 권한 적용 (monitor.js 함수)
+        if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
+        // Firebase에서 매뉴얼 인덱스 데이터 로드
+        _initManualData();
         // 접속 현황 heartbeat
         function _beat(){
             _authFetch('imi_presence/'+_ukey(user.name)+'.json', 'PUT', {name:user.name, team:(user.team||''), ts:Date.now()});
@@ -1228,7 +1305,7 @@
     // 로그아웃
     function _authLogout(){
         if(!confirm('로그아웃 하시겠습니까?')) return;
-        localStorage.removeItem('imi_auth');
+        sessionStorage.removeItem('imi_auth');
         location.reload();
     }
 
@@ -1247,14 +1324,81 @@
         var user = await _authFetch('imi_users/'+_ukey(_currentUser.name)+'.json');
         if(!user || user.pw_hash !== oldHash){ errEl.textContent='현재 비밀번호가 올바르지 않습니다'; errEl.style.display=''; return; }
         var newHash = await _sha256(newPw);
+        var now = Date.now();
         await _authFetch('imi_users/'+_ukey(_currentUser.name)+'/pw_hash.json', 'PUT', newHash);
-        localStorage.setItem('imi_auth', JSON.stringify({name:_currentUser.name, role:_currentUser.role, hash:newHash, at:Date.now()}));
-        _authCancelChange();
-        alert('비밀번호가 변경됐습니다.');
+        await _authFetch('imi_users/'+_ukey(_currentUser.name)+'/pw_changed_at.json', 'PUT', now);
+        sessionStorage.setItem('imi_auth', JSON.stringify({name:_currentUser.name, role:_currentUser.role, hash:newHash, at:now}));
+        // 기억된 비밀번호 갱신
+        try{
+            var rem=JSON.parse(localStorage.getItem('imi_remember')||'null');
+            if(rem&&rem.name===_currentUser.name) localStorage.setItem('imi_remember',JSON.stringify({name:rem.name,pw:newPw}));
+        }catch(e){}
+        // 잠금화면 강제변경인 경우 → 정식 로그인 진행
+        if(document.body.classList.contains('auth-pending')){
+            alert('비밀번호가 변경됐습니다. 로그인합니다.');
+            _authGrant(_currentUser);
+        } else {
+            _authCancelChange();
+            alert('비밀번호가 변경됐습니다.');
+        }
     }
     function _authCancelChange(){
         document.getElementById('lockChangeView').style.display='none';
         _lockHide();
+    }
+    // 비밀번호 찾기
+    function _showLockFindPw(){
+        _showLockView('lockFindPwView');
+        ['lockFindName','lockFindEmpId'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+        var err=document.getElementById('lockFindErr'); if(err) err.style.display='none';
+        var res=document.getElementById('lockFindResult'); if(res) res.style.display='none';
+        var btn=document.getElementById('lockFindBtn'); if(btn){ btn.textContent='임시 비밀번호 발급'; btn.disabled=false; }
+        setTimeout(function(){ var n=document.getElementById('lockFindName'); if(n) n.focus(); },80);
+    }
+    async function _authFindPw(){
+        var name  = (document.getElementById('lockFindName').value||'').trim();
+        var empId = (document.getElementById('lockFindEmpId').value||'').trim();
+        var errEl = document.getElementById('lockFindErr');
+        errEl.style.display='none';
+        if(!name||!empId){ errEl.textContent='이름과 사번을 모두 입력해주세요'; errEl.style.display=''; return; }
+        var btn=document.getElementById('lockFindBtn');
+        if(btn){ btn.textContent='확인 중...'; btn.disabled=true; }
+        var user = await _authFetch('imi_users/'+_ukey(name)+'.json');
+        if(!user||!user.emp_id){
+            errEl.textContent='이름 또는 사번이 올바르지 않습니다';
+            errEl.style.display='';
+            if(btn){ btn.textContent='임시 비밀번호 발급'; btn.disabled=false; }
+            return;
+        }
+        if(String(user.emp_id).trim() !== String(empId)){
+            errEl.textContent='이름 또는 사번이 올바르지 않습니다';
+            errEl.style.display='';
+            if(btn){ btn.textContent='임시 비밀번호 발급'; btn.disabled=false; }
+            return;
+        }
+        // 임시 비밀번호 생성 (대문자+숫자 8자리)
+        var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var tmpPw=Array.from({length:8},function(){return chars[Math.floor(Math.random()*chars.length)];}).join('');
+        var hash = await _sha256(tmpPw);
+        await _authFetch('imi_users/'+_ukey(name)+'/pw_hash.json','PUT',hash);
+        await _authFetch('imi_users/'+_ukey(name)+'/pw_changed_at.json','PUT',0); // 로그인 시 강제 변경
+        var resEl=document.getElementById('lockFindResult');
+        var pwEl=document.getElementById('lockFindTmpPw');
+        if(pwEl) pwEl.textContent=tmpPw;
+        if(resEl) resEl.style.display='';
+        if(btn){ btn.textContent='발급 완료'; btn.disabled=true; }
+    }
+
+    // 관리자: 비밀번호 초기화
+    async function _authResetPw(key, name){
+        if(!confirm('"'+name+'" 의 비밀번호를 초기화할까요?\n임시 비밀번호가 생성됩니다.')) return;
+        var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var tmpPw=Array.from({length:6},function(){return chars[Math.floor(Math.random()*chars.length)];}).join('');
+        var hash=await _sha256(tmpPw);
+        await _authFetch('imi_users/'+key+'/pw_hash.json','PUT',hash);
+        await _authFetch('imi_users/'+key+'/pw_changed_at.json','PUT',0); // 다음 로그인 시 강제 변경
+        alert('"'+name+'" 임시 비밀번호:\n\n  '+tmpPw+'\n\n다음 로그인 시 비밀번호 변경이 요구됩니다.');
+        _renderUserMgmt();
     }
     function _openUserChangePw(){
         _hideUserMenu();
@@ -1421,6 +1565,558 @@
     function closeUserMgmtModal(){
         document.getElementById('userMgmtModal').style.display='none';
     }
+
+    // ===== 파일 매뉴얼 시스템 =====
+    function _isPrivileged(){ return _currentUser && (_currentUser.role==='admin'||_currentUser.role==='subadmin'); }
+
+    function openManualFilesModal(){
+        var tab2 = document.getElementById('mfTab2');
+        if(tab2) tab2.style.display = _isPrivileged() ? '' : 'none';
+        document.getElementById('manualFilesModal').style.display='flex';
+        _mfSwitchTab(1);
+    }
+    function closeManualFilesModal(){
+        document.getElementById('manualFilesModal').style.display='none';
+    }
+    function _mfSwitchTab(n){
+        [1,2].forEach(function(i){
+            var btn = document.getElementById('mfTab'+i);
+            if(!btn) return;
+            var active = i===n;
+            var col = i===1 ? '#0284c7' : '#f59e0b';
+            btn.style.borderBottomColor = active ? col : 'transparent';
+            btn.style.background = active ? '#0f172a' : '#1e293b';
+            btn.style.color = active ? col : '#475569';
+        });
+        if(n===1) _renderManualFiles();
+        else _renderManualMgmt();
+    }
+
+    function _mfFileRow(f, priv){
+        var dt = new Date(f.approvedAt||f.uploadedAt).toLocaleDateString('ko');
+        var ext = (f.fileName||'').split('.').pop().toUpperCase();
+        var extColor = ext==='PDF'?'#ef4444':ext==='XLSX'||ext==='XLS'?'#22c55e':ext==='DOCX'||ext==='DOC'?'#3b82f6':'#6366f1';
+        var h = '<div style="background:#0f172a;border:1.5px solid #1e293b;border-radius:10px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:9px;">';
+        h += '<span style="background:'+extColor+'22;color:'+extColor+';font-size:10px;font-weight:900;border-radius:5px;padding:2px 7px;flex-shrink:0;">'+ext+'</span>';
+        h += '<div style="flex:1;min-width:0;">';
+        h += '<div style="font-size:12px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escHtml(f.title||f.fileName)+'</div>';
+        h += '<div style="font-size:10px;color:#475569;margin-top:1px;">'+escHtml(f.uploadedBy)+' · '+dt+'</div>';
+        h += '</div>';
+        h += '<a href="'+escHtml(f.downloadURL)+'" target="_blank" style="padding:5px 12px;border-radius:7px;background:#0284c7;color:#fff;font-size:10px;font-weight:700;text-decoration:none;flex-shrink:0;">열기</a>';
+        if(priv){
+            h += '<button onclick="_deleteManualFile(\''+f.id+'\',\''+escHtml(f.storagePath||'')+'\')" style="padding:5px 8px;border-radius:7px;background:none;border:1px solid #334155;color:#475569;font-size:10px;cursor:pointer;flex-shrink:0;">삭제</button>';
+        }
+        h += '</div>';
+        return h;
+    }
+
+    async function _renderManualFiles(){
+        var wrap = document.getElementById('mfContent');
+        if(!wrap) return;
+        wrap.innerHTML = '<div style="color:#64748b;font-size:12px;text-align:center;padding:20px;">로딩 중...</div>';
+
+        var priv  = _isPrivileged();
+        var isAdm = _currentUser && _currentUser.role==='admin';
+
+        var raw = await _authFetch('imi_manual_files.json');
+        var files = raw ? Object.entries(raw).map(function(e){ return Object.assign({id:e[0]},e[1]); }) : [];
+
+        var approved = files.filter(function(f){ return f.status==='approved'; })
+                            .sort(function(a,b){ return (b.approvedAt||b.uploadedAt)-(a.approvedAt||a.uploadedAt); });
+        var pending  = files.filter(function(f){ return f.status==='pending'; })
+                            .sort(function(a,b){ return b.uploadedAt-a.uploadedAt; });
+
+        var maniaFiles = approved.filter(function(f){ return !f.mode||f.mode==='mania'; });
+        var bayFiles   = approved.filter(function(f){ return f.mode==='bay'; });
+
+        var h = '';
+
+        // ── 업로드 (관리자/부관리자) ──
+        if(priv){
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">';
+            h += '<div style="font-size:11px;font-weight:900;color:#64748b;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em;">파일 등록</div>';
+            // 모드 선택
+            h += '<div style="display:flex;gap:6px;margin-bottom:8px;">';
+            h += '<button id="mfModeBtn_mania" onclick="_mfSetMode(\'mania\')" style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #0284c7;background:#0284c7;color:#fff;font-size:11px;font-weight:900;cursor:pointer;">매니아</button>';
+            h += '<button id="mfModeBtn_bay"   onclick="_mfSetMode(\'bay\')"   style="flex:1;padding:6px;border-radius:7px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;">베이</button>';
+            h += '</div>';
+            h += '<input type="text" id="mfTitle" placeholder="파일 제목 (비워두면 파일명 사용)" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:8px;">';
+            h += '<label style="display:block;padding:7px 14px;border-radius:8px;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+            h += '&#x1f4e4; 파일 선택 후 업로드';
+            h += '<input type="file" id="mfFileInput" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc,.hwp,.pptx,.ppt,.txt" style="display:none;" onchange="_uploadManualFile()">';
+            h += '</label>';
+            h += '<div id="mfUploadProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;"></div>';
+            h += '</div>';
+        }
+
+        // ── 검토 대기 (관리자만) ──
+        if(isAdm && pending.length>0){
+            h += '<div style="margin-bottom:14px;">';
+            h += '<div style="font-size:11px;font-weight:900;color:#f59e0b;margin-bottom:8px;">&#x23f3; 승인 대기 '+pending.length+'건</div>';
+            pending.forEach(function(f){
+                var dt = new Date(f.uploadedAt).toLocaleDateString('ko');
+                h += '<div style="background:#1c1917;border:1.5px solid rgba(245,158,11,0.25);border-radius:10px;padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                h += '<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#e2e8f0;">'+escHtml(f.title||f.fileName)+'</div>';
+                h += '<div style="font-size:10px;color:#64748b;margin-top:2px;">'+escHtml(f.uploadedBy)+' · '+dt+'</div></div>';
+                h += '<a href="'+escHtml(f.downloadURL)+'" target="_blank" style="padding:4px 10px;border-radius:7px;background:#0284c7;color:#fff;font-size:10px;font-weight:700;text-decoration:none;flex-shrink:0;">보기</a>';
+                h += '<button onclick="_approveManualFile(\''+f.id+'\')" style="padding:4px 10px;border-radius:7px;background:#22c55e;color:#fff;font-size:10px;font-weight:700;border:none;cursor:pointer;flex-shrink:0;">승인</button>';
+                h += '<button onclick="_deleteManualFile(\''+f.id+'\',\''+escHtml(f.storagePath||'')+'\')" style="padding:4px 8px;border-radius:7px;background:none;border:1px solid #334155;color:#64748b;font-size:10px;cursor:pointer;flex-shrink:0;">삭제</button>';
+                h += '</div>';
+            });
+            h += '</div>';
+        }
+
+        // ── 섹션별 파일 목록 ──
+        var sections = [
+            {key:'mania', label:'📌 아이템매니아', color:'#0284c7', files:maniaFiles},
+            {key:'bay',   label:'📌 아이템베이',   color:'#e85d04', files:bayFiles}
+        ];
+        var total = approved.length;
+        if(total===0){
+            h += '<div style="text-align:center;padding:30px 0;color:#334155;font-size:12px;">등록된 파일이 없습니다.</div>';
+        } else {
+            sections.forEach(function(sec){
+                if(sec.files.length===0) return;
+                h += '<div style="margin-bottom:14px;">';
+                h += '<div style="font-size:11px;font-weight:900;color:'+sec.color+';margin-bottom:8px;border-left:3px solid '+sec.color+';padding-left:8px;">'+sec.label+' '+sec.files.length+'개</div>';
+                sec.files.forEach(function(f){ h += _mfFileRow(f, priv); });
+                h += '</div>';
+            });
+        }
+
+        wrap.innerHTML = h;
+        // 기본 모드 버튼 상태 초기화
+        if(typeof _mfCurrentMode !== 'undefined') _mfSetMode(_mfCurrentMode, true);
+    }
+
+    var _mfCurrentMode = 'mania';
+    function _mfSetMode(mode, silent){
+        _mfCurrentMode = mode;
+        var colors = {mania:'#0284c7', bay:'#e85d04'};
+        ['mania','bay'].forEach(function(m){
+            var btn = document.getElementById('mfModeBtn_'+m);
+            if(!btn) return;
+            var active = m===mode;
+            btn.style.background = active ? colors[m] : 'none';
+            btn.style.borderColor = active ? colors[m] : '#334155';
+            btn.style.color = active ? '#fff' : '#94a3b8';
+        });
+    }
+
+    function _mfNorm(s){
+        // 제목/파일명 정규화: 소문자, 공백·특수문자 제거, 끝 버전번호 제거
+        return (s||'').toLowerCase()
+            .replace(/[_\-\s\.]+/g,'')
+            .replace(/[vV버전version]?\d[\d\.]*$/,'');
+    }
+    function _mfFindDupes(files, title, fileName){
+        var normTitle = _mfNorm(title);
+        var normFile  = _mfNorm(fileName.replace(/\.[^.]+$/,''));
+        return files.filter(function(f){
+            var ft = _mfNorm(f.title||f.fileName);
+            var ff = _mfNorm((f.fileName||'').replace(/\.[^.]+$/,''));
+            // 제목 일치 or 파일명(확장자 제거) 일치 or 한쪽이 다른쪽을 포함
+            return ft===normTitle || ff===normFile ||
+                   (normTitle.length>3 && (ft.includes(normTitle)||normTitle.includes(ft))) ||
+                   (normFile.length>3  && (ff.includes(normFile)||normFile.includes(ff)));
+        });
+    }
+
+    async function _uploadManualFile(){
+        var titleEl = document.getElementById('mfTitle');
+        var fileEl  = document.getElementById('mfFileInput');
+        var prog    = document.getElementById('mfUploadProgress');
+        var file    = fileEl ? fileEl.files[0] : null;
+        if(!file){ return; }
+
+        var title = (titleEl&&titleEl.value.trim()) || file.name.replace(/\.[^.]+$/,'');
+        var mode  = _mfCurrentMode || 'mania';
+
+        // ── 중복 체크 (같은 모드 내에서만) ──
+        if(prog) prog.textContent = '중복 파일 확인 중...';
+        var raw = await _authFetch('imi_manual_files.json');
+        var allFiles = raw ? Object.entries(raw).map(function(e){ return Object.assign({id:e[0]},e[1]); }) : [];
+        var sameMode = allFiles.filter(function(f){ return (f.mode||'mania')===mode; });
+        var dupes = _mfFindDupes(sameMode, title, file.name);
+
+        var replaceIds = [];
+        if(dupes.length > 0){
+            var dupeNames = dupes.map(function(d){ return '· '+escHtml(d.title||d.fileName)+' ('+new Date(d.uploadedAt).toLocaleDateString('ko')+')'; }).join('\n');
+            var msg = '유사한 파일이 이미 '+dupes.length+'개 있습니다:\n'+dupeNames.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            msg += '\n\n최신 버전으로 교체하시겠습니까?\n(확인 → 기존 삭제 후 등록 / 취소 → 기존 유지하고 별도 추가)';
+            if(confirm(msg)){
+                replaceIds = dupes.map(function(d){ return {id:d.id, path:d.storagePath||''}; });
+            }
+        }
+
+        if(prog) prog.textContent = '업로드 중... 잠시 기다려 주세요.';
+
+        try{
+            var ts = Date.now();
+            var safeName = ts+'_'+file.name.replace(/[^\w가-힣._-]/g,'_');
+            var storePath = 'manuals/'+safeName;
+            var snap = await storage.ref(storePath).put(file);
+            var url  = await snap.ref.getDownloadURL();
+
+            // 교체 시 기존 파일 삭제
+            for(var i=0;i<replaceIds.length;i++){
+                var r=replaceIds[i];
+                if(r.path){ try{ await storage.ref(r.path).delete(); }catch(e){} }
+                await _authFetch('imi_manual_files/'+r.id+'.json','DELETE');
+            }
+
+            var entry = {
+                title: title,
+                fileName: file.name,
+                storagePath: storePath,
+                downloadURL: url,
+                uploadedBy: (_currentUser&&_currentUser.name)||'',
+                uploadedAt: ts,
+                mode: mode,
+                status: 'approved',
+                approvedBy: (_currentUser&&_currentUser.name)||'',
+                approvedAt: ts
+            };
+            await _authFetch('imi_manual_files/'+ts+'.json','PUT',entry);
+
+            var msg2 = replaceIds.length>0 ? '&#x2713; 교체 등록 완료!' : '&#x2713; 등록 완료!';
+            if(prog) prog.textContent = msg2;
+            if(titleEl) titleEl.value='';
+            if(fileEl)  fileEl.value='';
+            setTimeout(function(){ _renderManualFiles(); }, 600);
+        }catch(e){
+            if(prog) prog.textContent = '오류: '+e.message;
+        }
+    }
+
+    async function _approveManualFile(id){
+        var now = Date.now();
+        await _authFetch('imi_manual_files/'+id+'/status.json','PUT','approved');
+        await _authFetch('imi_manual_files/'+id+'/approvedBy.json','PUT',(_currentUser&&_currentUser.name)||'');
+        await _authFetch('imi_manual_files/'+id+'/approvedAt.json','PUT',now);
+        _renderManualFiles();
+    }
+
+    async function _deleteManualFile(id, storagePath){
+        if(!confirm('이 파일을 삭제하시겠습니까?')) return;
+        if(storagePath){
+            try{ await storage.ref(storagePath).delete(); }catch(e){}
+        }
+        await _authFetch('imi_manual_files/'+id+'.json','DELETE');
+        _renderManualFiles();
+    }
+    // ===== /파일 매뉴얼 =====
+
+    // ── 매뉴얼 관리 탭 ──
+    var _mfMgmtMode = 'mania';
+    var _mfRegTab   = 'new';
+    var _MANIA_CATS = ['일반','충전','결제','사고'];
+    var _BAY_CATS   = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+
+    function _renderManualMgmt(){
+        var wrap = document.getElementById('mfContent');
+        if(!wrap) return;
+        if(!_isPrivileged()){
+            wrap.innerHTML='<div style="color:#475569;text-align:center;padding:30px;font-size:13px;">접근 권한이 없습니다.</div>';
+            return;
+        }
+        var isAdm = _currentUser && _currentUser.role==='admin';
+        var h = '';
+
+        // 모드 선택 (매니아/베이)
+        h += '<div style="display:flex;gap:6px;margin-bottom:12px;">';
+        h += '<button id="mfMgmtMode_mania" onclick="_mfSetMgmtMode(\'mania\')" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #0284c7;background:#0284c7;color:#fff;font-size:11px;font-weight:900;cursor:pointer;">📌 매니아</button>';
+        h += '<button id="mfMgmtMode_bay"   onclick="_mfSetMgmtMode(\'bay\')"   style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;">📌 베이</button>';
+        h += '</div>';
+
+        // 서브탭: 신규등록 / 수정
+        h += '<div style="display:flex;gap:4px;margin-bottom:12px;background:#1e293b;border-radius:9px;padding:4px;">';
+        h += '<button id="mfRegTab_new"  onclick="_mfSetRegTab(\'new\')"  style="flex:1;padding:7px;border-radius:7px;border:none;background:#0f172a;color:#e2e8f0;font-size:11px;font-weight:900;cursor:pointer;">➕ 신규 등록</button>';
+        h += '<button id="mfRegTab_edit" onclick="_mfSetRegTab(\'edit\')" style="flex:1;padding:7px;border-radius:7px;border:none;background:none;color:#475569;font-size:11px;font-weight:900;cursor:pointer;">✏️ 항목 수정</button>';
+        h += '</div>';
+
+        // ── 신규 등록 패널 ──
+        h += '<div id="mfRegPanel_new">';
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:12px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">항목명</div>';
+        h += '<input type="text" id="mfNewName" placeholder="예: 신용카드 결제" style="width:100%;box-sizing:border-box;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">카테고리</div>';
+        h += '<select id="mfNewCat" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;"></select>';
+        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">시작 페이지 <span style="font-weight:400;color:#475569;">(등록할 PDF의 첫 페이지가 매뉴얼 전체의 몇 번째 페이지인지)</span></div>';
+        h += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
+        h += '<input type="number" id="mfNewStart" min="1" placeholder="예: 151" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
+        h += '<button onclick="_mfAutoStart()" style="padding:7px 12px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;white-space:nowrap;">자동 확인</button>';
+        h += '</div>';
+        h += '<label style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+        h += '📄 PDF 선택 → 자동 렌더링 + 등록';
+        h += '<input type="file" id="mfNewFile" accept=".pdf" style="display:none;" onchange="_mfDoNewEntry()">';
+        h += '</label>';
+        h += '<div id="mfNewProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
+        h += '</div>';
+        h += '</div>';
+
+        // ── 수정 패널 ──
+        h += '<div id="mfRegPanel_edit" style="display:none;">';
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:12px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">수정할 항목 선택</div>';
+        h += '<select id="mfEditSel" onchange="_mfOnEditSel()" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;">';
+        h += '<option value="">-- 항목을 선택하세요 --</option>';
+        h += '</select>';
+        h += '<div id="mfEditInfo" style="font-size:11px;color:#94a3b8;margin-bottom:10px;min-height:14px;line-height:1.5;"></div>';
+        h += '<label id="mfEditFileLabel" style="display:none;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+        h += '📄 수정된 PDF 선택 → 자동 교체';
+        h += '<input type="file" id="mfEditFile" accept=".pdf" style="display:none;" onchange="_mfDoModify()">';
+        h += '</label>';
+        h += '<div id="mfEditProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
+        h += '</div>';
+        h += '</div>';
+
+        // ── 등록된 항목 목록 ──
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;">';
+        h += '<div style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">📋 등록된 항목 목록</div>';
+        h += '<div id="mfRangeList" style="max-height:240px;overflow-y:auto;"></div>';
+        h += '</div>';
+
+        // ── 마이그레이션 (관리자만) ──
+        if(isAdm){
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #334155;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:6px;">🔧 HTML → Firebase 마이그레이션 (최초 1회)</div>';
+            h += '<button id="mfMigrateBtn" onclick="_migrateManualToFirebase()" style="padding:7px 0;border-radius:7px;background:#334155;color:#94a3b8;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">기존 MANUAL_INDEX 데이터 Firebase로 이전</button>';
+            h += '</div>';
+        }
+
+        wrap.innerHTML = h;
+        _mfSetMgmtMode(_mfMgmtMode);
+        _mfSetRegTab(_mfRegTab);
+    }
+
+    function _mfSetMgmtMode(mode){
+        _mfMgmtMode = mode;
+        ['mania','bay'].forEach(function(m){
+            var btn = document.getElementById('mfMgmtMode_'+m);
+            if(!btn) return;
+            var active = m===mode;
+            var col = m==='mania' ? '#0284c7' : '#e85d04';
+            btn.style.background = active ? col : 'none';
+            btn.style.borderColor = active ? col : '#334155';
+            btn.style.color = active ? '#fff' : '#94a3b8';
+        });
+        _mfFillCategories(mode);
+        _mfFillEditSel(mode);
+        _mfLoadRanges(mode);
+    }
+
+    function _mfSetRegTab(tab){
+        _mfRegTab = tab;
+        ['new','edit'].forEach(function(t){
+            var btn   = document.getElementById('mfRegTab_'+t);
+            var panel = document.getElementById('mfRegPanel_'+t);
+            if(!btn||!panel) return;
+            var active = t===tab;
+            btn.style.background = active ? '#0f172a' : 'none';
+            btn.style.color      = active ? '#e2e8f0' : '#475569';
+            panel.style.display  = active ? '' : 'none';
+        });
+    }
+
+    function _mfFillCategories(mode){
+        var sel = document.getElementById('mfNewCat');
+        if(!sel) return;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>'; }).join('');
+    }
+
+    async function _mfFillEditSel(mode){
+        var sel = document.getElementById('mfEditSel');
+        if(!sel) return;
+        var infoEl = document.getElementById('mfEditInfo');
+        var labelEl = document.getElementById('mfEditFileLabel');
+        if(infoEl) infoEl.textContent = '';
+        if(labelEl) labelEl.style.display = 'none';
+        sel.innerHTML = '<option value="">-- 항목을 선택하세요 --</option>';
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(!raw) return;
+        Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); }).forEach(function(e){
+            var key=e[0], r=e[1];
+            var opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = (r.title||key)+' (p.'+r.start+'~'+r.end+')';
+            opt.dataset.start = r.start;
+            opt.dataset.end   = r.end;
+            opt.dataset.title = r.title||key;
+            opt.dataset.cat   = r.category||'';
+            sel.appendChild(opt);
+        });
+    }
+
+    function _mfOnEditSel(){
+        var sel     = document.getElementById('mfEditSel');
+        var infoEl  = document.getElementById('mfEditInfo');
+        var labelEl = document.getElementById('mfEditFileLabel');
+        var progEl  = document.getElementById('mfEditProgress');
+        if(progEl) progEl.textContent = '';
+        if(!sel||!sel.value){ if(infoEl) infoEl.textContent=''; if(labelEl) labelEl.style.display='none'; return; }
+        var opt = sel.options[sel.selectedIndex];
+        var cat = opt.dataset.cat ? ' · 카테고리: '+opt.dataset.cat : '';
+        if(infoEl) infoEl.textContent = '페이지 범위: p.'+opt.dataset.start+' ~ p.'+opt.dataset.end+cat+'\n수정된 PDF를 업로드하면 해당 위치 이미지가 자동 교체됩니다.';
+        if(labelEl) labelEl.style.display = '';
+    }
+
+    async function _mfAutoStart(){
+        var progEl = document.getElementById('mfNewProgress');
+        if(progEl) progEl.textContent = '현재 마지막 페이지 확인 중...';
+        var total = await _mfGetMaxPage(_mfMgmtMode);
+        var startEl = document.getElementById('mfNewStart');
+        if(startEl) startEl.value = total+1;
+        if(progEl) progEl.textContent = '현재 '+total+'페이지 확인 → 시작 페이지: '+(total+1)+'으로 설정';
+    }
+
+    async function _mfGetMaxPage(mode){
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(!raw) return 0;
+        var max = 0;
+        Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
+        return max;
+    }
+
+    async function _mfDoNewEntry(){
+        var nameEl  = document.getElementById('mfNewName');
+        var catEl   = document.getElementById('mfNewCat');
+        var startEl = document.getElementById('mfNewStart');
+        var fileEl  = document.getElementById('mfNewFile');
+        var prog    = document.getElementById('mfNewProgress');
+        var name    = nameEl ? nameEl.value.trim() : '';
+        var cat     = catEl  ? catEl.value : '';
+        var start   = parseInt(startEl ? startEl.value : '0', 10);
+        var file    = fileEl ? fileEl.files[0] : null;
+        if(!name){ alert('항목명을 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
+        if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
+        if(!file) return;
+        var numPages = await _renderPdfToManualPages(_mfMgmtMode, file, prog, start);
+        if(!numPages){ if(fileEl) fileEl.value=''; return; }
+        var end = start + numPages - 1;
+        var key = name.replace(/[.#$\[\]\/]/g,'_');
+        await _authFetch('manual_page_ranges/'+_mfMgmtMode+'/'+key+'.json','PUT',{start:start,end:end,title:name,category:cat});
+        var idx = _mfMgmtMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+        if(!idx[name]){ await _authFetch('imi_manual_index/'+_mfMgmtMode+'/'+encodeURIComponent(name)+'.json','PUT',''); idx[name]=''; }
+        if(prog) prog.textContent = '✅ 등록 완료! "'+name+'" · '+cat+' · p.'+start+'~p.'+end;
+        if(nameEl)  nameEl.value  = '';
+        if(startEl) startEl.value = '';
+        if(fileEl)  fileEl.value  = '';
+        _mfLoadRanges(_mfMgmtMode);
+        _mfFillEditSel(_mfMgmtMode);
+    }
+
+    async function _mfDoModify(){
+        var sel    = document.getElementById('mfEditSel');
+        var fileEl = document.getElementById('mfEditFile');
+        var prog   = document.getElementById('mfEditProgress');
+        var key    = sel ? sel.value : '';
+        var file   = fileEl ? fileEl.files[0] : null;
+        if(!key||!file) return;
+        var opt   = sel.options[sel.selectedIndex];
+        var start = parseInt(opt.dataset.start, 10);
+        var title = opt.dataset.title || key;
+        if(!start){ alert('항목 정보를 불러올 수 없습니다.'); return; }
+        var numPages = await _renderPdfToManualPages(_mfMgmtMode, file, prog, start);
+        if(!numPages){ if(fileEl) fileEl.value=''; return; }
+        var end = start + numPages - 1;
+        await _authFetch('manual_page_ranges/'+_mfMgmtMode+'/'+key+'/end.json','PUT',end);
+        if(prog) prog.textContent = '✅ 교체 완료! "'+title+'" · p.'+start+'~p.'+end;
+        if(fileEl) fileEl.value='';
+        _mfLoadRanges(_mfMgmtMode);
+        _mfFillEditSel(_mfMgmtMode);
+    }
+
+    async function _mfLoadRanges(mode){
+        var listEl = document.getElementById('mfRangeList');
+        if(!listEl) return;
+        listEl.innerHTML = '<div style="font-size:11px;color:#475569;padding:8px 0;">로딩 중...</div>';
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(!raw||typeof raw!=='object'){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
+        var entries = Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
+        if(!entries.length){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
+        var h='';
+        entries.forEach(function(e){
+            var key=e[0], r=e[1];
+            var title=r.title||key;
+            var catBadge=r.category?'<span style="font-size:9px;background:#1e293b;border:1px solid #334155;color:#64748b;border-radius:4px;padding:1px 5px;margin-left:4px;">'+escHtml(r.category)+'</span>':'';
+            h+='<div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;background:#1e293b;margin-bottom:4px;">';
+            h+='<div style="flex:1;min-width:0;">';
+            h+='<div style="font-size:11px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escHtml(title)+catBadge+'</div>';
+            h+='<div style="font-size:10px;color:#475569;margin-top:1px;">p.'+r.start+' ~ p.'+r.end+'</div>';
+            h+='</div>';
+            h+='<button onclick="_mfDeleteRange(\''+mode+'\',\''+escHtml(key)+'\',\''+escHtml(title)+'\')" style="padding:4px 8px;border-radius:6px;background:none;border:1px solid #334155;color:#ef4444;font-size:10px;cursor:pointer;flex-shrink:0;">삭제</button>';
+            h+='</div>';
+        });
+        listEl.innerHTML=h;
+    }
+
+    async function _mfDeleteRange(mode, key, title){
+        if(!confirm('"'+title+'" 항목을 삭제하시겠습니까?')) return;
+        await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','DELETE');
+        _mfLoadRanges(mode);
+        _mfFillEditSel(mode);
+    }
+
+    async function _renderPdfToManualPages(mode, file, prog, startFrom){
+        startFrom = startFrom||1;
+        if(prog) prog.textContent = 'PDF 로딩 중...';
+        try{
+            pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            var arrayBuf = await file.arrayBuffer();
+            var pdfDoc   = await pdfjsLib.getDocument({data:arrayBuf}).promise;
+            var numPages = pdfDoc.numPages;
+            var canvas = document.createElement('canvas');
+            var ctx    = canvas.getContext('2d');
+            for(var i=1;i<=numPages;i++){
+                var page     = await pdfDoc.getPage(i);
+                var viewport = page.getViewport({scale:1.5});
+                canvas.width=viewport.width; canvas.height=viewport.height;
+                await page.render({canvasContext:ctx,viewport:viewport}).promise;
+                var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.85); });
+                var pageNum   = String(startFrom+i-1).padStart(3,'0');
+                var storePath = 'manual_pages/'+mode+'/page-'+pageNum+'.jpg';
+                await storage.ref(storePath).put(blob,{contentType:'image/jpeg'});
+                if(prog) prog.textContent = '이미지 변환 중 '+i+'/'+numPages+'...';
+            }
+            return numPages;
+        }catch(e){
+            if(prog) prog.textContent='오류: '+e.message;
+            console.error(e);
+            return 0;
+        }
+    }
+
+    async function _migrateManualToFirebase(){
+        var btn = document.getElementById('mfMigrateBtn');
+        if(btn){ btn.disabled=true; btn.textContent='마이그레이션 중...'; }
+        try{
+            await _authFetch('imi_manual_index/mania.json','PUT',MANUAL_INDEX);
+            await _authFetch('imi_manual_index/bay.json','PUT',BAY_MANUAL_INDEX);
+            await _authFetch('imi_page_ranges/mania.json','PUT',PAGE_RANGES);
+            await _authFetch('imi_page_ranges/bay.json','PUT',BAY_PAGE_RANGES);
+            if(btn){ btn.textContent='✓ 마이그레이션 완료'; }
+            alert('✓ 매뉴얼 인덱스 데이터를 Firebase에 저장했습니다.');
+        }catch(e){
+            if(btn){ btn.disabled=false; btn.textContent='Firebase로 마이그레이션'; }
+            alert('오류: '+e.message);
+        }
+    }
+
+    async function _initManualData(){
+        try{
+            var mI  = await _authFetch('imi_manual_index/mania.json');
+            var bI  = await _authFetch('imi_manual_index/bay.json');
+            var pR  = await _authFetch('imi_page_ranges/mania.json');
+            var bpR = await _authFetch('imi_page_ranges/bay.json');
+            if(mI  && typeof mI  === 'object') MANUAL_INDEX     = mI;
+            if(bI  && typeof bI  === 'object') BAY_MANUAL_INDEX = bI;
+            if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
+            if(bpR && typeof bpR === 'object') BAY_PAGE_RANGES  = bpR;
+        }catch(e){ /* Firebase 실패 시 HTML 하드코딩 값 유지 */ }
+    }
+
     function _umSwitchTab(n){
         _umCurrentTab = n;
         [1,2,3].forEach(function(i){
@@ -1433,17 +2129,41 @@
     }
 
     // teamsData 포맷: { "팀이름": ["파트1", "파트2"], ... }
-    // 구버전(배열) 자동 마이그레이션
+    // Firebase는 빈 배열 [] 을 저장하지 않으므로 sentinel {_:1} 로 대체
+    function _teamsToFirebase(teamsData){
+        var out = {};
+        Object.keys(teamsData).forEach(function(team){
+            var parts = teamsData[team];
+            out[team] = (Array.isArray(parts) && parts.length === 0) ? {_:1} : parts;
+        });
+        return out;
+    }
+    function _normalizeTeamParts(val){
+        if(!val) return [];
+        if(Array.isArray(val)) return val;
+        // Firebase가 배열을 숫자키 객체로 바꾼 경우: {"0":"파트1","1":"파트2"}
+        var keys = Object.keys(val);
+        if(keys.length === 1 && keys[0] === '_') return []; // sentinel
+        // 숫자키만 있으면 배열로 복원
+        if(keys.every(function(k){ return /^\d+$/.test(k); }))
+            return keys.sort(function(a,b){return +a-+b;}).map(function(k){ return val[k]; });
+        return [];
+    }
+    // 구버전(배열) 자동 마이그레이션 + sentinel 정규화
     async function _umLoadTeams(){
         var raw = await _authFetch('imi_teams.json');
         if(!raw) return {};
         if(Array.isArray(raw)){
             var obj = {};
             raw.forEach(function(t){ obj[t] = []; });
-            await _authFetch('imi_teams.json', 'PUT', obj);
+            await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(obj));
             return obj;
         }
-        return raw;
+        var normalized = {};
+        Object.keys(raw).forEach(function(team){
+            normalized[team] = _normalizeTeamParts(raw[team]);
+        });
+        return normalized;
     }
 
     async function _renderUserMgmt(){
@@ -1503,6 +2223,8 @@
                     : '<span style="color:#334155;font-size:10px;flex-shrink:0;">&#x25cf;</span>';
                 var roleBadge = u.role==='admin'
                     ? '<span style="background:#7c3aed;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;flex-shrink:0;">관리자</span>'
+                    : u.role==='subadmin'
+                    ? '<span style="background:#0e7490;color:#a5f3fc;font-size:9px;border-radius:4px;padding:1px 5px;flex-shrink:0;">부관리자</span>'
                     : '<span style="background:#334155;color:#94a3b8;font-size:9px;border-radius:4px;padding:1px 5px;flex-shrink:0;">일반</span>';
                 var teamBadge = u.team
                     ? '<span style="background:#0284c7;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;flex-shrink:0;">'+escHtml(u.team)+'</span>'
@@ -1515,14 +2237,21 @@
                     + '<span style="font-size:12px;font-weight:700;color:#e2e8f0;min-width:50px;">'+escHtml(u.name||u._key)+(isMe?'<span style="font-size:9px;color:#64748b;"> (나)</span>':'')+'</span>'
                     + teamBadge + partBadge + roleBadge
                     + '<span style="flex:1;min-width:4px;"></span>';
-                if(isAdmin && !isMe){
+                if(isAdmin){
                     h += '<select onchange="_umSetTeam(\''+u._key+'\',this.value)" style="'+SEL+'" title="팀">'+teamOpts(u.team||'')+'</select>';
                     h += '<select onchange="_umSetPart(\''+u._key+'\',this.value)" style="'+SEL+'" title="파트">'+partOpts(u.team||'', u.part||'')+'</select>';
-                    h += '<select onchange="_umSetRole(\''+u._key+'\',this.value)" style="'+SEL+'" title="권한">'
-                        + '<option value="user"'+(u.role==='user'?' selected':'')+'>일반</option>'
-                        + '<option value="admin"'+(u.role==='admin'?' selected':'')+'>관리자</option>'
-                        + '</select>';
-                    h += '<button onclick="_authDelete(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#64748b;" title="삭제">&#x2715;</button>';
+                    if(!isMe){
+                        h += '<select onchange="_umSetRole(\''+u._key+'\',this.value)" style="'+SEL+'" title="권한">'
+                            + '<option value="user"'+(u.role==='user'?' selected':'')+'>일반</option>'
+                            + '<option value="subadmin"'+(u.role==='subadmin'?' selected':'')+'>부관리자</option>'
+                            + '<option value="admin"'+(u.role==='admin'?' selected':'')+'>관리자</option>'
+                            + '</select>';
+                    }
+                    h += '<button onclick="_umSetEmpId(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\',\''+escHtml(u.emp_id||'')+'\')" style="'+ABT+'background:none;border:1px solid #1e3a5f;color:#93c5fd;" title="사번 설정">ID</button>';
+                    if(!isMe){
+                        h += '<button onclick="_authResetPw(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#f59e0b;" title="비밀번호 초기화">&#x1f511;</button>';
+                        h += '<button onclick="_authDelete(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#64748b;" title="삭제">&#x2715;</button>';
+                    }
                 }
                 h += '</div>';
             });
@@ -1625,14 +2354,14 @@
         var teamsData = await _umLoadTeams();
         if(teamsData.hasOwnProperty(name)){ alert('이미 존재하는 팀입니다.'); return; }
         teamsData[name] = [];
-        await _authFetch('imi_teams.json', 'PUT', teamsData);
+        await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(teamsData));
         _renderUserMgmt();
     }
     async function _umDeleteTeam(team){
         if(!confirm(team+' 팀을 삭제하시겠습니까?\n(소속 멤버의 팀/파트 배정이 해제됩니다)')) return;
         var teamsData = await _umLoadTeams();
         delete teamsData[team];
-        await _authFetch('imi_teams.json', 'PUT', teamsData);
+        await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(teamsData));
         var users = await _authFetch('imi_users.json') || {};
         var tasks = Object.entries(users)
             .filter(function(e){ return e[1].team === team; })
@@ -1652,14 +2381,14 @@
         if(!teamsData[team]) teamsData[team] = [];
         if(teamsData[team].includes(name)){ alert('이미 존재하는 파트입니다.'); return; }
         teamsData[team].push(name);
-        await _authFetch('imi_teams.json', 'PUT', teamsData);
+        await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(teamsData));
         _renderUserMgmt();
     }
     async function _umDeletePart(team, part){
         if(!confirm('['+team+'] '+part+' 파트를 삭제하시겠습니까?\n(소속 멤버의 파트 배정이 해제됩니다)')) return;
         var teamsData = await _umLoadTeams();
         if(teamsData[team]) teamsData[team] = teamsData[team].filter(function(p){ return p !== part; });
-        await _authFetch('imi_teams.json', 'PUT', teamsData);
+        await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(teamsData));
         var users = await _authFetch('imi_users.json') || {};
         var tasks = Object.entries(users)
             .filter(function(e){ return e[1].team === team && e[1].part === part; })
@@ -1681,6 +2410,13 @@
     async function _umSetRole(key, role){
         if(!confirm('권한을 변경하시겠습니까?')) return;
         await _authFetch('imi_users/'+key+'/role.json', 'PUT', role);
+        _renderUserMgmt();
+    }
+    async function _umSetEmpId(key, name, current){
+        var val = prompt('['+name+'] 사번을 입력하세요.\n현재: '+(current||'없음'), current||'');
+        if(val === null) return;
+        val = val.trim();
+        await _authFetch('imi_users/'+key+'/emp_id.json', 'PUT', val);
         _renderUserMgmt();
     }
 
@@ -3464,7 +4200,12 @@
     var MEMO_KEY_PFX='imi_memos_';
     var _memos=[];
     var _mfZTop=4000;
-    function getMemoKey(){return MEMO_KEY_PFX+currentMode+'_v1';}
+    var _memoSaveTimer=null;
+
+    function _memoFbPath(){
+        if(!_currentUser||!_currentUser.name) return null;
+        return 'user_memos/'+_ukey(_currentUser.name)+'/'+currentMode;
+    }
     var MCOL=[
         {id:'y',bg:'#fef9c3',bar:'#fde047',text:'#713f12'},
         {id:'b',bg:'#dbeafe',bar:'#93c5fd',text:'#1e3a5f'},
@@ -3474,16 +4215,34 @@
     function mcol(cid){return MCOL.find(function(c){return c.id===cid;})||MCOL[0];}
 
     function loadMemos(){
-        try{_memos=JSON.parse(localStorage.getItem(getMemoKey()))||[];}catch(e){_memos=[];}
-        if(!_memos.length){
-            try{
-                var old=JSON.parse(localStorage.getItem('imi_memos_v1'));
-                if(old&&old.length){_memos=old;saveMemos();localStorage.removeItem('imi_memos_v1');}
-            }catch(e){}
-        }
-        renderDockedMemos();
+        var path=_memoFbPath();
+        if(!path){ _memos=[]; renderDockedMemos(); return; }
+        db.ref(path).once('value',function(snap){
+            var data=snap.val();
+            if(data&&typeof data==='object'){
+                _memos=Object.values(data);
+            } else {
+                _memos=[];
+                // 구버전 localStorage에서 Firebase로 1회 마이그레이션
+                try{
+                    var legacyKey=MEMO_KEY_PFX+currentMode+'_v1';
+                    var old=JSON.parse(localStorage.getItem(legacyKey));
+                    if(old&&old.length){ _memos=old; saveMemos(); }
+                }catch(e){}
+            }
+            renderDockedMemos();
+        });
     }
-    function saveMemos(){localStorage.setItem(getMemoKey(),JSON.stringify(_memos));}
+    function saveMemos(){
+        var path=_memoFbPath();
+        if(!path) return;
+        clearTimeout(_memoSaveTimer);
+        _memoSaveTimer=setTimeout(function(){
+            var obj={};
+            _memos.forEach(function(m){ obj[m.id]=m; });
+            db.ref(path).set(obj);
+        },600);
+    }
     function unloadMemos(){
         _memos.forEach(function(m){var el=document.getElementById('mf_'+m.id);if(el)el.remove();});
         _memos=[];
@@ -4447,7 +5206,7 @@
                 card.innerHTML=
                     '<div class="n-title font-black">'+(n.pinned?'📌 ':'')+n.title+'</div>'+
                     '<div class="n-content">'+prev+'</div>'+
-                    '<div class="text-[9px] opacity-50 mt-3 font-black">'+n.date+'</div>';
+                    '<div class="text-[9px] opacity-50 mt-3 font-black">'+n.date+(n.author?' · ✍️ '+n.author:'')+'</div>';
                 list.appendChild(card);
                 count++;
             }
@@ -4500,48 +5259,150 @@
     function getBellSeenKey(){return 'bell_seen_urgent';}
     function getBellSeen(){try{return JSON.parse(localStorage.getItem(getBellSeenKey())||'[]');}catch(e){return[];}}
     function setBellSeen(arr){localStorage.setItem(getBellSeenKey(),JSON.stringify(arr));}
+    function getNoticeBellSeen(){try{return JSON.parse(localStorage.getItem('bell_seen_notices')||'[]');}catch(e){return[];}}
+    function setNoticeBellSeen(arr){localStorage.setItem('bell_seen_notices',JSON.stringify(arr));}
+
+    function _formatBellTime(ts){
+        if(!ts||ts<1000000000000) return '';
+        var diff=Date.now()-ts;
+        if(diff<60000) return '방금';
+        if(diff<3600000) return Math.floor(diff/60000)+'분 전';
+        if(diff<86400000) return Math.floor(diff/3600000)+'시간 전';
+        var d=new Date(ts);
+        return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    }
+
+    function getUnseenNotices(){
+        var seenN=getNoticeBellSeen();
+        var cutoff=Date.now()-3*86400000;
+        var result=[];
+        ['mania','bay'].forEach(function(mode){
+            var notices=allNotices[mode]||{};
+            Object.entries(notices).forEach(function(e){
+                var ts=parseInt(e[0]);
+                if(ts>cutoff && seenN.indexOf(e[0])<0){
+                    result.push({id:e[0],mode:mode,n:e[1],ts:ts});
+                }
+            });
+        });
+        return result.sort(function(a,b){return b.ts-a.ts;});
+    }
+
+    function _buildBellItems(){
+        /* 긴급공지 + 일반공지 전체 합쳐서 최신순 정렬 */
+        var seenU=getBellSeen();
+        var items=[];
+        // 긴급공지 - 이미 확인한 것은 제외
+        Object.entries(urgentNotices).forEach(function(e){
+            var id=e[0]; var n=e[1];
+            if(!isUrgentActive(n)) return;
+            if(seenU.indexOf(id)>=0) return;
+            items.push({type:'urgent',id:id,ts:n.timestamp||parseInt(id),n:n,unread:true});
+        });
+        // 일반공지 (매니아+베이, 3일 이내 미확인)
+        var seenN=getNoticeBellSeen();
+        var cutoff=Date.now()-3*86400000;
+        ['mania','bay'].forEach(function(mode){
+            var notices=allNotices[mode]||{};
+            Object.entries(notices).forEach(function(e){
+                var ts=parseInt(e[0]);
+                if(ts>cutoff && seenN.indexOf(e[0])<0){
+                    items.push({type:'notice',mode:mode,id:e[0],ts:ts,n:e[1],unread:true});
+                }
+            });
+        });
+        return items.sort(function(a,b){return b.ts-a.ts;});
+    }
+
     function updateBellBadge(){
+        var seenU=getBellSeen();
         var pinned=getPinnedNotices();
-        var seen=getBellSeen();
-        var unread=pinned.filter(function(p){return seen.indexOf(p.id)<0;}).length;
+        var unreadUrgent=pinned.filter(function(p){return seenU.indexOf(p.id)<0;}).length;
+        var unreadNotice=getUnseenNotices().length;
+        var unread=unreadUrgent+unreadNotice;
         var badge=document.getElementById('bellBadge');
         if(!badge)return;
         if(unread>0){badge.textContent=unread;badge.classList.remove('hidden');}
         else{badge.classList.add('hidden');}
     }
+
     function openBellModal(){
-        var pinned=getPinnedNotices();
-        document.getElementById('bellModalTitle').textContent='🚨 긴급공지 (매니아/베이 공통)';
+        var items=_buildBellItems();
+        var totalUnread=items.filter(function(i){return i.unread;}).length;
+        document.getElementById('bellModalTitle').textContent='🔔 알림'+(totalUnread>0?' ('+totalUnread+'건)':'');
         var list=document.getElementById('bellModalList');
-        if(pinned.length===0){
-            list.innerHTML='<div style="text-align:center;opacity:0.4;font-size:13px;font-weight:700;padding:20px 0;">현재 유효한 긴급공지가 없습니다.</div>';
+        list.innerHTML='';
+        if(items.length===0){
+            list.innerHTML='<div style="text-align:center;opacity:0.4;font-size:13px;font-weight:700;padding:30px 0;">새로운 알림이 없습니다.</div>';
         } else {
-            list.innerHTML='';
-            pinned.forEach(function(item){
+            items.forEach(function(item){
+                var n=item.n;
                 var div=document.createElement('div');
                 div.className='bell-notice-item';
-                var remaining=Math.max(0,Math.ceil((URGENT_TTL-(Date.now()-item.timestamp))/3600000));
-                div.innerHTML='<div class="bell-notice-title">🚨 '+escHtml(item.title)+'</div>'+
-                    '<div style="font-size:10px;opacity:0.7;margin-top:6px;line-height:1.6;white-space:pre-wrap;">'+escHtml(item.content.substring(0,200))+'</div>'+
-                    '<div class="bell-notice-date">'+escHtml(item.date)+' &nbsp;·&nbsp; 잔여 '+remaining+'시간</div>';
+                var timeStr=_formatBellTime(item.ts);
+                if(item.type==='urgent'){
+                    var remaining=getUrgentRemaining(n);
+                    var isPerm=!!n.permanent;
+                    div.style.borderLeftColor='#ef4444';
+                    div.style.borderColor='rgba(239,68,68,0.35)';
+                    div.innerHTML=
+                        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">'
+                            +'<span style="font-size:10px;font-weight:900;padding:2px 8px;border-radius:5px;background:rgba(239,68,68,0.15);color:#ef4444;white-space:nowrap;">🚨 긴급공지</span>'
+                            +(isPerm?'<span style="font-size:10px;font-weight:900;padding:2px 8px;border-radius:5px;background:rgba(139,92,246,0.15);color:#8b5cf6;">♾️ 영구</span>':'<span style="font-size:10px;font-weight:700;opacity:0.45;">'+remaining+'</span>')
+                            +'<span style="margin-left:auto;font-size:10px;font-weight:700;opacity:0.4;white-space:nowrap;">'+timeStr+'</span>'
+                        +'</div>'
+                        +'<div style="font-size:13px;font-weight:900;line-height:1.4;margin-bottom:6px;">'+escHtml(n.title||'')+'</div>'
+                        +'<div style="font-size:11px;opacity:0.65;line-height:1.6;white-space:pre-wrap;">'+escHtml((n.content||'').substring(0,180))+'</div>'
+                        +(n.author?'<div style="font-size:10px;opacity:0.4;font-weight:700;margin-top:6px;">✍️ '+escHtml(n.author)+'</div>':'');
+                    (function(id){
+                        div.onclick=function(){
+                            var s=getBellSeen(); if(s.indexOf(id)<0){s.push(id);setBellSeen(s);}
+                            updateBellBadge();
+                            closeBellModal(); openUrgentDetail(id);
+                        };
+                    })(item.id);
+                } else {
+                    var isMania=item.mode==='mania';
+                    var modeColor=isMania?'var(--mania-color)':'var(--bay-color)';
+                    var modeBg=isMania?'rgba(2,132,199,0.12)':'rgba(219,39,119,0.12)';
+                    var modeLabel=isMania?'📌 매니아 공지':'📌 베이 공지';
+                    div.style.borderLeftColor=isMania?'#0284c7':'#db2777';
+                    div.style.borderColor=isMania?'rgba(2,132,199,0.3)':'rgba(219,39,119,0.3)';
+                    var prev=(n.content||'').replace(/\n+/g,' ').substring(0,150);
+                    div.innerHTML=
+                        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;">'
+                            +'<span style="font-size:10px;font-weight:900;padding:2px 8px;border-radius:5px;background:'+modeBg+';color:'+modeColor+';white-space:nowrap;">'+modeLabel+'</span>'
+                            +'<span style="margin-left:auto;font-size:10px;font-weight:700;opacity:0.4;white-space:nowrap;">'+timeStr+'</span>'
+                        +'</div>'
+                        +'<div style="font-size:13px;font-weight:900;line-height:1.4;margin-bottom:6px;">'+escHtml(n.title||'')+'</div>'
+                        +'<div style="font-size:11px;opacity:0.65;line-height:1.6;">'+escHtml(prev)+'</div>'
+                        +(n.author?'<div style="font-size:10px;opacity:0.4;font-weight:700;margin-top:6px;">✍️ '+escHtml(n.author)+'</div>':'');
+                    (function(id,mode){
+                        div.onclick=function(){
+                            var s=getNoticeBellSeen(); if(s.indexOf(id)<0){s.push(id);setNoticeBellSeen(s);}
+                            updateBellBadge();
+                            closeBellModal(); if(currentMode!==mode){switchMode(mode);} openViewModal(id);
+                        };
+                    })(item.id,item.mode);
+                }
                 list.appendChild(div);
             });
         }
-        var seen=getBellSeen();
-        pinned.forEach(function(p){if(seen.indexOf(p.id)<0)seen.push(p.id);});
-        setBellSeen(seen);
-        updateBellBadge();
         document.getElementById('bellModal').classList.remove('hidden');
     }
     function closeBellModal(){document.getElementById('bellModal').classList.add('hidden');}
     function markAllBellRead(){
         var pinned=getPinnedNotices();
-        var seen=getBellSeen();
-        pinned.forEach(function(p){if(seen.indexOf(p.id)<0)seen.push(p.id);});
-        setBellSeen(seen);
+        var seenU=getBellSeen();
+        pinned.forEach(function(p){if(seenU.indexOf(p.id)<0)seenU.push(p.id);});
+        setBellSeen(seenU);
+        var unseenN=getUnseenNotices();
+        var seenN=getNoticeBellSeen();
+        unseenN.forEach(function(e){if(seenN.indexOf(e.id)<0)seenN.push(e.id);});
+        setNoticeBellSeen(seenN);
         updateBellBadge();
         var list=document.getElementById('bellModalList');
-        if(list) list.innerHTML='<div style="text-align:center;opacity:0.4;font-size:13px;font-weight:700;padding:20px 0;">모두 확인하셨습니다.</div>';
+        if(list) list.innerHTML='<div style="text-align:center;opacity:0.4;font-size:13px;font-weight:700;padding:30px 0;">모두 확인하셨습니다.</div>';
     }
     var _currentUrgentId=null;
     function openUrgentHistory(){
@@ -4598,7 +5459,7 @@
                 +'<div style="font-size:12.5px;font-weight:900;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">'+(isPermanent?'♾️ ':active?'🚨 ':'')+escHtml(n.title||n.content||'')+'</div>';
             var dateEl=document.createElement('div');
             dateEl.style.cssText='font-size:10px;opacity:0.4;font-weight:700;margin-top:8px;';
-            dateEl.textContent=n.date||'';
+            dateEl.textContent=(n.date||'')+(n.author?' · ✍️ '+n.author:'');
             card.appendChild(inner);
             card.appendChild(dateEl);
             grid.appendChild(card);
@@ -4646,6 +5507,8 @@
         document.getElementById('udStatus').innerHTML='<span style="font-size:10px;font-weight:900;padding:2px 9px;border-radius:5px;background:'+(isPermanent?'rgba(139,92,246,0.15)':active?'rgba(239,68,68,0.12)':'var(--border-ui)')+';color:'+statusColor+';">'+(isPermanent?'♾️ 영구공지':active?'🚨 진행중':'만료됨')+'</span>';
         document.getElementById('udTitle').textContent=n.title;
         document.getElementById('udDate').textContent=n.date||'';
+        var udAuth=document.getElementById('udAuthor');
+        if(udAuth) udAuth.textContent=n.author?'✍️ '+n.author:'';
         document.getElementById('udContent').textContent=n.content;
         /* +24h 버튼 */
         var extBtn=document.getElementById('udExtendBtn');
@@ -5111,7 +5974,7 @@
             card.onclick=function(){document.getElementById('allNoticesModal').classList.add('hidden');_returnToAllNotices=true;openViewModal(id);};
             var prev=(n.content||'').replace(/\n+/g,' ').slice(0,90);
             var inner=document.createElement('div');
-            inner.innerHTML='<div class="ncm-title" style="padding-right:18px;padding-left:'+(n.pinned?'18px':'4px')+';">'+(n.pinned?'📌 ':'')+n.title+'</div><div class="ncm-content">'+prev+'</div><div class="ncm-date">'+n.date+'</div>';
+            inner.innerHTML='<div class="ncm-title" style="padding-right:18px;padding-left:'+(n.pinned?'18px':'4px')+';">'+(n.pinned?'📌 ':'')+n.title+'</div><div class="ncm-content">'+prev+'</div><div class="ncm-date">'+n.date+(n.author?' · ✍️ '+n.author:'')+'</div>';
             card.appendChild(inner);
             list.appendChild(card);
             cnt++;
@@ -5142,6 +6005,11 @@
         if(updEl){
             if(n.updatedAt){updEl.textContent='✏️ 최종 수정: '+n.updatedAt;updEl.classList.remove('hidden');}
             else{updEl.classList.add('hidden');}
+        }
+        var authorEl=document.getElementById('viewAuthor');
+        if(authorEl){
+            if(n.author){authorEl.textContent='✍️ 작성자: '+n.author;authorEl.classList.remove('hidden');}
+            else{authorEl.classList.add('hidden');}
         }
         document.getElementById('viewTitle').innerText=n.title;
         document.getElementById('viewTitle').style.color='var(--active-focus-color)';
@@ -5244,7 +6112,8 @@
         var durEl=document.querySelector('input[name="urgentDuration"]:checked');
         var hours=durEl?parseInt(durEl.value):48;
         var dateStr=new Date(now).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short'});
-        var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:now+hours*3600000,showInTicker:true,permanent:false};
+        var author=_currentUser&&_currentUser.name?_currentUser.name:'알 수 없음';
+        var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:now+hours*3600000,showInTicker:true,permanent:false,author:author};
         db.ref('urgent_notices').child(String(now)).set(obj, function(err){
             if(err){ alert('🚨 Firebase 오류: '+err.message+'\n\n경로: urgent_notices'); }
         });
@@ -5265,6 +6134,8 @@
             ? allNotices[currentMode][currentEditId].date : null;
         var dateStr = existingDate || new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
         var obj={title:content.split('\n')[0].substring(0,35),content:content,date:dateStr};
+        var existingAuthor=currentEditId&&allNotices[currentMode]&&allNotices[currentMode][currentEditId]?allNotices[currentMode][currentEditId].author:null;
+        obj.author=existingAuthor||(_currentUser&&_currentUser.name?_currentUser.name:'알 수 없음');
         if(urlVal) obj.url=urlVal;
         if(currentEditId) obj.updatedAt=new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
         var saveKey=currentEditId||String(Date.now());
