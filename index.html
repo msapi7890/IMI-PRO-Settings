@@ -825,6 +825,7 @@
             <div class="mon-tabs" style="border-bottom:none;margin:0 -20px;">
                 <button id="termTab1" class="mon-tab mon-tab-active" onclick="switchTermsTab(1)" style="font-size:11px;">아이템매니아 서비스 이용약관</button>
                 <button id="termTab2" class="mon-tab" onclick="switchTermsTab(2)" style="font-size:11px;">아이템거래 서비스 이용약관</button>
+                <button id="termTab3" class="mon-tab" onclick="switchTermsTab(3)" style="font-size:11px;">아이템베이 이용약관</button>
             </div>
             <div style="padding:10px 0 8px;display:flex;align-items:center;gap:6px;">
                 <input id="termsSearchInput" type="text" placeholder="🔍 약관 내 검색 (Enter: 다음, Shift+Enter: 이전)..." style="flex:1;padding:7px 12px;border-radius:8px;border:2px solid var(--border-ui);background:var(--bg-card);color:var(--text-main);font-size:12px;font-weight:700;outline:none;transition:0.15s;" oninput="_termsSearch()" onfocus="this.style.borderColor='var(--active-focus-color)'" onblur="this.style.borderColor='var(--border-ui)'" onkeydown="if(event.key==='Enter'){event.preventDefault();_termsNavMatch(event.shiftKey?-1:1);}">
@@ -1180,16 +1181,16 @@
         var maniaW, bayW;
         if(v <= 16){
             var maniaPct=(v-12)*20+40;
-            var bayPct=Math.round((v-12)*12.5+35);
+            var bayPct=Math.round((v-12)*7.5+35);
             var maniaMaxW=Math.round(chatW*0.62);
-            var bayMaxW=Math.round(chatW*0.86);
+            var bayMaxW=Math.round(chatW*0.65);
             maniaW=Math.min(Math.round(chatW*maniaPct/100), maniaMaxW);
             bayW=Math.min(Math.round(chatW*bayPct/100), bayMaxW);
             document.documentElement.style.setProperty('--bubble-max-w', '88%');
         } else {
-            // 16 기준(mania:62%, bay:85%) → 18: +5%, 20: +9%
+            // 16 기준(mania:62%, bay:65%) → 18: +5%, 20: +9%
             var maniaPct=Math.min(62+(v-16)*2.5, 88);
-            var bayPct=Math.min(85+(v-16)*2.0, 93);
+            var bayPct=Math.min(65+(v-16)*3.0, 80);
             var maxW=Math.round(chatW*0.97);
             maniaW=Math.min(Math.round(chatW*maniaPct/100), maxW);
             bayW=Math.min(Math.round(chatW*bayPct/100), maxW);
@@ -2759,10 +2760,10 @@
                             +'<img src="'+u+'" loading="lazy" onerror="this.style.display=\'none\'"></div>';
                     };
                     if(tot===1){
-                        pgHtml='<div style="margin:8px auto 0;width:var(--bay-mv-w,65%);max-width:100%;">'
-                            +'<div class="mv-cell" onclick="openImgModal(\''+imgKey+'\',0)">'
+                        pgHtml='<div class="mt-pages">'
+                            +'<div style="position:relative;width:var(--bay-mv-w,65%);max-width:100%;margin:0 auto;">'
                             +'<span class="mv-num">'+_pgLabel(0,1)+'</span>'
-                            +'<img src="'+urls[0]+'" loading="lazy" style="width:100%;display:block;border-radius:4px;" onerror="this.style.display=\'none\'"></div></div>';
+                            +'<img src="'+urls[0]+'" loading="lazy" style="width:100%;display:block;border-radius:4px;cursor:zoom-in;" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div></div>';
                     } else if(tot<=3){
                         pgHtml='<div class="bay-multiview">'+urls.map(_bayCell).join('')+'</div>';
                     } else {
@@ -2818,23 +2819,21 @@
         var words=raw.filter(function(w){ return !_stop.has(w); });
         if(!words.length) words=raw;
         if(!words.length) return [];
-        // 핵심어: 4자 이상 단어 + 인접 단어 bigram(결제+인증→결제인증)
-        // → 브랜드명/복합어 기준 매칭, 짧은 범용 단어(충전·결제 단독)로 오매칭 방지
+        // 핵심어: 4자 이상 단어 + 인접 단어 bigram
         var primary=[];
         words.forEach(function(w,i){
             if(w.length>=4) primary.push(w);
             if(i<words.length-1) primary.push(w+words[i+1]);
         });
+        // 4자 이상 단어가 없으면 짧은 단어 전체를 primary로 사용 (롤백 등 2글자 특수 용어 처리)
+        if(!primary.length) primary = words.slice();
         var results=[];
         Object.keys(notices).forEach(function(id){
             try{
                 var n=notices[id];
                 if(!n||typeof n!=='object') return;
-                var titleOnly=(n.title||'').toLowerCase();
-                // 핵심어 있으면 제목+내용 전체, 없으면(단일 짧은 단어) 제목만
-                var hay=primary.length ? (titleOnly+' '+(n.content||'')).toLowerCase() : titleOnly;
-                var terms=primary.length ? primary : words;
-                if(terms.some(function(w){ return hay.indexOf(w)>=0; })){
+                var hay=((n.title||'')+' '+(n.content||'')).toLowerCase();
+                if(primary.some(function(w){ return hay.indexOf(w)>=0; })){
                     results.push({id:id, title:n.title||'', date:n.date||'', _ts:_parseDateNum(n)});
                 }
             }catch(e){}
@@ -3594,6 +3593,53 @@
         if(!CLAUDE_API_KEY){alert('⚠️ Claude API 키를 먼저 설정해주세요.');return;}
         addCSMsg(escHtml(q),'user');
         inp.value='';
+        /* 베이 카테고리 분기 (BAY_CATEGORY_GROUPS 기반) */
+        if(currentMode==='bay'){
+            var _qLow2=q.toLowerCase().trim();
+            var _bg2=BAY_CATEGORY_GROUPS[_qLow2]||BAY_CATEGORY_GROUPS[q.trim()]||null;
+            if(!_bg2){
+                var _bk2=Object.keys(BAY_CATEGORY_GROUPS).find(function(c){
+                    return c===_qLow2||c.indexOf(_qLow2)>=0||_qLow2.indexOf(c)>=0;
+                });
+                if(_bk2) _bg2=BAY_CATEGORY_GROUPS[_bk2];
+            }
+            if(_bg2&&_bg2.length){
+                var _csLidB='csL'+Date.now();
+                addCSMsg('','bot',_csLidB);
+                var _csBotDB=document.getElementById(_csLidB).querySelector('.bubble');
+                var _bh2='<strong>📂 '+escHtml(q)+' 카테고리 전체 ('+_bg2.length+'건):</strong><br><div style="font-size:10px;opacity:0.55;margin-bottom:8px;">항목을 클릭하면 예상 QNA를 바로 생성합니다</div><div class="choice-card-wrap">';
+                _bg2.forEach(function(t){_bh2+="<button class='choice-card' onclick='pickCSTemplate(\""+t.replace(/\"/g,'&quot;')+"\",this)'>▶ "+escHtml(t)+"</button>";});
+                _bh2+='</div>';
+                _csBotDB.innerHTML=_bh2;
+                var _csBoxB=document.getElementById('csChatBox'); if(_csBoxB)_csBoxB.scrollTop=99999;
+                return;
+            }
+        }
+        /* 매니아 카테고리 분기 (일반/충전/결제/사고) */
+        if(currentMode==='mania'&&(q==='일반'||q==='충전'||q==='결제'||q==='사고')){
+            var _csLid='csL'+Date.now();
+            addCSMsg('','bot',_csLid);
+            var _csBotD=document.getElementById(_csLid).querySelector('.bubble');
+            var _catLabel2=q==='충전'?'충전':q==='결제'?'결제':q;
+            var _titles2=Object.keys(MANUAL_INDEX);
+            var _catList2=_titles2.filter(function(t){
+                var pr=PAGE_RANGES[normalizeKey(t)];
+                if(q==='사고') return pr&&pr.start>=139;
+                if(q==='충전') return pr&&pr.start>=99&&pr.start<=127;
+                if(q==='결제') return pr&&pr.start>=128&&pr.start<=134;
+                return !pr||pr.start<99||(pr.start>=135&&pr.start<=138);
+            });
+            if(_catList2.length){
+                var _ch2='<strong>📂 '+escHtml(_catLabel2)+' 카테고리 전체 ('+_catList2.length+'건):</strong><br><div style="font-size:10px;opacity:0.55;margin-bottom:8px;">항목을 클릭하면 예상 QNA를 바로 생성합니다</div><div class="choice-card-wrap">';
+                _catList2.forEach(function(t){_ch2+="<button class='choice-card' onclick='pickCSTemplate(\""+t.replace(/\"/g,'&quot;')+"\",this)'>▶ "+escHtml(t)+"</button>";});
+                _ch2+='</div>';
+                _csBotD.innerHTML=_ch2;
+            } else {
+                _csBotD.innerHTML='<span>'+escHtml(_catLabel2)+' 카테고리 항목을 찾을 수 없습니다.</span>';
+            }
+            var _csBox0=document.getElementById('csChatBox'); if(_csBox0)_csBox0.scrollTop=99999;
+            return;
+        }
         var lid='csL'+Date.now();
         addCSMsg('<span style="opacity:0.5;font-style:italic;">매뉴얼 검색 중...</span>','bot',lid);
         var botEl=document.getElementById(lid); if(!botEl)return;
@@ -5264,7 +5310,143 @@
 
 **[부칙]**
 - **2025년 12월 24일**부터 적용
-- 2020년 5월 1일부터 시행되던 종전 약관 대체`
+- 2020년 5월 1일부터 시행되던 종전 약관 대체`,
+        bay: `## 아이템베이 이용약관
+
+## 제 1 장 총칙
+
+### 제 1 조 (목적)
+주식회사 아이템베이가 제공하는 중개서비스 및 정보서비스와 관련하여 회사와 회원 간의 권리, 의무, 책임사항 및 이용절차를 규정합니다.
+
+### 제 2 조 (약관의 명시, 효력 및 변경)
+- 약관은 서비스 이용자가 알 수 있도록 공시됩니다
+- 개정 시 적용일자 7일 전에 공지 (불리한 변경 시 최소 30일 전 공지)
+- 운영정책이 우선 적용되며 본 약관은 보충적 효력을 갖습니다
+
+### 제 3 조 (관련법령과의 관계)
+본 약관에 정하지 않은 사항은 전기통신사업법, 전자거래기본법, 전자상거래 소비자보호법 등 관련 법령을 따릅니다.
+
+### 제 4 조 (서비스의 종류)
+1. 중개서비스: 회원 상호간 상품매매거래가 이루어지는 온라인 거래장소 제공
+2. 기타 정보서비스: 온라인 정보서비스
+
+### 제 6 조 (서비스의 성질과 목적)
+회사는 온라인 거래장소를 제공하며, 상품 판매/구매는 하지 않습니다. 거래책임은 거래당사자가 부담합니다.
+
+---
+
+## 제 2 장 서비스 이용계약
+
+### 제 7 조 (서비스 이용계약)
+- 이용신청 및 약관 동의로 계약 성립
+- 실명 1인당 1개 아이디만 사용 가능
+- 거짓 정보 기재 시 법적 보호 불가
+
+### 제 8 조 (이용신청 및 거부)
+- 실명확인 절차 필수 (아이핀, 휴대폰 인증)
+- **만 19세 미만 회원은 중개서비스 이용 불가**
+- 거부 사유: 실명가입 아님, 중복 가입, 전 회원 재가입, 만 14세 미만 등
+
+### 제 9 조 (이용계약의 종료)
+- 회원은 해지 신청 가능 (진행 중인 매매 완료 후)
+- 회사는 위반 시 이용계약 해지 가능
+- 마일리지 정산 후 7일 내 환급
+
+---
+
+## 제 3 장 회원정보의 보호
+
+### 제 10 조 (회사의 의무)
+- 회원 정보 수집 시 동의 필수
+- 수집목적, 이용목적, 제3자 제공 관련사항 명시
+- 정보정정 요청에 성실히 응함
+- 정보 유출 시 회사가 책임 부담
+
+### 제 11 조 (회원의 의무)
+- 사실대로 정보 제공
+- 변경 사항 즉시 수정 (아이디, 성명 제외)
+- 아이디, 비밀번호 관리 책임
+- 도난 시 즉시 통보
+
+---
+
+## 제 4 장 서비스의 이용
+
+### 제 13 조 (중개서비스의 종류 및 이용)
+- 서비스: 일반판매, 분할판매, 일반구매, 분할구매
+- **매매보호 서비스를 통한 거래 필수**
+- 직거래 문제에 대해 회사는 책임 없음
+
+### 제 15 조 (부가서비스)
+유료등록 서비스 제공 (상품 홍보용, 환불 불가)
+
+### 제 17 조 (중개서비스 이용정지)
+서비스 운영정책에 따라 회원자격 정지 가능
+
+### 제 18 조 (회원의 등급 관리)
+- 거래 횟수 기준으로 5단계 등급 부여
+- 등급은 신용 보증이 아님
+- 거래 혜택 제공 (Level2 이상)
+
+### 제 20 조 (매매보호 서비스)
+- 대금 수령, 보관, 송금 업무 제공
+- 직거래 유도 시 거래취소 등 조치
+- **대금보관 이자는 서비스 대가 (환불 불가)**
+
+### 제 21 조 (중개서비스 이용자의 의무)
+- 거짓 없는 상품설명 제공
+- 거래 불가능 상품 거래 금지
+- 게임머니, 게임아이템 판매 제한 가능
+- 수수료는 회원 부담
+
+### 제 22 조 (판매자의 의무)
+- 상품 안전 인도 의무
+- 배송정보 제공 필수
+- 상품 전달 지연 시 책임 부담
+- 반품, 환불 요청 대응 의무
+
+### 제 23 조 (구매자의 의무)
+- 정확한 구매 정보 작성
+- 30분 내 결제 의무
+- **상품 수령 후 인수확인 (30일 경과 시 자동 인수확인)**
+- 구매거부 시 제재 가능
+
+### 제 24 조 (구매거부/판매거부의 신고, 신청 및 처리)
+- 신고 후 3일 내 의견 진술 기회
+- 신고 인정 시 거래 종료
+- 자진 신청 시 제재 가능
+
+---
+
+## 제 5 장 서비스 이용수수료
+
+### 제 27 조 (수수료의 내용)
+- 상품 등록, 사진 등록: **무료**
+- 일반판매/구매 거래 수수료:
+  - 2만원 이상: 거래금액의 **5%**
+  - 2만원 미만: **1,000원**
+
+### 제 29 조 (수수료 부과의 예외)
+- 구매 거부, 반품 시 수수료 미부과
+- 상품 인수확인 후 반품 시 수수료 환불 불가
+
+---
+
+## 제 6 장 면책조항 등
+
+### 제 31 조 (회사의 면책)
+- 회원 간 거래 분쟁: 회사 책임 없음
+- 천재지변, 시스템 장애: 책임 면제
+- 상품 하자, 정보 오류: 책임 없음
+- 회원 간 신뢰로 인한 손해: 책임 없음
+
+### 제 32 조 (준거법 및 관할법원)
+대한민국 법령이 적용되며 한국 법원의 관할입니다.
+
+---
+
+**[부칙]**
+- **2025년 11월 11일**부터 적용`
     };
 
     var _termsCurrentTab = 1;
@@ -5274,7 +5456,11 @@
         document.getElementById('termsModal').classList.remove('hidden');
         document.getElementById('termsSearchInput').value = '';
         document.getElementById('termsMatchInfo').textContent = '';
-        switchTermsTab(1);
+        var isBay = currentMode === 'bay';
+        document.getElementById('termTab1').style.display = isBay ? 'none' : '';
+        document.getElementById('termTab2').style.display = isBay ? 'none' : '';
+        document.getElementById('termTab3').style.display = isBay ? '' : 'none';
+        switchTermsTab(isBay ? 3 : 1);
         setTimeout(function(){document.getElementById('termsSearchInput').focus();}, 150);
     }
     function closeTermsModal(){
@@ -5282,8 +5468,9 @@
     }
     function switchTermsTab(n){
         _termsCurrentTab = n;
-        [1,2].forEach(function(i){
-            document.getElementById('termTab'+i).classList.toggle('mon-tab-active', i===n);
+        [1,2,3].forEach(function(i){
+            var el = document.getElementById('termTab'+i);
+            if(el) el.classList.toggle('mon-tab-active', i===n);
         });
         _termsRender();
     }
@@ -5308,7 +5495,7 @@
         return html;
     }
     function _termsRender(){
-        var md = _termsCurrentTab === 1 ? _TERMS.service : _TERMS.trade;
+        var md = _termsCurrentTab === 1 ? _TERMS.service : _termsCurrentTab === 3 ? _TERMS.bay : _TERMS.trade;
         var html = _termsMdToHtml(md);
         var term = document.getElementById('termsSearchInput').value.trim();
         document.getElementById('termsContent').innerHTML = html;
