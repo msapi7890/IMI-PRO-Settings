@@ -5670,6 +5670,15 @@
         switchMode('mania'); updateFontSize(16); loadMemos(); switchChatTab(1);
         if(localStorage.getItem('tickerCollapsed')==='1') toggleTicker();
         window.addEventListener('resize', function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); });
+        // 채팅창 휠 스크롤 세분화 (기본 스크롤보다 작은 고정 단계)
+        (function(){
+            var cb = document.getElementById('chatBox');
+            if(!cb) return;
+            cb.addEventListener('wheel', function(e){
+                e.preventDefault();
+                cb.scrollTop += e.deltaY > 0 ? 90 : -90;
+            }, { passive: false });
+        })();
         var _apiKeyFirstLoad = true;
         db.ref('config/claude_api_key').on('value', function(snap){
             CLAUDE_API_KEY = snap.val() || '';
