@@ -2761,7 +2761,7 @@
                     };
                     if(tot===1){
                         pgHtml='<div class="mt-pages">'
-                            +'<div style="position:relative;width:var(--bay-mv-w,65%);max-width:100%;margin:0 auto;">'
+                            +'<div style="position:relative;width:calc(var(--bay-mv-w,65%) / 2 + 3px);max-width:100%;margin:0 auto;">'
                             +'<span class="mv-num">'+_pgLabel(0,1)+'</span>'
                             +'<img src="'+urls[0]+'" loading="lazy" style="width:100%;display:block;border-radius:4px;cursor:zoom-in;" onclick="openImgModal(\''+imgKey+'\',0)" onerror="this.style.display=\'none\'"></div></div>';
                     } else if(tot<=3){
