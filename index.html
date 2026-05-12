@@ -1812,24 +1812,23 @@
     var _mfRegTab   = 'new';
     var _MANIA_CATS = ['일반','충전','결제','사고'];
     var _BAY_CATS   = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    var _mfPending  = [];   // 신규 등록 대기 항목
+    var _mfRendered = null; // {mode, startFrom, numPages, fileName, storePath, downloadURL}
 
     function _renderManualMgmt(){
         var wrap = document.getElementById('mfContent');
         if(!wrap) return;
-        if(!_isPrivileged()){
-            wrap.innerHTML='<div style="color:#475569;text-align:center;padding:30px;font-size:13px;">접근 권한이 없습니다.</div>';
-            return;
-        }
+        if(!_isPrivileged()){ wrap.innerHTML='<div style="color:#475569;text-align:center;padding:30px;font-size:13px;">접근 권한이 없습니다.</div>'; return; }
         var isAdm = _currentUser && _currentUser.role==='admin';
         var h = '';
 
-        // 모드 선택 (매니아/베이)
+        // 모드 선택
         h += '<div style="display:flex;gap:6px;margin-bottom:12px;">';
         h += '<button id="mfMgmtMode_mania" onclick="_mfSetMgmtMode(\'mania\')" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #0284c7;background:#0284c7;color:#fff;font-size:11px;font-weight:900;cursor:pointer;">📌 매니아</button>';
         h += '<button id="mfMgmtMode_bay"   onclick="_mfSetMgmtMode(\'bay\')"   style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;">📌 베이</button>';
         h += '</div>';
 
-        // 서브탭: 신규등록 / 수정
+        // 서브탭
         h += '<div style="display:flex;gap:4px;margin-bottom:12px;background:#1e293b;border-radius:9px;padding:4px;">';
         h += '<button id="mfRegTab_new"  onclick="_mfSetRegTab(\'new\')"  style="flex:1;padding:7px;border-radius:7px;border:none;background:#0f172a;color:#e2e8f0;font-size:11px;font-weight:900;cursor:pointer;">➕ 신규 등록</button>';
         h += '<button id="mfRegTab_edit" onclick="_mfSetRegTab(\'edit\')" style="flex:1;padding:7px;border-radius:7px;border:none;background:none;color:#475569;font-size:11px;font-weight:900;cursor:pointer;">✏️ 항목 수정</button>';
@@ -1837,47 +1836,87 @@
 
         // ── 신규 등록 패널 ──
         h += '<div id="mfRegPanel_new">';
-        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:12px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">항목명</div>';
-        h += '<input type="text" id="mfNewName" placeholder="예: 신용카드 결제" style="width:100%;box-sizing:border-box;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">카테고리</div>';
-        h += '<select id="mfNewCat" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;"></select>';
-        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">시작 페이지 <span style="font-weight:400;color:#475569;">(등록할 PDF의 첫 페이지가 매뉴얼 전체의 몇 번째 페이지인지)</span></div>';
+
+        // STEP 1: PDF 업로드 + 렌더링
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#7c3aed;letter-spacing:0.05em;margin-bottom:8px;">① PDF 업로드 &amp; 이미지 변환</div>';
+        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">시작 페이지 <span style="font-weight:400;color:#475569;">(이 PDF 1페이지 = 매뉴얼 전체 몇 번째 페이지인지)</span></div>';
         h += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
         h += '<input type="number" id="mfNewStart" min="1" placeholder="예: 151" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '<button onclick="_mfAutoStart()" style="padding:7px 12px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;white-space:nowrap;">자동 확인</button>';
         h += '</div>';
-        h += '<label style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-        h += '📄 PDF 선택 → 자동 렌더링 + 등록';
-        h += '<input type="file" id="mfNewFile" accept=".pdf" style="display:none;" onchange="_mfDoNewEntry()">';
+        h += '<label style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+        h += '📄 PDF 선택 → 이미지 변환 시작';
+        h += '<input type="file" id="mfNewFile" accept=".pdf" style="display:none;" onchange="_mfDoRender()">';
         h += '</label>';
         h += '<div id="mfNewProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
         h += '</div>';
+
+        // STEP 2: 항목 등록 (렌더링 완료 후 활성화)
+        h += '<div id="mfEntryPanel" style="display:none;">';
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #22c55e;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;margin-bottom:4px;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
+        h += '<div style="font-size:10px;color:#475569;margin-bottom:10px;">PDF 안에 여러 항목이 있으면 각각 페이지 범위를 지정해서 추가하세요.</div>';
+        h += '<div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;">';
+        h += '<input type="text" id="mfEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
+        h += '<select id="mfEntryCat" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
+        h += '<div style="display:flex;gap:6px;align-items:center;">';
+        h += '<span style="font-size:11px;color:#64748b;flex-shrink:0;">페이지</span>';
+        h += '<input type="number" id="mfEntryFrom" min="1" placeholder="시작" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
+        h += '<span style="font-size:11px;color:#64748b;">~</span>';
+        h += '<input type="number" id="mfEntryTo"   min="1" placeholder="끝"   style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '</div>';
+        h += '<button onclick="_mfAddPending()" style="padding:8px 0;border-radius:7px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;">+ 항목 추가</button>';
+        h += '</div>';
+        h += '<div id="mfPendingList"></div>';
+        h += '<button id="mfSaveAllBtn" onclick="_mfSaveAllPending()" style="display:none;padding:10px 0;border-radius:8px;background:#0284c7;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;width:100%;margin-top:8px;">💾 전체 저장</button>';
+        h += '</div>';
+        h += '</div>'; // mfEntryPanel
+
+        h += '</div>'; // mfRegPanel_new
 
         // ── 수정 패널 ──
         h += '<div id="mfRegPanel_edit" style="display:none;">';
-        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:12px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:4px;">수정할 항목 선택</div>';
-        h += '<select id="mfEditSel" onchange="_mfOnEditSel()" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;margin-bottom:10px;">';
+
+        // 항목 선택
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;letter-spacing:0.05em;margin-bottom:8px;">① 수정할 항목 선택</div>';
+        h += '<select id="mfEditSel" onchange="_mfOnEditSel()" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '<option value="">-- 항목을 선택하세요 --</option>';
         h += '</select>';
-        h += '<div id="mfEditInfo" style="font-size:11px;color:#94a3b8;margin-bottom:10px;min-height:14px;line-height:1.5;"></div>';
-        h += '<label id="mfEditFileLabel" style="display:none;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+        h += '<div id="mfEditInfo" style="font-size:11px;color:#94a3b8;margin-top:8px;min-height:14px;line-height:1.6;"></div>';
+        h += '</div>';
+
+        // PDF 업로드 (항목 선택 후 표시)
+        h += '<div id="mfEditRenderPanel" style="display:none;">';
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;letter-spacing:0.05em;margin-bottom:8px;">② 수정된 PDF 업로드</div>';
+        h += '<label style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
         h += '📄 수정된 PDF 선택 → 자동 교체';
         h += '<input type="file" id="mfEditFile" accept=".pdf" style="display:none;" onchange="_mfDoModify()">';
         h += '</label>';
         h += '<div id="mfEditProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
         h += '</div>';
+
+        // 추가 범위 수정 (렌더링 완료 후)
+        h += '<div id="mfEditExtraPanel" style="display:none;">';
+        h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #f59e0b;margin-bottom:10px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;letter-spacing:0.05em;margin-bottom:6px;">③ 같은 범위 내 다른 항목 페이지 조정 <span style="font-weight:400;color:#475569;">(선택)</span></div>';
+        h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">PDF에 여러 항목이 포함된 경우 각 항목의 끝 페이지를 조정하세요.</div>';
+        h += '<div id="mfEditExtraList"></div>';
+        h += '<button onclick="_mfSaveExtraEdits()" style="padding:8px 0;border-radius:7px;background:#f59e0b;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;margin-top:8px;">수정 내용 저장</button>';
         h += '</div>';
+        h += '</div>'; // mfEditExtraPanel
+
+        h += '</div>'; // mfEditRenderPanel
+        h += '</div>'; // mfRegPanel_edit
 
         // ── 등록된 항목 목록 ──
         h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;">';
         h += '<div style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">📋 등록된 항목 목록</div>';
-        h += '<div id="mfRangeList" style="max-height:240px;overflow-y:auto;"></div>';
+        h += '<div id="mfRangeList" style="max-height:230px;overflow-y:auto;"></div>';
         h += '</div>';
 
-        // ── 마이그레이션 (관리자만) ──
         if(isAdm){
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #334155;">';
             h += '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:6px;">🔧 HTML → Firebase 마이그레이션 (최초 1회)</div>';
@@ -1886,6 +1925,8 @@
         }
 
         wrap.innerHTML = h;
+        _mfPending  = [];
+        _mfRendered = null;
         _mfSetMgmtMode(_mfMgmtMode);
         _mfSetRegTab(_mfRegTab);
     }
@@ -1901,7 +1942,7 @@
             btn.style.borderColor = active ? col : '#334155';
             btn.style.color = active ? '#fff' : '#94a3b8';
         });
-        _mfFillCategories(mode);
+        _mfFillEntryCat(mode);
         _mfFillEditSel(mode);
         _mfLoadRanges(mode);
     }
@@ -1919,8 +1960,8 @@
         });
     }
 
-    function _mfFillCategories(mode){
-        var sel = document.getElementById('mfNewCat');
+    function _mfFillEntryCat(mode){
+        var sel = document.getElementById('mfEntryCat');
         if(!sel) return;
         var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
         sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>'; }).join('');
@@ -1929,10 +1970,6 @@
     async function _mfFillEditSel(mode){
         var sel = document.getElementById('mfEditSel');
         if(!sel) return;
-        var infoEl = document.getElementById('mfEditInfo');
-        var labelEl = document.getElementById('mfEditFileLabel');
-        if(infoEl) infoEl.textContent = '';
-        if(labelEl) labelEl.style.display = 'none';
         sel.innerHTML = '<option value="">-- 항목을 선택하세요 --</option>';
         var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
         if(!raw) return;
@@ -1941,25 +1978,29 @@
             var opt = document.createElement('option');
             opt.value = key;
             opt.textContent = (r.title||key)+' (p.'+r.start+'~'+r.end+')';
-            opt.dataset.start = r.start;
-            opt.dataset.end   = r.end;
-            opt.dataset.title = r.title||key;
-            opt.dataset.cat   = r.category||'';
+            opt.dataset.start = r.start; opt.dataset.end = r.end;
+            opt.dataset.title = r.title||key; opt.dataset.cat = r.category||'';
             sel.appendChild(opt);
         });
     }
 
     function _mfOnEditSel(){
-        var sel     = document.getElementById('mfEditSel');
-        var infoEl  = document.getElementById('mfEditInfo');
-        var labelEl = document.getElementById('mfEditFileLabel');
-        var progEl  = document.getElementById('mfEditProgress');
+        var sel       = document.getElementById('mfEditSel');
+        var infoEl    = document.getElementById('mfEditInfo');
+        var renderPnl = document.getElementById('mfEditRenderPanel');
+        var extraPnl  = document.getElementById('mfEditExtraPanel');
+        var progEl    = document.getElementById('mfEditProgress');
         if(progEl) progEl.textContent = '';
-        if(!sel||!sel.value){ if(infoEl) infoEl.textContent=''; if(labelEl) labelEl.style.display='none'; return; }
+        if(extraPnl) extraPnl.style.display = 'none';
+        if(!sel||!sel.value){
+            if(infoEl) infoEl.textContent = '';
+            if(renderPnl) renderPnl.style.display = 'none';
+            return;
+        }
         var opt = sel.options[sel.selectedIndex];
-        var cat = opt.dataset.cat ? ' · 카테고리: '+opt.dataset.cat : '';
-        if(infoEl) infoEl.textContent = '페이지 범위: p.'+opt.dataset.start+' ~ p.'+opt.dataset.end+cat+'\n수정된 PDF를 업로드하면 해당 위치 이미지가 자동 교체됩니다.';
-        if(labelEl) labelEl.style.display = '';
+        var cat = opt.dataset.cat ? ' · '+opt.dataset.cat : '';
+        if(infoEl) infoEl.innerHTML = '현재 페이지: <strong style="color:#e2e8f0;">p.'+opt.dataset.start+' ~ p.'+opt.dataset.end+'</strong>'+escHtml(cat);
+        if(renderPnl) renderPnl.style.display = '';
     }
 
     async function _mfAutoStart(){
@@ -1968,7 +2009,7 @@
         var total = await _mfGetMaxPage(_mfMgmtMode);
         var startEl = document.getElementById('mfNewStart');
         if(startEl) startEl.value = total+1;
-        if(progEl) progEl.textContent = '현재 '+total+'페이지 확인 → 시작 페이지: '+(total+1)+'으로 설정';
+        if(progEl) progEl.textContent = '현재 '+total+'페이지 → 시작 페이지: '+(total+1)+'으로 설정됐습니다.';
     }
 
     async function _mfGetMaxPage(mode){
@@ -1979,34 +2020,134 @@
         return max;
     }
 
-    async function _mfDoNewEntry(){
-        var nameEl  = document.getElementById('mfNewName');
-        var catEl   = document.getElementById('mfNewCat');
+    // ── 신규: 렌더링만 먼저 실행 ──
+    async function _mfDoRender(){
         var startEl = document.getElementById('mfNewStart');
         var fileEl  = document.getElementById('mfNewFile');
         var prog    = document.getElementById('mfNewProgress');
-        var name    = nameEl ? nameEl.value.trim() : '';
-        var cat     = catEl  ? catEl.value : '';
         var start   = parseInt(startEl ? startEl.value : '0', 10);
         var file    = fileEl ? fileEl.files[0] : null;
-        if(!name){ alert('항목명을 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
-        if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
         if(!file) return;
-        var numPages = await _renderPdfToManualPages(_mfMgmtMode, file, prog, start);
+        if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
+
+        var mode = _mfMgmtMode;
+        var ts   = Date.now();
+        var safeName = ts+'_'+file.name.replace(/[^\w가-힣._-]/g,'_');
+        var storePath = 'manuals/'+safeName;
+
+        // PDF → 이미지 변환
+        var numPages = await _renderPdfToManualPages(mode, file, prog, start);
         if(!numPages){ if(fileEl) fileEl.value=''; return; }
-        var end = start + numPages - 1;
-        var key = name.replace(/[.#$\[\]\/]/g,'_');
-        await _authFetch('manual_page_ranges/'+_mfMgmtMode+'/'+key+'.json','PUT',{start:start,end:end,title:name,category:cat});
-        var idx = _mfMgmtMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
-        if(!idx[name]){ await _authFetch('imi_manual_index/'+_mfMgmtMode+'/'+encodeURIComponent(name)+'.json','PUT',''); idx[name]=''; }
-        if(prog) prog.textContent = '✅ 등록 완료! "'+name+'" · '+cat+' · p.'+start+'~p.'+end;
-        if(nameEl)  nameEl.value  = '';
-        if(startEl) startEl.value = '';
-        if(fileEl)  fileEl.value  = '';
-        _mfLoadRanges(_mfMgmtMode);
-        _mfFillEditSel(_mfMgmtMode);
+
+        // 원본 PDF → 파일 목록에도 자동 저장
+        if(prog) prog.textContent = '파일 목록 저장 중...';
+        try{
+            var snap = await storage.ref(storePath).put(file);
+            var url  = await snap.ref.getDownloadURL();
+            var entry = {
+                title: file.name.replace(/\.[^.]+$/,''),
+                fileName: file.name, storagePath: storePath, downloadURL: url,
+                uploadedBy: (_currentUser&&_currentUser.name)||'', uploadedAt: ts,
+                mode: mode, status: 'approved',
+                approvedBy: (_currentUser&&_currentUser.name)||'', approvedAt: ts
+            };
+            await _authFetch('imi_manual_files/'+ts+'.json','PUT',entry);
+            _mfRendered = {mode:mode, startFrom:start, numPages:numPages, fileName:file.name, storePath:storePath, downloadURL:url};
+        }catch(e){
+            _mfRendered = {mode:mode, startFrom:start, numPages:numPages, fileName:file.name};
+        }
+
+        var endPage = start + numPages - 1;
+        if(prog) prog.textContent = '✅ '+numPages+'페이지 변환 완료 · 파일 목록 자동 저장됨';
+
+        // 항목 등록 패널 활성화
+        var entryPanel = document.getElementById('mfEntryPanel');
+        var infoEl     = document.getElementById('mfRenderedInfo');
+        var fromEl     = document.getElementById('mfEntryFrom');
+        var toEl       = document.getElementById('mfEntryTo');
+        if(infoEl) infoEl.textContent = '(p.'+start+' ~ p.'+endPage+', '+numPages+'페이지)';
+        if(fromEl) fromEl.value = start;
+        if(toEl)   toEl.value   = endPage;
+        if(entryPanel) entryPanel.style.display = '';
+        _mfFillEntryCat(mode);
+        _mfPending = [];
+        _mfRenderPendingList();
+        if(fileEl) fileEl.value = '';
     }
 
+    // ── 신규: 항목 추가 ──
+    function _mfAddPending(){
+        var nameEl = document.getElementById('mfEntryName');
+        var catEl  = document.getElementById('mfEntryCat');
+        var fromEl = document.getElementById('mfEntryFrom');
+        var toEl   = document.getElementById('mfEntryTo');
+        var name   = nameEl ? nameEl.value.trim() : '';
+        var cat    = catEl  ? catEl.value : '';
+        var from   = parseInt(fromEl ? fromEl.value : '0', 10);
+        var to     = parseInt(toEl   ? toEl.value   : '0', 10);
+        if(!name){ alert('항목명을 입력해주세요.'); return; }
+        if(!from||!to||from<1||to<from){ alert('올바른 페이지 범위를 입력해주세요. (시작 ≤ 끝)'); return; }
+        // 렌더링된 범위 벗어나는지 경고
+        if(_mfRendered){
+            var rEnd = _mfRendered.startFrom + _mfRendered.numPages - 1;
+            if(from < _mfRendered.startFrom || to > rEnd){
+                if(!confirm('입력한 범위(p.'+from+'~p.'+to+')가 렌더링된 범위(p.'+_mfRendered.startFrom+'~p.'+rEnd+') 밖입니다.\n계속 추가하시겠습니까?')) return;
+            }
+        }
+        _mfPending.push({name:name, cat:cat, from:from, to:to});
+        if(nameEl) nameEl.value = '';
+        // 다음 항목 시작은 이전 끝+1 자동 설정
+        if(fromEl) fromEl.value = to+1;
+        if(toEl)   toEl.value   = _mfRendered ? (_mfRendered.startFrom+_mfRendered.numPages-1) : to+1;
+        _mfRenderPendingList();
+    }
+
+    function _mfRenderPendingList(){
+        var listEl  = document.getElementById('mfPendingList');
+        var saveBtn = document.getElementById('mfSaveAllBtn');
+        if(!listEl) return;
+        if(!_mfPending.length){ listEl.innerHTML=''; if(saveBtn) saveBtn.style.display='none'; return; }
+        var h = '';
+        _mfPending.forEach(function(e,i){
+            h += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:7px;background:#0f172a;margin-bottom:4px;">';
+            h += '<div style="flex:1;min-width:0;">';
+            h += '<div style="font-size:11px;font-weight:700;color:#e2e8f0;">'+escHtml(e.name)+'</div>';
+            h += '<div style="font-size:10px;color:#475569;">'+escHtml(e.cat)+' · p.'+e.from+'~'+e.to+'</div>';
+            h += '</div>';
+            h += '<button onclick="_mfRemovePending('+i+')" style="padding:3px 8px;border-radius:6px;background:none;border:1px solid #334155;color:#ef4444;font-size:10px;cursor:pointer;">삭제</button>';
+            h += '</div>';
+        });
+        listEl.innerHTML = h;
+        if(saveBtn) saveBtn.style.display = '';
+    }
+
+    function _mfRemovePending(idx){
+        _mfPending.splice(idx,1);
+        _mfRenderPendingList();
+    }
+
+    async function _mfSaveAllPending(){
+        if(!_mfPending.length){ alert('추가된 항목이 없습니다.'); return; }
+        var btn = document.getElementById('mfSaveAllBtn');
+        if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
+        var mode = _mfMgmtMode;
+        var idx  = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+        for(var i=0;i<_mfPending.length;i++){
+            var e   = _mfPending[i];
+            var key = e.name.replace(/[.#$\[\]\/]/g,'_');
+            await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','PUT',{start:e.from,end:e.to,title:e.name,category:e.cat});
+            if(!idx[e.name]){ await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(e.name)+'.json','PUT',''); idx[e.name]=''; }
+        }
+        var prog = document.getElementById('mfNewProgress');
+        if(prog) prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!';
+        _mfPending = [];
+        _mfRenderPendingList();
+        if(btn){ btn.disabled=false; btn.textContent='💾 전체 저장'; btn.style.display='none'; }
+        _mfLoadRanges(mode);
+        _mfFillEditSel(mode);
+    }
+
+    // ── 수정: PDF 렌더링 + 파일목록 저장 ──
     async function _mfDoModify(){
         var sel    = document.getElementById('mfEditSel');
         var fileEl = document.getElementById('mfEditFile');
@@ -2018,12 +2159,79 @@
         var start = parseInt(opt.dataset.start, 10);
         var title = opt.dataset.title || key;
         if(!start){ alert('항목 정보를 불러올 수 없습니다.'); return; }
-        var numPages = await _renderPdfToManualPages(_mfMgmtMode, file, prog, start);
+
+        var mode = _mfMgmtMode;
+        var numPages = await _renderPdfToManualPages(mode, file, prog, start);
         if(!numPages){ if(fileEl) fileEl.value=''; return; }
         var end = start + numPages - 1;
-        await _authFetch('manual_page_ranges/'+_mfMgmtMode+'/'+key+'/end.json','PUT',end);
-        if(prog) prog.textContent = '✅ 교체 완료! "'+title+'" · p.'+start+'~p.'+end;
-        if(fileEl) fileEl.value='';
+
+        // 선택 항목 end 업데이트
+        await _authFetch('manual_page_ranges/'+mode+'/'+key+'/end.json','PUT',end);
+
+        // 원본 PDF → 파일 목록 자동 저장
+        try{
+            var ts = Date.now();
+            var safeName = ts+'_'+file.name.replace(/[^\w가-힣._-]/g,'_');
+            var storePath = 'manuals/'+safeName;
+            var snap = await storage.ref(storePath).put(file);
+            var url  = await snap.ref.getDownloadURL();
+            var entry = {
+                title: file.name.replace(/\.[^.]+$/,''),
+                fileName: file.name, storagePath: storePath, downloadURL: url,
+                uploadedBy: (_currentUser&&_currentUser.name)||'', uploadedAt: ts,
+                mode: mode, status: 'approved',
+                approvedBy: (_currentUser&&_currentUser.name)||'', approvedAt: ts
+            };
+            await _authFetch('imi_manual_files/'+ts+'.json','PUT',entry);
+        }catch(e){}
+
+        if(prog) prog.textContent = '✅ 교체 완료! "'+title+'" · p.'+start+'~p.'+end+' · 파일 목록 저장됨';
+        if(fileEl) fileEl.value = '';
+
+        // 같은 범위 내 다른 항목들 표시 (선택적 조정)
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(raw){
+            var sameRange = Object.entries(raw).filter(function(e){
+                return e[0]!==key && e[1].start>=start && e[1].start<=end;
+            }).sort(function(a,b){ return a[1].start-b[1].start; });
+            if(sameRange.length){
+                var extraPnl  = document.getElementById('mfEditExtraPanel');
+                var extraList = document.getElementById('mfEditExtraList');
+                if(extraPnl&&extraList){
+                    var h='';
+                    sameRange.forEach(function(e){
+                        var k=e[0], r=e[1];
+                        h+='<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:7px;background:#1e293b;margin-bottom:4px;">';
+                        h+='<div style="flex:1;font-size:11px;color:#e2e8f0;">'+escHtml(r.title||k)+'</div>';
+                        h+='<span style="font-size:10px;color:#475569;">p.</span>';
+                        h+='<input type="number" data-key="'+escHtml(k)+'" data-mode="'+mode+'" value="'+r.start+'" min="1" style="width:52px;padding:4px 6px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;text-align:center;outline:none;">';
+                        h+='<span style="font-size:10px;color:#475569;">~</span>';
+                        h+='<input type="number" data-key2="'+escHtml(k)+'" data-mode="'+mode+'" value="'+r.end+'" min="1" style="width:52px;padding:4px 6px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;text-align:center;outline:none;">';
+                        h+='</div>';
+                    });
+                    extraList.innerHTML=h;
+                    extraPnl.style.display='';
+                }
+            }
+        }
+        _mfLoadRanges(mode);
+        _mfFillEditSel(mode);
+    }
+
+    async function _mfSaveExtraEdits(){
+        var extraList = document.getElementById('mfEditExtraList');
+        if(!extraList) return;
+        var starts = extraList.querySelectorAll('[data-key]');
+        var ends   = extraList.querySelectorAll('[data-key2]');
+        for(var i=0;i<starts.length;i++){
+            var k    = starts[i].dataset.key;
+            var mode = starts[i].dataset.mode;
+            var s    = parseInt(starts[i].value,10);
+            var e    = parseInt(ends[i].value,10);
+            if(s&&e&&s<=e) await _authFetch('manual_page_ranges/'+mode+'/'+k+'.json','PATCH',{start:s,end:e});
+        }
+        var extraPnl = document.getElementById('mfEditExtraPanel');
+        if(extraPnl) extraPnl.style.display='none';
         _mfLoadRanges(_mfMgmtMode);
         _mfFillEditSel(_mfMgmtMode);
     }
@@ -2038,9 +2246,8 @@
         if(!entries.length){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
         var h='';
         entries.forEach(function(e){
-            var key=e[0], r=e[1];
-            var title=r.title||key;
-            var catBadge=r.category?'<span style="font-size:9px;background:#1e293b;border:1px solid #334155;color:#64748b;border-radius:4px;padding:1px 5px;margin-left:4px;">'+escHtml(r.category)+'</span>':'';
+            var key=e[0], r=e[1], title=r.title||key;
+            var catBadge=r.category?'<span style="font-size:9px;background:#0f172a;border:1px solid #334155;color:#64748b;border-radius:4px;padding:1px 5px;margin-left:4px;">'+escHtml(r.category)+'</span>':'';
             h+='<div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;background:#1e293b;margin-bottom:4px;">';
             h+='<div style="flex:1;min-width:0;">';
             h+='<div style="font-size:11px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escHtml(title)+catBadge+'</div>';
