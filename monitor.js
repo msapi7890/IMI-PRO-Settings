@@ -6,8 +6,11 @@ var _botBridgeConnected = false;
 window.addEventListener('message', function(e) {
     if (!e.data) return;
     if (e.data.__imiBotConnected) {
+        var wasConnected = _botBridgeConnected;
         _botBridgeConnected = true;
         _updateBotToggleBtn();
+        // 처음 연결 시 확장프로그램에 즉시 상태 동기화 요청
+        if (!wasConnected) _sendToBot({ type: 'SYNC_STATUS' });
     }
 });
 
@@ -102,20 +105,35 @@ function _renderBotStatus() {
     }
 
     var isActive = s.active;
-    dot.classList.toggle('active', isActive);
+    var isStale = s.lastUpdate && (Date.now() - s.lastUpdate) > 5 * 60 * 1000; // 5분 이상 갱신 없음
+    dot.classList.toggle('active', isActive && !isStale);
 
     if (text) {
-        text.textContent = isActive
-            ? '감시 중 — ' + (s.activeCount || 0) + '개 규칙 실행 중'
-            : '봇 중지됨 — ' + (s.totalCount || 0) + '개 규칙 등록됨';
+        if (isStale) {
+            text.textContent = '⚠ 연결 끊김 — 확장프로그램이 응답하지 않습니다';
+        } else {
+            text.textContent = isActive
+                ? '감시 중 — ' + (s.activeCount || 0) + '개 규칙 실행 중'
+                : '봇 중지됨 — ' + (s.totalCount || 0) + '개 규칙 등록됨';
+        }
     }
     if (badge) {
-        badge.textContent  = isActive ? '● 감시 중' : '■ 중지됨';
-        badge.style.background = isActive ? '#166534' : '#374151';
-        badge.style.color      = isActive ? '#4ade80'  : '#9ca3af';
+        if (isStale) {
+            badge.textContent  = '⚠ 연결 끊김';
+            badge.style.background = '#78350f';
+            badge.style.color      = '#fbbf24';
+        } else {
+            badge.textContent  = isActive ? '● 감시 중' : '■ 중지됨';
+            badge.style.background = isActive ? '#166534' : '#374151';
+            badge.style.color      = isActive ? '#4ade80'  : '#9ca3af';
+        }
     }
     if (lastUpd && s.lastUpdate) {
-        lastUpd.textContent = '마지막 동기화: ' + new Date(s.lastUpdate).toLocaleTimeString('ko-KR');
+        var mins = Math.floor((Date.now() - s.lastUpdate) / 60000);
+        var timeStr = new Date(s.lastUpdate).toLocaleTimeString('ko-KR');
+        lastUpd.textContent = isStale
+            ? '마지막 동기화: ' + timeStr + ' (' + mins + '분 전)'
+            : '마지막 동기화: ' + timeStr;
     }
 
     if (!ruleList) return;

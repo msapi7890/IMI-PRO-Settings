@@ -253,8 +253,9 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
 });
 
-// 서비스워커 시작 시 밀린 명령 즉시 처리
+// 서비스워커 시작 시 밀린 명령 처리 + 현재 상태 즉시 Firebase 반영
 checkBotCmd().catch(() => {});
+syncStatus().catch(() => {});
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
