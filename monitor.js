@@ -572,13 +572,6 @@ function _triggerMonitorAlert(id, rule, items) {
         +'감지된 물품: '+items.length+'개\n\n'
         +lines.join('\n')
         +'\n\n🔗 '+rule.url;
-    db.ref('monitor_last_alert/'+id).once('value', function(snap) {
-        var lastAt = snap.val() || 0;
-        if (Date.now() - lastAt >= 60000) {
-            db.ref('urgent_notices').push({ content:content, createdAt:Date.now(), expiresAt:Date.now()+24*60*60*1000, isMonitorAlert:true });
-            db.ref('monitor_last_alert/'+id).set(Date.now());
-        }
-    });
     db.ref('monitor_flash_state').set({
         active: true,
         ruleName: rule.name,
