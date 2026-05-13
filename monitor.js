@@ -572,12 +572,19 @@ function _triggerMonitorAlert(id, rule, items) {
         +'감지된 물품: '+items.length+'개\n\n'
         +lines.join('\n')
         +'\n\n🔗 '+rule.url;
+    var _at = Date.now();
     db.ref('monitor_flash_state').set({
         active: true,
         ruleName: rule.name,
         itemCount: items.length,
         itemRows: items.slice(0,3).map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
-        at: Date.now()
+        at: _at
+    });
+    db.ref('/monitor_history').push({
+        ruleName: rule.name,
+        itemCount: items.length,
+        itemRows: items.slice(0,3).map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
+        at: _at
     });
 }
 
@@ -611,7 +618,7 @@ function _showMonitorFlash(s) {
             +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
             +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
             +'</div>'
-            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">필터제외</button>'
+            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">필터제외</button>'
             +'</div>';
     }).join('');
     document.getElementById('monitorAlertFlash').classList.remove('hidden');
@@ -707,8 +714,16 @@ function _hideMonitorFlashLocal() {
 db.ref('monitor_flash_state').on('value', function(snap) {
     var s = snap.val();
     if (!s) return;
-    if (s.active) _showMonitorFlash(s);
-    else _hideMonitorFlashLocal();
+    // at이 90초 이내인 최신 감지만 표시 — 페이지 로드 시 오래된 active 상태 재표시 방지
+    if (s.active && s.at && (Date.now() - s.at) < 90000) {
+        _showMonitorFlash(s);
+        // 로그 패널이 열려있고 감지 로그 탭이 활성이면 자동 갱신
+        var panel = document.getElementById('logPanel');
+        var tab1  = document.getElementById('logTab1');
+        if (panel && !panel.classList.contains('hidden') && tab1 && tab1.classList.contains('mon-tab-active')) {
+            setTimeout(loadMonitorLog, 1500);
+        }
+    } else if (!s.active) _hideMonitorFlashLocal();
 });
 
 // 필터제외 버튼 — 이벤트 위임 (monitorAlertFlash 내)
@@ -717,13 +732,14 @@ document.addEventListener('click', function(e) {
     if (!btn || !document.getElementById('monitorAlertItems').contains(btn)) return;
     var key   = btn.getAttribute('data-bk');
     var title = btn.getAttribute('data-title') || '';
+    var tid   = btn.getAttribute('data-tid') || '';
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, addedBy: addedBy, addedAt: Date.now() });
+            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now() });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -738,13 +754,14 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
     if (!btn || btn.disabled) return;
     var key   = btn.getAttribute('data-logbk');
     var title = btn.getAttribute('data-logtitle') || '';
+    var tid   = btn.getAttribute('data-logtid') || '';
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, addedBy: addedBy, addedAt: Date.now() });
+            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now() });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -777,7 +794,10 @@ function loadMonitorLog() {
         var blockedList = blockedSnap.val() || [];
         if (!Array.isArray(blockedList)) blockedList = [];
         var blockedSet = {};
-        blockedList.forEach(function(k) { blockedSet[k] = true; });
+        blockedList.forEach(function(item) {
+            var k = typeof item === 'object' ? (item.key || '') : item;
+            if (k) blockedSet[k] = true;
+        });
 
         db.ref('/monitor_history').once('value', function(snap) {
             var val = snap.val() || {};
@@ -817,14 +837,15 @@ function loadMonitorLog() {
                 var d = entry.data;
                 var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
                 var rows = (d.itemRows || []).map(function(it) {
-                    var rawKey = it.key || it.tid || (it.t || '').substring(0, 30).trim();
+                    var rawKey = it.key || (it.t || '').substring(0, 30).trim();
                     var bk = _esc(rawKey);
                     var isBlocked = blockedSet[rawKey];
                     var titleAttr = _esc(it.t || '');
+                    var tidAttr = _esc(it.tid || '');
                     var btnHtml = bk
                         ? (isBlocked
-                            ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
-                            : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                            ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                            : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
                         + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
@@ -880,14 +901,16 @@ function loadBlockedItems() {
         }
         empty.style.display = 'none';
         container.innerHTML = list.map(function(item, i) {
-            var key   = typeof item === 'object' ? (item.key   || '') : item;
-            var title = typeof item === 'object' ? (item.title || '') : '';
+            var key     = typeof item === 'object' ? (item.key   || '') : item;
+            var title   = typeof item === 'object' ? (item.title || '') : '';
+            var tid     = typeof item === 'object' ? (item.tid   || '') : '';
             var addedBy = typeof item === 'object' ? (item.addedBy || '') : '';
             var addedAt = typeof item === 'object' && item.addedAt ? new Date(item.addedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+            var subText = tid ? ('#' + tid) : key; // 거래번호 있으면 우선 표시
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
                 + '<div style="flex:1;min-width:0;">'
                 + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>' : '')
-                + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(key) + '</div>'
+                + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(subText) + '</div>'
                 + (addedBy ? '<div style="font-size:10px;opacity:0.45;margin-top:2px;">✍️ ' + _esc(addedBy) + (addedAt ? ' · ' + addedAt : '') + '</div>' : '')
                 + '</div>'
                 + '<button onclick="unblockItem(' + i + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'

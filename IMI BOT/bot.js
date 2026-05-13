@@ -228,15 +228,16 @@
             const itemKey = title.substring(0, 30).trim();
             if (blockedItems.has(itemKey)) return;
 
-            const key = title.substring(0, 20) + '_' + price;
-            if (seen.has(key)) return;
-            seen.add(key);
-            // data-tid 직접 우선, 없으면 href 파싱
+            // TID를 먼저 추출해서 중복 키로 사용 — 제목+가격이 같아도 TID가 다르면 별개 물품
             const elTid = el.getAttribute('data-tid') ||
                           [el, ...Array.from(el.querySelectorAll('[data-tid]'))].reduce((acc, e) => acc || e.getAttribute('data-tid'), '');
             const tidM = href.match(/[?&]tid=(\d+)/);
             const idM  = href.match(/[?&]id=(\d+)/);
             const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
+
+            const key = tid ? ('tid_' + tid) : (title.substring(0, 20) + '_' + price);
+            if (seen.has(key)) return;
+            seen.add(key);
             chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
             // _el: DOM 참조 저장 → 클릭 시 직접 사용
             items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
@@ -272,7 +273,8 @@
 
     // --- Firebase 알림 ---
     function sendAlert(items) {
-        const content = `🚨 [물리봇 감지] ${rule.name}\n키워드: "${rule.keyword}"\n감지: ${items.length}개\n\n${items[0].t}`;
+        const _at = Date.now();
+        const _rows = items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' }));
         chrome.runtime.sendMessage({
             type: 'FIREBASE_SET',
             path: '/monitor_flash_state',
@@ -282,11 +284,11 @@
                 ruleName: rule.name,
                 ruleUrl: rule.url,
                 itemCount: items.length,
-                itemRows: items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' })),
-                at: Date.now()
+                itemRows: _rows,
+                at: _at
             }
         });
-        /* urgent_notices 직접 쓰기 제거됨 - 모니터링 알림은 monitor_flash_state로만 전달 */
+        // monitor_history 기록은 background.js의 FIREBASE_SET 핸들러에서 원자적으로 처리됨
     }
 
     // --- 메인 스캔 루프 ---
