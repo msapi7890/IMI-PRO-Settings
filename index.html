@@ -1433,8 +1433,8 @@
             : '';
         var rowS = 'padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;';
         h += '<div id="authInlineSettings" style="display:none;border-bottom:1px solid var(--border-ui);background:var(--bg-body);">';
-        if(isAdmin || (_currentUser && _currentUser.role === 'subadmin')){
-            h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 회원 관리'+pendingTag+'</div>';
+        if(_currentUser){
+            h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 멤버 목록'+pendingTag+'</div>';
         }
         h += '<div onclick="_openUserChangePw()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f511; 비밀번호 변경</div>';
         h += '<div onclick="_authLogout()" style="'+rowS+'color:#ef4444;" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f6aa; 로그아웃</div>';
@@ -1540,8 +1540,16 @@
     function openUserMgmtModal(){
         _hideUserMenu();
         document.getElementById('userMgmtModal').style.display='flex';
-        // 부관리자는 승인대기 탭으로 바로 이동
-        var defaultTab = (_currentUser && _currentUser.role === 'subadmin') ? 2 : _umCurrentTab;
+        var role = _currentUser && _currentUser.role;
+        var isPriv = role === 'admin' || role === 'subadmin';
+        // 승인대기 탭: admin/subadmin만
+        var tab2 = document.getElementById('umTab2');
+        if(tab2) tab2.style.display = isPriv ? '' : 'none';
+        // 팀관리 탭: admin만
+        var tab3 = document.getElementById('umTab3');
+        if(tab3) tab3.style.display = role === 'admin' ? '' : 'none';
+        // 일반 유저는 항상 탭1로
+        var defaultTab = isPriv ? _umCurrentTab : 1;
         _umSwitchTab(defaultTab);
     }
     function closeUserMgmtModal(){
