@@ -1284,7 +1284,7 @@
         var adminItem = document.getElementById('authAdminMenuItem');
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
         // 승인 대기 감시
-        if(user.role === 'admin') _authWatchPending();
+        if(user.role === 'admin' || user.role === 'subadmin') _authWatchPending();
         // 봇 버튼 권한 적용 (monitor.js 함수)
         if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
         // Firebase에서 매뉴얼 인덱스 데이터 로드
@@ -1433,7 +1433,7 @@
             : '';
         var rowS = 'padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;';
         h += '<div id="authInlineSettings" style="display:none;border-bottom:1px solid var(--border-ui);background:var(--bg-body);">';
-        if(isAdmin){
+        if(isAdmin || (_currentUser && _currentUser.role === 'subadmin')){
             h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 회원 관리'+pendingTag+'</div>';
         }
         h += '<div onclick="_openUserChangePw()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f511; 비밀번호 변경</div>';
@@ -1540,7 +1540,9 @@
     function openUserMgmtModal(){
         _hideUserMenu();
         document.getElementById('userMgmtModal').style.display='flex';
-        _umSwitchTab(_umCurrentTab);
+        // 부관리자는 승인대기 탭으로 바로 이동
+        var defaultTab = (_currentUser && _currentUser.role === 'subadmin') ? 2 : _umCurrentTab;
+        _umSwitchTab(defaultTab);
     }
     function closeUserMgmtModal(){
         document.getElementById('userMgmtModal').style.display='none';
