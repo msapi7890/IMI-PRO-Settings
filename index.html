@@ -1885,6 +1885,10 @@
             h += '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:6px;">🔧 HTML → Firebase 마이그레이션 (최초 1회)</div>';
             h += '<button id="mfMigrateBtn" onclick="_migrateManualToFirebase()" style="padding:7px 0;border-radius:7px;background:#334155;color:#94a3b8;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">기존 MANUAL_INDEX 데이터 Firebase로 이전</button>';
             h += '</div>';
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #7f1d1d;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:6px;">⚠ 위험 — 현재 모드 매뉴얼 전체 삭제</div>';
+            h += '<button onclick="_mfResetAll()" style="padding:7px 0;border-radius:7px;background:#7f1d1d;color:#fca5a5;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">🗑 매뉴얼 전체 초기화 (DB + 이미지)</button>';
+            h += '</div>';
         }
 
         wrap.innerHTML = h;
@@ -2305,6 +2309,34 @@
         await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','DELETE');
         _mfLoadRanges(mode);
         _mfFillEditSel(mode);
+    }
+
+    async function _mfResetAll(){
+        var mode = _mfMgmtMode;
+        var label = mode === 'bay' ? '아이템베이(BAY)' : '아이템매니아(IMI)';
+        if(!confirm('['+label+'] 매뉴얼을 전체 삭제하시겠습니까?\n\n• DB 페이지 범위 등록 데이터\n• DB 목차 인덱스\n• Storage 이미지 파일 전체\n\n이 작업은 되돌릴 수 없습니다.')) return;
+        if(!confirm('정말 삭제합니다. 계속하시겠습니까?')) return;
+
+        var btn = document.querySelector('button[onclick="_mfResetAll()"]');
+        if(btn){ btn.disabled=true; btn.textContent='삭제 중...'; }
+
+        // DB 삭제
+        await _authFetch('manual_page_ranges/'+mode+'.json','DELETE');
+        await _authFetch('imi_manual_index/'+mode+'.json','DELETE');
+
+        // Storage 이미지 삭제
+        try{
+            var result = await storage.ref('manual_pages/'+mode+'/').listAll();
+            var dels = result.items.map(function(ref){ return ref.delete().catch(function(){}); });
+            await Promise.all(dels);
+        } catch(e){ console.warn('Storage 삭제 중 오류:', e); }
+
+        if(btn){ btn.disabled=false; btn.textContent='🗑 매뉴얼 전체 초기화 (DB + 이미지)'; }
+        alert('['+label+'] 매뉴얼 전체 삭제 완료!');
+        _mfLoadRanges(mode);
+        _mfFillEditSel(mode);
+        window._mfPageUrls = [];
+        _mfRenderPageThumbs();
     }
 
     async function _renderPdfToManualPages(mode, file, prog, startFrom){
