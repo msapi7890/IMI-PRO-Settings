@@ -569,6 +569,38 @@
     </div>
 </div>
 
+<!-- 페이지 이미지 뷰어 모달 -->
+<div id="mfPageViewerModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
+    <div style="background:#1e293b;border-radius:16px;border:2px solid #334155;width:min(94vw,720px);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+        <!-- 헤더 -->
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #334155;flex-shrink:0;flex-wrap:wrap;">
+            <span id="mfViewerPageLabel" style="font-size:13px;font-weight:900;color:#3abff8;min-width:40px;">p.1</span>
+            <span id="mfViewerNavLabel" style="font-size:10px;color:#475569;">1 / ?</span>
+            <div style="flex:1;"></div>
+            <button onclick="_mfViewerSetFrom()" style="padding:5px 10px;border-radius:7px;background:#166534;color:#4ade80;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">📌 시작 페이지로</button>
+            <button onclick="_mfViewerSetTo()"   style="padding:5px 10px;border-radius:7px;background:#1e3a5f;color:#7dd3fc;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">📌 끝 페이지로</button>
+            <button onclick="_mfViewerCrop()"    style="padding:5px 10px;border-radius:7px;background:#1c1917;color:#fb923c;font-size:11px;font-weight:900;border:1px solid #fb923c;cursor:pointer;white-space:nowrap;">✂️ 노출 범위</button>
+            <button onclick="_mfCloseViewer()"   style="padding:5px 10px;border-radius:7px;background:none;color:#64748b;font-size:18px;font-weight:900;border:none;cursor:pointer;line-height:1;">×</button>
+        </div>
+        <!-- 선택된 범위 표시 -->
+        <div id="mfViewerRangeBar" style="padding:6px 16px;background:#0f172a;font-size:11px;color:#64748b;border-bottom:1px solid #1e293b;flex-shrink:0;">선택 범위: 없음</div>
+        <!-- 이미지 영역 -->
+        <div style="flex:1;overflow-y:auto;background:#0a1120;display:flex;align-items:flex-start;justify-content:center;padding:12px;min-height:0;">
+            <div style="position:relative;width:100%;max-width:640px;">
+                <img id="mfViewerImg" style="width:100%;border-radius:6px;display:block;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+                <div id="mfViewerCropTopDim" style="display:none;position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;border-radius:6px 6px 0 0;"></div>
+                <div id="mfViewerCropBotDim" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;border-radius:0 0 6px 6px;"></div>
+            </div>
+        </div>
+        <!-- 하단 네비게이션 -->
+        <div style="padding:10px 16px;display:flex;align-items:center;gap:8px;border-top:1px solid #334155;flex-shrink:0;">
+            <button onclick="_mfViewerPrev()" style="padding:6px 14px;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:900;border:1px solid #334155;cursor:pointer;">◀</button>
+            <div style="flex:1;overflow-x:auto;white-space:nowrap;text-align:center;" id="mfViewerThumbNav"></div>
+            <button onclick="_mfViewerNext()" style="padding:6px 14px;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:900;border:1px solid #334155;cursor:pointer;">▶</button>
+        </div>
+    </div>
+</div>
+
 <!-- 직원 스케쥴 모달 -->
 <div id="scheduleModal" class="hidden fixed inset-0 z-[9500] bg-black/70 backdrop-blur-sm flex items-center justify-center" onclick="if(event.target===this)closeScheduleModal()">
     <div style="position:relative;background:var(--bg-card);border-radius:14px;border:2px solid var(--border-ui);width:calc(100vw - 14px);height:calc(100vh - 14px);display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.5);">
@@ -2078,7 +2110,8 @@
         }
         var kwsEl = document.getElementById('mfEntryKeywords');
         var kws = kwsEl ? kwsEl.value.trim() : '';
-        _mfPending.push({name:name, cat:cat, from:from, to:to, keywords:kws, cropTop:0, cropBottom:100});
+        _mfPending.push({name:name, cat:cat, from:from, to:to, keywords:kws, cropTop:_mfViewerCropTop||0, cropBottom:(_mfViewerCropBot!==undefined?_mfViewerCropBot:100)});
+        _mfViewerCropTop=0; _mfViewerCropBot=100; // 다음 항목을 위해 초기화
         if(nameEl) nameEl.value = '';
         if(kwsEl)  kwsEl.value  = '';
         // 다음 항목 시작은 이전 끝+1 자동 설정
@@ -2134,24 +2167,106 @@
         thumbsEl.innerHTML = h;
     }
     function _mfThumbClick(page){
-        var fromEl = document.getElementById('mfEntryFrom');
-        var toEl   = document.getElementById('mfEntryTo');
-        // 시작 페이지 미설정이면 시작, 이미 설정됐으면 끝 페이지로
-        if(!fromEl.value || parseInt(fromEl.value) === page){
-            fromEl.value = page;
-            toEl.value = page;
-        } else if(page < parseInt(fromEl.value)){
-            fromEl.value = page;
-        } else {
-            toEl.value = page;
-        }
-        // 선택된 범위 하이라이트
-        var from = parseInt(fromEl.value)||0, to = parseInt(toEl.value)||0;
-        if(window._mfPageUrls) window._mfPageUrls.forEach(function(p){
+        // 썸네일 클릭 → 큰 이미지 뷰어로 열기
+        _mfOpenPageViewer(page);
+    }
+
+    // ── 페이지 이미지 뷰어 ──
+    var _mfViewerIdx = 0;
+    var _mfViewerCropTop = 0;
+    var _mfViewerCropBot = 100;
+
+    function _mfOpenPageViewer(page){
+        if(!window._mfPageUrls || !window._mfPageUrls.length){ alert('먼저 "📷 저장된 이미지 불러오기"를 눌러주세요.'); return; }
+        _mfViewerIdx = window._mfPageUrls.findIndex(function(p){ return p.page === page; });
+        if(_mfViewerIdx < 0) _mfViewerIdx = 0;
+        document.getElementById('mfPageViewerModal').style.display = 'flex';
+        _mfViewerRender();
+        document.addEventListener('keydown', _mfViewerKeydown);
+    }
+    function _mfCloseViewer(){
+        document.getElementById('mfPageViewerModal').style.display = 'none';
+        document.removeEventListener('keydown', _mfViewerKeydown);
+    }
+    function _mfViewerKeydown(e){
+        if(e.key === 'ArrowLeft')  _mfViewerPrev();
+        if(e.key === 'ArrowRight') _mfViewerNext();
+        if(e.key === 'Escape')     _mfCloseViewer();
+    }
+    function _mfViewerPrev(){ if(_mfViewerIdx > 0){ _mfViewerIdx--; _mfViewerRender(); } }
+    function _mfViewerNext(){ if(_mfViewerIdx < window._mfPageUrls.length-1){ _mfViewerIdx++; _mfViewerRender(); } }
+
+    function _mfViewerRender(){
+        var p = window._mfPageUrls[_mfViewerIdx];
+        if(!p) return;
+        document.getElementById('mfViewerImg').src = p.url;
+        document.getElementById('mfViewerPageLabel').textContent = 'p.'+p.page;
+        document.getElementById('mfViewerNavLabel').textContent = (_mfViewerIdx+1)+' / '+window._mfPageUrls.length;
+        _mfViewerUpdateCropOverlay();
+        _mfViewerUpdateRangeBar();
+    }
+    function _mfViewerUpdateRangeBar(){
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        var to   = parseInt(document.getElementById('mfEntryTo').value)||0;
+        var bar  = document.getElementById('mfViewerRangeBar');
+        if(!bar) return;
+        if(from && to) bar.innerHTML = '선택 범위: <strong style="color:#4ade80;">p.'+from+' ~ p.'+to+'</strong>'
+            +((_mfViewerCropTop||0)>0||_mfViewerCropBot<100 ? ' &nbsp;·&nbsp; <span style="color:#fb923c;">노출 '+_mfViewerCropTop+'%~'+_mfViewerCropBot+'%</span>' : '');
+        else bar.textContent = '선택 범위: 없음 (아래 버튼으로 시작/끝 페이지 설정)';
+    }
+    function _mfViewerUpdateCropOverlay(){
+        var topDim = document.getElementById('mfViewerCropTopDim');
+        var botDim = document.getElementById('mfViewerCropBotDim');
+        if(!topDim||!botDim) return;
+        if(_mfViewerCropTop > 0){
+            topDim.style.display='block'; topDim.style.height = _mfViewerCropTop+'%';
+        } else { topDim.style.display='none'; }
+        if(_mfViewerCropBot < 100){
+            botDim.style.display='block'; botDim.style.height = (100-_mfViewerCropBot)+'%';
+        } else { botDim.style.display='none'; }
+    }
+    function _mfViewerSetFrom(){
+        var p = window._mfPageUrls[_mfViewerIdx];
+        if(!p) return;
+        document.getElementById('mfEntryFrom').value = p.page;
+        document.getElementById('mfEntryTo').value   = p.page;
+        _mfViewerUpdateRangeBar();
+        _mfUpdateThumbHighlight();
+    }
+    function _mfViewerSetTo(){
+        var p = window._mfPageUrls[_mfViewerIdx];
+        if(!p) return;
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        if(from && p.page < from){ document.getElementById('mfEntryFrom').value = p.page; }
+        else { document.getElementById('mfEntryTo').value = p.page; }
+        _mfViewerUpdateRangeBar();
+        _mfUpdateThumbHighlight();
+    }
+    function _mfViewerCrop(){
+        var p = window._mfPageUrls[_mfViewerIdx];
+        if(!p) return;
+        window._currentCropData = {
+            dbPath:'', imgUrl: p.url,
+            cropTop: _mfViewerCropTop||0,
+            cropBottom: _mfViewerCropBot!==undefined ? _mfViewerCropBot : 100,
+            _pendingCallback: function(top, bot){
+                _mfViewerCropTop = top;
+                _mfViewerCropBot = bot;
+                _mfViewerUpdateCropOverlay();
+                _mfViewerUpdateRangeBar();
+            }
+        };
+        openCropEditor();
+    }
+
+    function _mfUpdateThumbHighlight(){
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        var to   = parseInt(document.getElementById('mfEntryTo').value)||0;
+        if(!window._mfPageUrls) return;
+        window._mfPageUrls.forEach(function(p){
             var el = document.getElementById('mfThumb_'+p.page);
             if(!el) return;
-            var inRange = p.page >= from && p.page <= to;
-            el.style.borderColor = inRange ? '#22c55e' : '#1e293b';
+            el.style.borderColor = (p.page>=from && p.page<=to && from && to) ? '#22c55e' : '#1e293b';
         });
     }
 
