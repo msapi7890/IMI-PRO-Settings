@@ -23,17 +23,22 @@ function _isBotPrivileged(){
            (_currentUser.role === 'admin' || _currentUser.role === 'subadmin');
 }
 
+var _botTogglePending = false;
+
 function toggleBotFromWeb() {
     if(!_isBotPrivileged()){ alert('관리자 또는 부관리자만 봇을 제어할 수 있습니다.'); return; }
     var btn = document.getElementById('monBotToggleBtn');
-    if (btn) btn.disabled = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ 전송 중...';
+        btn.style.background = '#334155';
+        btn.style.color = '#94a3b8';
+    }
+    _botTogglePending = true;
     if (_botStatus && _botStatus.active) {
-        // Firebase 제어 채널에 중지 명령 기록 → 모든 확장프로그램이 1분 내 감지
         db.ref('bot_cmd').set({ cmd: 'stop', ts: Date.now() });
-        // 로컬 확장프로그램에는 즉시 전송
         if (_botBridgeConnected) _sendToBot({ type: 'STOP_ALL' });
     } else {
-        // 체크된 규칙 ID 수집
         var rules = (_botStatus && _botStatus.rules) || [];
         var checkedIds = rules
             .filter(function(r) {
@@ -43,27 +48,31 @@ function toggleBotFromWeb() {
             .map(function(r) { return r.id; });
         if (!checkedIds.length) {
             alert('실행할 규칙을 하나 이상 체크해주세요.');
-            if (btn) btn.disabled = false;
+            _botTogglePending = false;
+            if (btn) { btn.disabled = false; _updateBotToggleBtn(); }
             return;
         }
-        // Firebase 제어 채널에 시작 명령 기록
         db.ref('bot_cmd').set({ cmd: 'start', ruleIds: checkedIds, ts: Date.now() });
-        // 로컬 확장프로그램에는 즉시 전송
         if (_botBridgeConnected) _sendToBot({ type: 'START_SELECTED', ruleIds: checkedIds });
     }
-    setTimeout(function() { if (btn) btn.disabled = false; }, 2000);
+    // 30초 후에도 Firebase 응답 없으면 버튼 복구
+    setTimeout(function() {
+        if (_botTogglePending) { _botTogglePending = false; _updateBotToggleBtn(); }
+    }, 30000);
 }
 
 function _updateBotToggleBtn() {
     var btn = document.getElementById('monBotToggleBtn');
     if (!btn) return;
 
-    // 관리자/부관리자만 봇 제어 버튼 표시
     if (!_isBotPrivileged()) {
         btn.style.display = 'none';
         return;
     }
     btn.style.display = '';
+
+    // Firebase 상태가 바뀌면 pending 해제 후 버튼 복구
+    _botTogglePending = false;
 
     var active = _botStatus && _botStatus.active;
     if (active) {
