@@ -344,7 +344,13 @@
             }
             sessionStorage.setItem('_imi_page2_scan', '1');
             setStatus('1p 없음 — 2p 스캔 중...', '#64748b');
-            setTimeout(() => { if (!isRunning) return; goToPage2(); }, 400);
+            setTimeout(() => {
+                if (!isRunning) return;
+                goToPage2();
+                // AJAX 방식 페이지 전환 대비: 리로드 없으면 doCheck가 자동 호출 안 됨
+                // 리로드 방식이면 구 컨텍스트가 소멸되므로 이 타이머는 무시됨
+                setTimeout(() => { if (!isRunning) return; doCheck(); }, 1500);
+            }, 400);
         } else {
             // 2페이지도 없음 → 다음 사이클
             sessionStorage.removeItem('_imi_page2_scan');
