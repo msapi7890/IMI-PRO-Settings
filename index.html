@@ -1806,11 +1806,15 @@
         h += '<div id="mfNewProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
         h += '</div>';
 
-        // STEP 2: 항목 등록 (렌더링 완료 후 활성화)
-        h += '<div id="mfEntryPanel" style="display:none;">';
+        // STEP 2: 항목 등록
+        h += '<div id="mfEntryPanel" style="">';
         h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #22c55e;margin-bottom:10px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;margin-bottom:4px;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
-        h += '<div style="font-size:10px;color:#475569;margin-bottom:10px;">PDF 안에 여러 항목이 있으면 각각 페이지 범위를 지정해서 추가하세요.</div>';
+        h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">';
+        h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;flex:1;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
+        h += '<button onclick="_mfLoadStorageThumbs()" id="mfLoadThumbsBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #334155;background:none;color:#64748b;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">📷 저장된 이미지 불러오기</button>';
+        h += '</div>';
+        h += '<div id="mfPageThumbs" style="display:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:8px;margin-bottom:10px;background:#0a1120;"></div>';
+        h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">썸네일 클릭 → 시작 페이지 자동 입력. 항목별로 범위 지정 후 추가하세요.</div>';
         h += '<div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;">';
         h += '<input type="text" id="mfEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '<select id="mfEntryCat" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
@@ -1823,7 +1827,6 @@
         h += '<input type="text" id="mfEntryKeywords" placeholder="🔑 키워드 (쉼표 구분, 예: 개명, 이름변경)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;outline:none;">';
         h += '<button onclick="_mfAddPending()" style="padding:8px 0;border-radius:7px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;">+ 항목 추가</button>';
         h += '</div>';
-        h += '<div id="mfPageThumbs" style="display:none;max-height:130px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:6px 8px;margin-bottom:6px;background:#0a1120;"></div>';
         h += '<div id="mfPendingList"></div>';
         h += '<button id="mfSaveAllBtn" onclick="_mfSaveAllPending()" style="display:none;padding:10px 0;border-radius:8px;background:#0284c7;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;width:100%;margin-top:8px;">💾 전체 저장</button>';
         h += '</div>';
@@ -2123,9 +2126,9 @@
         thumbsEl.style.display = '';
         var h = '';
         window._mfPageUrls.forEach(function(p){
-            h += '<div onclick="_mfThumbClick('+p.page+')" style="display:inline-block;cursor:pointer;text-align:center;margin-right:5px;vertical-align:top;" title="p.'+p.page+' 클릭 시 페이지 자동 입력">';
-            h += '<img src="'+p.url+'" style="width:52px;height:68px;object-fit:cover;border-radius:4px;border:2px solid #1e293b;display:block;">';
-            h += '<div style="font-size:9px;color:#64748b;margin-top:2px;">p.'+p.page+'</div>';
+            h += '<div onclick="_mfThumbClick('+p.page+')" id="mfThumb_'+p.page+'" style="display:inline-block;cursor:pointer;text-align:center;margin-right:6px;vertical-align:top;border-radius:6px;padding:2px;border:2px solid #1e293b;transition:border-color 0.15s;" title="p.'+p.page+'">';
+            h += '<img src="'+p.url+'" style="width:70px;height:90px;object-fit:cover;border-radius:4px;display:block;">';
+            h += '<div style="font-size:9px;color:#64748b;margin-top:3px;font-weight:700;">p.'+p.page+'</div>';
             h += '</div>';
         });
         thumbsEl.innerHTML = h;
@@ -2133,8 +2136,50 @@
     function _mfThumbClick(page){
         var fromEl = document.getElementById('mfEntryFrom');
         var toEl   = document.getElementById('mfEntryTo');
-        if(fromEl && (!fromEl.value || parseInt(fromEl.value) > page)) fromEl.value = page;
-        if(toEl) toEl.value = page;
+        // 시작 페이지 미설정이면 시작, 이미 설정됐으면 끝 페이지로
+        if(!fromEl.value || parseInt(fromEl.value) === page){
+            fromEl.value = page;
+            toEl.value = page;
+        } else if(page < parseInt(fromEl.value)){
+            fromEl.value = page;
+        } else {
+            toEl.value = page;
+        }
+        // 선택된 범위 하이라이트
+        var from = parseInt(fromEl.value)||0, to = parseInt(toEl.value)||0;
+        if(window._mfPageUrls) window._mfPageUrls.forEach(function(p){
+            var el = document.getElementById('mfThumb_'+p.page);
+            if(!el) return;
+            var inRange = p.page >= from && p.page <= to;
+            el.style.borderColor = inRange ? '#22c55e' : '#1e293b';
+        });
+    }
+
+    async function _mfLoadStorageThumbs(){
+        var btn = document.getElementById('mfLoadThumbsBtn');
+        if(btn){ btn.disabled=true; btn.textContent='불러오는 중...'; }
+        var mode = _mfMgmtMode;
+        try{
+            var result = await storage.ref('manual_pages/'+mode+'/').listAll();
+            if(!result.items.length){ alert('저장된 이미지가 없습니다. PDF를 먼저 업로드해주세요.'); return; }
+            var sorted = result.items.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+            window._mfPageUrls = [];
+            if(btn) btn.textContent = '로딩 중... 0/'+sorted.length;
+            for(var i=0;i<sorted.length;i++){
+                try{
+                    var url = await sorted[i].getDownloadURL();
+                    var pageNum = parseInt(sorted[i].name.replace('page-','').replace('.jpg',''));
+                    window._mfPageUrls.push({page:pageNum, url:url});
+                }catch(e2){}
+                if(btn && i%10===9) btn.textContent = '로딩 중... '+(i+1)+'/'+sorted.length;
+            }
+            _mfRenderPageThumbs();
+            if(btn) btn.textContent = '✅ '+window._mfPageUrls.length+'장 로드됨';
+        }catch(e){
+            alert('이미지 불러오기 실패: '+e.message);
+        }finally{
+            if(btn) btn.disabled=false;
+        }
     }
 
     async function _mfOpenCropForPending(idx){
