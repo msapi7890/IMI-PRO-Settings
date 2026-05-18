@@ -13,6 +13,7 @@
     chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (msg.type === 'STOP_BOT') {
             isRunning = false;
+            sessionStorage.removeItem('_imi_page2_scan');
             setStatus('⏹ 정지됨', '#94a3b8');
             sendResponse({ ok: true });
             return true;
@@ -31,7 +32,7 @@
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
             initUI();
-            if (rule.enabled) { isRunning = true; setTimeout(doCheck, 1500); }
+            if (rule.enabled) { isRunning = true; sessionStorage.removeItem('_imi_page2_scan'); setTimeout(doCheck, 1500); }
         });
     });
 
@@ -291,10 +292,28 @@
         // monitor_history 기록은 background.js의 FIREBASE_SET 핸들러에서 원자적으로 처리됨
     }
 
+    // --- 2페이지 존재 여부 확인 ---
+    function findPage2Link() {
+        return Array.from(document.querySelectorAll('a[href]')).find(a => {
+            const h = a.href || '';
+            return h.includes('page=2') || h.includes('pnum=2') || h.includes('nowPage=2') || h.includes('pageNo=2');
+        }) || Array.from(document.querySelectorAll('a')).find(a => {
+            return a.textContent.trim() === '2' && a.closest('[class*="pag"],[class*="page"],[class*="num"]');
+        }) || null;
+    }
+
+    // --- 2페이지 이동 ---
+    function goToPage2() {
+        const p2 = findPage2Link();
+        if (p2) { p2.click(); return; }
+        // 링크 없으면 이동 안 함 (1페이지만 있는 경우)
+    }
+
     // --- 메인 스캔 루프 ---
     function doCheck() {
         if (!isRunning || !rule) return;
-        setStatus('🔍 스캔 중...', '#3abff8');
+        const onPage2 = sessionStorage.getItem('_imi_page2_scan') === '1';
+        setStatus('🔍 스캔 중...' + (onPage2 ? ' (2p)' : ' (1p)'), '#3abff8');
 
         const items = scanPage();
         const intervalMs = (rule.scanInterval || 5) * 1000;
@@ -304,6 +323,7 @@
             document.getElementById('_imi_box').style.borderColor = '#ef4444';
             renderAlertItems(items);
             sendAlert(items);
+            sessionStorage.removeItem('_imi_page2_scan');
             setTimeout(() => {
                 if (!isRunning) return;
                 document.getElementById('_imi_box').style.borderColor = '#3abff8';
@@ -311,7 +331,23 @@
                 setStatus('30초 대기 후 재검색...', '#94a3b8');
                 submitSearch();
             }, 30000);
+        } else if (!onPage2) {
+            // 1페이지 완료 → 2페이지 링크 있을 때만 이동
+            if (!findPage2Link()) {
+                // 2페이지 없음(1페이지짜리 검색결과) → 다음 사이클
+                sessionStorage.removeItem('_imi_page2_scan');
+                const t = new Date().toLocaleTimeString('ko-KR');
+                setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
+                document.getElementById('_imi_items').innerHTML = '';
+                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+                return;
+            }
+            sessionStorage.setItem('_imi_page2_scan', '1');
+            setStatus('1p 없음 — 2p 스캔 중...', '#64748b');
+            setTimeout(() => { if (!isRunning) return; goToPage2(); }, 400);
         } else {
+            // 2페이지도 없음 → 다음 사이클
+            sessionStorage.removeItem('_imi_page2_scan');
             const t = new Date().toLocaleTimeString('ko-KR');
             setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
             document.getElementById('_imi_items').innerHTML = '';
