@@ -2503,32 +2503,45 @@
         startFrom = startFrom||1;
         window._mfPageUrls = [];
         if(prog) prog.textContent = 'PDF 로딩 중...';
+        var numPages = 0;
+        var failedPages = [];
         try{
             pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
             var arrayBuf = await file.arrayBuffer();
             var pdfDoc   = await pdfjsLib.getDocument({data:arrayBuf}).promise;
-            var numPages = pdfDoc.numPages;
+            numPages = pdfDoc.numPages;
             var canvas = document.createElement('canvas');
             var ctx    = canvas.getContext('2d');
             for(var i=1;i<=numPages;i++){
-                var page     = await pdfDoc.getPage(i);
-                var viewport = page.getViewport({scale:1.5});
-                canvas.width=viewport.width; canvas.height=viewport.height;
-                await page.render({canvasContext:ctx,viewport:viewport}).promise;
-                var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.85); });
-                var pageNum   = String(startFrom+i-1).padStart(3,'0');
-                var storePath = 'manual_pages/'+mode+'/page-'+pageNum+'.jpg';
-                var ref = storage.ref(storePath);
-                await ref.put(blob,{contentType:'image/jpeg'});
-                try{ var dlUrl = await ref.getDownloadURL(); window._mfPageUrls.push({page:startFrom+i-1, url:dlUrl}); }catch(e2){}
                 if(prog) prog.textContent = '이미지 변환 중 '+i+'/'+numPages+'...';
+                try{
+                    var page     = await pdfDoc.getPage(i);
+                    var viewport = page.getViewport({scale:1.2}); // 메모리 절약
+                    canvas.width=viewport.width; canvas.height=viewport.height;
+                    await page.render({canvasContext:ctx,viewport:viewport}).promise;
+                    var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.80); });
+                    var pageNum   = String(startFrom+i-1).padStart(3,'0');
+                    var storePath = 'manual_pages/'+mode+'/page-'+pageNum+'.jpg';
+                    var ref = storage.ref(storePath);
+                    await ref.put(blob,{contentType:'image/jpeg'});
+                    try{ var dlUrl = await ref.getDownloadURL(); window._mfPageUrls.push({page:startFrom+i-1, url:dlUrl}); }catch(e2){}
+                    // 캔버스 메모리 해제
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    blob = null;
+                } catch(pageErr){
+                    console.warn('페이지 '+i+' 실패, 건너뜀:', pageErr);
+                    failedPages.push(i);
+                }
             }
-            return numPages;
         }catch(e){
             if(prog) prog.textContent='오류: '+e.message;
             console.error(e);
             return 0;
         }
+        if(failedPages.length){
+            if(prog) prog.textContent = '⚠ '+numPages+'페이지 중 '+failedPages.length+'개 실패 ('+failedPages.join(',')+') — 나머지 완료';
+        }
+        return numPages;
     }
 
     async function _migrateManualToFirebase(){
