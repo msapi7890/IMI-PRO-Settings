@@ -654,8 +654,8 @@ function _showMonitorFlash(s) {
     // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
     if ('Notification' in window) {
         var _fireNotif = function() {
-            new Notification('🚨 IMI PRO 사기글 감지', {
-                body: (s.itemCount||0) + '개 물품 감지됨 — IMI PRO 확인',
+            new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' — 물품 감지!', {
+                body: (s.itemCount||0) + '개 감지됨' + ((s.itemRows&&s.itemRows[0]) ? '\n' + (s.itemRows[0].t||'') : ''),
                 icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico'
             });
         };
