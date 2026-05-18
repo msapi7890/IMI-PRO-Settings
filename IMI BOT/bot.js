@@ -310,16 +310,9 @@
     }
 
     // --- 메인 스캔 루프 ---
-    function isUrlOnPage2() {
-        const url = new URL(location.href);
-        return ['page', 'pnum', 'nowPage', 'pageNo', 'pageNum'].some(p => url.searchParams.get(p) === '2');
-    }
-
     function doCheck() {
         if (!isRunning || !rule) return;
-        // 플래그 + URL 교차 검증: 둘 다 page2여야 실제 2페이지로 인식
-        const onPage2 = sessionStorage.getItem('_imi_page2_scan') === '1' && isUrlOnPage2();
-        if (!onPage2) sessionStorage.removeItem('_imi_page2_scan'); // URL이 1p면 플래그 정리
+        const onPage2 = sessionStorage.getItem('_imi_page2_scan') === '1';
         setStatus('🔍 스캔 중...' + (onPage2 ? ' (2p)' : ' (1p)'), '#3abff8');
 
         const items = scanPage();
