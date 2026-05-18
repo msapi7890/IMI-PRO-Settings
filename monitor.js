@@ -24,6 +24,7 @@ function _isBotPrivileged(){
 }
 
 var _botTogglePending = false;
+var _botToggleExpected = null; // 'start' | 'stop'
 
 function toggleBotFromWeb() {
     if(!_isBotPrivileged()){ alert('관리자 또는 부관리자만 봇을 제어할 수 있습니다.'); return; }
@@ -36,6 +37,7 @@ function toggleBotFromWeb() {
     }
     _botTogglePending = true;
     if (_botStatus && _botStatus.active) {
+        _botToggleExpected = 'stop';
         db.ref('bot_cmd').set({ cmd: 'stop', ts: Date.now() });
         if (_botBridgeConnected) _sendToBot({ type: 'STOP_ALL' });
     } else {
@@ -52,6 +54,7 @@ function toggleBotFromWeb() {
             if (btn) { btn.disabled = false; _updateBotToggleBtn(); }
             return;
         }
+        _botToggleExpected = 'start';
         db.ref('bot_cmd').set({ cmd: 'start', ruleIds: checkedIds, ts: Date.now() });
         if (_botBridgeConnected) _sendToBot({ type: 'START_SELECTED', ruleIds: checkedIds });
     }
@@ -71,10 +74,15 @@ function _updateBotToggleBtn() {
     }
     btn.style.display = '';
 
-    // Firebase 상태가 바뀌면 pending 해제 후 버튼 복구
-    _botTogglePending = false;
-
     var active = _botStatus && _botStatus.active;
+
+    // 기대 상태로 실제로 바뀐 경우에만 pending 해제
+    if (_botTogglePending) {
+        var expectedActive = _botToggleExpected === 'start';
+        if (active !== expectedActive) return; // 아직 안 바뀜 — 전송 중 유지
+        _botTogglePending = false;
+        _botToggleExpected = null;
+    }
     if (active) {
         btn.textContent = '⏸ 봇 중지';
         btn.style.background = '#ef4444';
