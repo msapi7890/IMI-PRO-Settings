@@ -2742,6 +2742,13 @@
                     btn.textContent = '✅ '+total+'장 불러옴';
                 }
             }
+            // Storage에서 로드한 실제 페이지 범위로 _mfRendered 갱신 — 스테일 PDF 렌더 데이터로 인한 오범위 경고 방지
+            if(window._mfPageUrls.length){
+                var _pages = window._mfPageUrls.map(function(p){ return p.page; });
+                var _minP  = Math.min.apply(null, _pages);
+                var _maxP  = Math.max.apply(null, _pages);
+                _mfRendered = {mode: mode, startFrom: _minP, numPages: _maxP - _minP + 1, fileName: 'Storage 불러오기', storePath: '', downloadURL: ''};
+            }
             _mfLoadRanges(_mfMgmtMode); // 등록된 범위 로드 → 썸네일에 ✓ 표시
         }catch(e){
             alert('이미지 불러오기 실패: '+e.message);
