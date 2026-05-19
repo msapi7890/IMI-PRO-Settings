@@ -2254,59 +2254,84 @@
         });
         var total = files.length;
 
+        // 파일명 끝 숫자를 페이지 번호로 추출 (예: "page-041.jpg" → 41, "123.jpg" → 123)
+        function _fnPageNum(name, fallback){
+            var m = name.replace(/\.[^.]+$/, '').match(/(\d+)$/);
+            return m ? parseInt(m[1], 10) : fallback;
+        }
+
         // UI 잠금 + 전역 상태 시작 (동기적으로 즉시 표시)
         _mfImgUploading = true;
-        _mfImgUploadState = {text:'⬆ 업로드 중...', count:'0 / '+total, pct:0, done:false};
-        if(label){
-            label.style.pointerEvents='none';
-            label.style.opacity='0.5';
-            // 라벨 첫 줄 텍스트를 즉시 변경 (async 이전에 보장)
+        _mfImgUploadState = {text:'⬆ 준비 중...', count:'0 / '+total, pct:0, done:false};
+        if(label){ label.style.pointerEvents='none'; label.style.opacity='0.5';
             var _firstNode = label.firstChild;
             if(_firstNode && _firstNode.nodeType===3) _firstNode.nodeValue = '⬆ 업로드 준비 중... ('+total+'장)';
         }
         if(progWrap){ progWrap.style.display='block'; }
-        if(progText) progText.textContent = '⬆ 업로드 준비 중...';
-        if(progCnt)  progCnt.textContent  = '0 / '+total;
+        if(progText) progText.textContent = '⬆ 이미 업로드된 파일 확인 중...';
+        if(progCnt)  progCnt.textContent  = '';
         if(progBar)  progBar.style.width  = '0%';
-        // 브라우저가 DOM 변경을 화면에 반영한 뒤 업로드 시작
         await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
-        var uploaded = 0, failed = 0;
+        // Storage 기존 업로드 목록 한 번에 조회 → 중복 건너뜀에 사용
+        var existingPages = new Set();
+        try{
+            var listResult = await storage.ref('manual_pages/'+mode+'/').listAll();
+            listResult.items.forEach(function(ref){
+                var m = ref.name.match(/page-(\d+)\.jpg$/i);
+                if(m) existingPages.add(parseInt(m[1], 10));
+            });
+        }catch(e){ console.warn('기존 목록 조회 실패, 전체 업로드로 진행:', e); }
+
+        var uploaded = 0, failed = 0, skipped = 0;
+        var lastUploadedPage = 0;
         for(var i=0; i<files.length; i++){
-            var pageNum = startPage + i;
+            var pageNum = _fnPageNum(files[i].name, startPage + i);
             var padded  = String(pageNum).padStart(3,'0');
             var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
+
+            // 이미 존재하면 건너뜀
+            if(existingPages.has(pageNum)){
+                skipped++;
+                var pct0 = Math.round((i+1)/total*100);
+                var txt0 = '⏭ 건너뜀 p.'+pageNum+' (이미 업로드됨)';
+                var cnt0 = (i+1)+' / '+total+' (건너뜀 '+skipped+'장)';
+                _mfImgUploadState = {text:txt0, count:cnt0, pct:pct0, done:false};
+                _mfUpdateNavBadge();
+                var _lpt0=document.getElementById('mfImgUploadText'); var _lpc0=document.getElementById('mfImgUploadCount'); var _lpb0=document.getElementById('mfImgUploadBar');
+                if(_lpt0) _lpt0.textContent=txt0; if(_lpc0) _lpc0.textContent=cnt0; if(_lpb0) _lpb0.style.width=pct0+'%';
+                continue;
+            }
+
             try{
                 await storage.ref(storagePath).put(files[i]);
                 uploaded++;
+                if(pageNum > lastUploadedPage) lastUploadedPage = pageNum;
             }catch(e){
                 failed++;
                 console.warn('업로드 실패:', files[i].name, e);
             }
             var pct = Math.round((i+1)/total*100);
-            var txt = '⬆ 업로드 중... p.'+(startPage+i);
+            var txt = '⬆ 업로드 중... p.'+pageNum;
             var cnt = (i+1)+' / '+total+' ('+pct+'%)';
-            // 전역 상태 저장 (모달 닫혀있어도 유지)
             _mfImgUploadState = {text:txt, count:cnt, pct:pct, done:false};
             _mfUpdateNavBadge();
-            // 라이브 DOM 업데이트 (열려있으면)
-            var _lpt = document.getElementById('mfImgUploadText');
-            var _lpc = document.getElementById('mfImgUploadCount');
-            var _lpb = document.getElementById('mfImgUploadBar');
-            if(_lpt) _lpt.textContent = txt;
-            if(_lpc) _lpc.textContent = cnt;
-            if(_lpb) _lpb.style.width = pct+'%';
+            var _lpt=document.getElementById('mfImgUploadText'); var _lpc=document.getElementById('mfImgUploadCount'); var _lpb=document.getElementById('mfImgUploadBar');
+            if(_lpt) _lpt.textContent=txt; if(_lpc) _lpc.textContent=cnt; if(_lpb) _lpb.style.width=pct+'%';
         }
 
-        // maxPage 저장
-        var lastPage = startPage + files.length - 1;
-        await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',lastPage);
-        _mfTotalPdfPages = lastPage;
+        // maxPage: 파일명 기준 최대 페이지 번호로 저장
+        var lastPage = files.reduce(function(mx, f, i){ return Math.max(mx, _fnPageNum(f.name, startPage+i)); }, 0);
+        if(lastPage > 0){
+            await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',lastPage);
+            _mfTotalPdfPages = lastPage;
+        }
 
         // 완료 상태
-        var failMsg = failed ? ' ⚠ '+failed+'장 실패' : '';
+        var skipMsg  = skipped ? ' ('+skipped+'장 건너뜀)' : '';
+        var failMsg  = failed  ? ' ⚠ '+failed+'장 실패' : '';
         var doneText = '✅ 완료'+failMsg;
-        var doneCnt  = uploaded+'장 업로드됨 (p.'+startPage+'~p.'+lastPage+')';
+        var doneCnt  = uploaded+'장 업로드됨'+skipMsg+(lastPage?' (p.'+startPage+'~p.'+lastPage+')':'');
         _mfImgUploading = false;
         _mfUploadDone   = true;
         _mfImgUploadState = {text:doneText, count:doneCnt, pct:100, done:true};
