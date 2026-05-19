@@ -818,16 +818,13 @@ function loadMonitorLog() {
             if (k) blockedSet[k] = true;
         });
 
-        db.ref('/monitor_history').once('value', function(snap) {
+        db.ref('/monitor_history').limitToLast(100).once('value', function(snap) {
             var val = snap.val() || {};
-            var toDelete = [];
             var entries = [];
             Object.keys(val).forEach(function(k) {
                 var e = val[k];
-                if (!e || e.at < cutoff) { toDelete.push(k); return; }
-                entries.push({ key: k, data: e });
+                if (e) entries.push({ key: k, data: e });
             });
-            toDelete.forEach(function(k) { db.ref('/monitor_history/' + k).remove(); });
             entries.sort(function(a, b) { return b.data.at - a.data.at; });
 
             var empty = document.getElementById('monitorLogEmpty');
