@@ -274,6 +274,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 // (서비스워커가 두 번째 메시지를 놓치는 MV3 문제 방지)
                 await firePush('/monitor_history', {
                     ruleName: msg.data.ruleName || '',
+                    ruleKeyword: msg.data.ruleKeyword || '',
                     itemCount: msg.data.itemCount || 0,
                     itemRows: msg.data.itemRows || [],
                     at: msg.data.at || Date.now()

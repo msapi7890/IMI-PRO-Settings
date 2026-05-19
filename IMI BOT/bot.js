@@ -275,7 +275,7 @@
     // --- Firebase 알림 ---
     function sendAlert(items) {
         const _at = Date.now();
-        const _rows = items.slice(0, 3).map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' }));
+        const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' }));
         chrome.runtime.sendMessage({
             type: 'FIREBASE_SET',
             path: '/monitor_flash_state',
@@ -283,6 +283,7 @@
                 active: true,
                 ruleId: rule.id,
                 ruleName: rule.name,
+                ruleKeyword: rule.keyword || '',
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,

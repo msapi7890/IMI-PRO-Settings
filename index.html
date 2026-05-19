@@ -233,7 +233,7 @@
         #hdrMonDot { width:7px; height:7px; border-radius:50%; background:#94a3b8; flex-shrink:0; transition:background 0.3s; }
         #hdrMonDot.active { background:#22c55e; animation:monPulse 2s infinite; }
         @keyframes monPulse { 0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.3)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0.1)} }
-        #monitorAlertFlash { position:fixed; bottom:20px; right:20px; z-index:9700; background:var(--bg-card); border:2.5px solid #ef4444; border-radius:14px; padding:14px 16px; width:min(94vw,420px); box-shadow:0 6px 32px rgba(239,68,68,0.35); }
+        #monitorAlertFlash { position:fixed; bottom:20px; right:20px; z-index:9700; background:var(--bg-card); border:2.5px solid #ef4444; border-radius:14px; padding:14px 16px; width:min(94vw,420px); max-height:min(90vh,380px); display:flex; flex-direction:column; box-shadow:0 6px 32px rgba(239,68,68,0.35); }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
         .log-box { background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); width:min(96vw,960px); height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.45); overflow:hidden; }
@@ -570,8 +570,8 @@
 </div>
 
 <!-- 페이지 이미지 뷰어 모달 -->
-<div id="mfPageViewerModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
-    <div style="background:#1e293b;border-radius:16px;border:2px solid #334155;width:min(94vw,720px);max-height:94vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
+<div id="mfPageViewerModal" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
+    <div style="background:#1e293b;border-radius:16px;border:2px solid #334155;width:min(98vw,1060px);max-height:96vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);">
         <!-- 헤더 -->
         <div style="padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #334155;flex-shrink:0;flex-wrap:wrap;">
             <span id="mfViewerPageLabel" style="font-size:13px;font-weight:900;color:#3abff8;min-width:40px;">p.1</span>
@@ -586,7 +586,7 @@
         <div id="mfViewerRangeBar" style="padding:6px 16px;background:#0f172a;font-size:11px;color:#64748b;border-bottom:1px solid #1e293b;flex-shrink:0;">선택 범위: 없음</div>
         <!-- 이미지 영역 -->
         <div style="flex:1;overflow-y:auto;background:#0a1120;display:flex;align-items:flex-start;justify-content:center;padding:12px;min-height:0;">
-            <div style="position:relative;width:100%;max-width:640px;">
+            <div style="position:relative;width:100%;max-width:960px;">
                 <img id="mfViewerImg" style="width:100%;border-radius:6px;display:block;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
                 <div id="mfViewerCropTopDim" style="display:none;position:absolute;top:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;border-radius:6px 6px 0 0;"></div>
                 <div id="mfViewerCropBotDim" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);pointer-events:none;border-radius:0 0 6px 6px;"></div>
@@ -597,6 +597,23 @@
             <button onclick="_mfViewerPrev()" style="padding:6px 14px;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:900;border:1px solid #334155;cursor:pointer;">◀</button>
             <div style="flex:1;overflow-x:auto;white-space:nowrap;text-align:center;" id="mfViewerThumbNav"></div>
             <button onclick="_mfViewerNext()" style="padding:6px 14px;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:13px;font-weight:900;border:1px solid #334155;cursor:pointer;">▶</button>
+        </div>
+        <!-- 인라인 등록 패널 -->
+        <div style="padding:10px 14px 12px;border-top:2px solid #1e3a5f;flex-shrink:0;background:#0d1b2a;">
+            <div style="font-size:10px;color:#3abff8;margin-bottom:7px;font-weight:900;letter-spacing:0.5px;">📝 이 페이지 항목 등록</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <input type="text" id="mfViewerEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;width:100%;box-sizing:border-box;">
+                <div style="display:flex;gap:6px;">
+                    <select id="mfViewerEntryCat" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;min-width:0;"></select>
+                    <input type="text" id="mfViewerEntryKeywords" placeholder="🔑 키워드 (쉼표 구분)" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;outline:none;min-width:0;">
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                    <span id="mfViewerRegRangeLabel" style="font-size:11px;color:#64748b;flex-shrink:0;">현재: p.?</span>
+                    <div style="flex:1;"></div>
+                    <button onclick="_mfViewerRegisterSingle()" style="padding:6px 12px;border-radius:7px;background:#166534;color:#4ade80;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">+ 이 페이지만 등록</button>
+                    <button onclick="_mfViewerRegisterRange()" style="padding:6px 12px;border-radius:7px;background:#1e3a5f;color:#7dd3fc;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">+ 선택 범위 등록</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -710,7 +727,7 @@
             <button onclick="closeUrgentCreateModal()" style="font-size:22px;opacity:0.3;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
         <textarea id="urgentInput" rows="5" style="width:100%;padding:12px;border-radius:10px;border:2px solid var(--border-ui);background:var(--bg-chat);color:var(--text-main);font-size:13px;font-weight:600;resize:vertical;outline:none;box-sizing:border-box;" placeholder="긴급공지 내용을 입력하세요..."></textarea>
-        <div style="display:flex;align-items:center;gap:10px;padding:4px 2px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:4px 2px;flex-wrap:wrap;">
             <span style="font-size:11px;font-weight:700;opacity:0.55;flex-shrink:0;">⏱ 지속 시간</span>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:700;">
                 <input type="radio" name="urgentDuration" value="24" id="urgentDur24" style="accent-color:#ef4444;">
@@ -720,12 +737,23 @@
                 <input type="radio" name="urgentDuration" value="48" id="urgentDur48" checked style="accent-color:#ef4444;">
                 <span>48시간</span>
             </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:700;">
+                <input type="radio" name="urgentDuration" value="0" id="urgentDurPerm" style="accent-color:#ef4444;">
+                <span style="color:#fbbf24;">영구</span>
+            </label>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 2px;border-top:1px solid var(--border-ui);">
-            <input type="checkbox" id="urgentAlsoNotice" style="accent-color:#3b82f6;width:15px;height:15px;">
-            <span style="font-size:12px;font-weight:700;">오른쪽 공지에도 등록 <span id="urgentNoticeModeLabel" style="opacity:0.5;font-weight:600;font-size:11px;"></span></span>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 2px;border-top:1px solid var(--border-ui);flex-wrap:wrap;">
+            <span style="font-size:11px;font-weight:700;opacity:0.55;flex-shrink:0;">오른쪽 공지 등록</span>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid var(--border-ui);background:var(--bg-chat);">
+                <input type="checkbox" id="urgentAlsoMania" style="accent-color:#3b82f6;width:14px;height:14px;">
+                <span>📋 매니아</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid var(--border-ui);background:var(--bg-chat);">
+                <input type="checkbox" id="urgentAlsoBay" style="accent-color:#3b82f6;width:14px;height:14px;">
+                <span>📋 베이</span>
+            </label>
             <span style="font-size:10px;opacity:0.45;margin-left:auto;">핀 고정 없음</span>
-        </label>
+        </div>
         <div style="display:flex;gap:8px;">
             <button onclick="saveUrgentNotice()" style="flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:900;background:#ef4444;color:#fff;border:none;cursor:pointer;">🚨 등록</button>
             <button onclick="closeUrgentCreateModal()" style="padding:10px 16px;border-radius:10px;font-size:13px;font-weight:900;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;">취소</button>
@@ -851,7 +879,7 @@
         </div>
         <button onclick="closeMonitorFlash()" style="font-size:20px;opacity:0.35;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.35">×</button>
     </div>
-    <div id="monitorAlertItems"></div>
+    <div id="monitorAlertItems" style="max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;flex:1;min-height:0;"></div>
 </div>
 
 <!-- 벨 모달 -->
@@ -976,7 +1004,7 @@
                 <div id="authUserMenu" style="display:none;position:absolute;left:0;top:calc(100% + 6px);background:var(--bg-card);border:1.5px solid var(--border-ui);border-radius:14px;width:264px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9100;overflow:hidden;"></div>
             </div>
             <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
-            <button onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼</button>
+            <button id="mfNavBtn" onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼<span id="mfNavBadge" style="display:none;font-size:10px;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:3px;"></span></button><button id="mfNavCancelBtn" onclick="_mfNavCancel()" title="취소" style="display:none;font-size:11px;font-weight:900;border:1.5px solid #7f1d1d;border-radius:8px;padding:0 8px;height:32px;background:none;color:#f87171;cursor:pointer;white-space:nowrap;transition:0.15s;margin-left:-4px;">✕</button>
         </div>
         <div id="liveClock" onclick="openScheduleModal()" title="직원 스케쥴 확인" style="position:absolute;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=1;this.style.textDecoration='underline'" onmouseout="this.style.opacity=0.65;this.style.textDecoration='none'"></div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
@@ -1796,10 +1824,85 @@
     // ── 매뉴얼 관리 탭 ──
     var _mfMgmtMode = 'mania';
     var _mfRegTab   = 'new';
+
+    function _mfCancelPending(){
+        if(!_mfPending || !_mfPending.length) return;
+        if(!confirm('대기 중인 항목 '+_mfPending.length+'개를 취소하시겠습니까?\n저장되지 않은 항목은 모두 사라집니다.')) return;
+        _mfPending = [];
+        _mfRenderPendingList();
+        _mfUpdateNavBadge();
+    }
+    function _mfNavCancel(){
+        if(_mfIsConverting){ _mfCancelRenderNow(); }
+        else { _mfCancelPending(); }
+    }
+
+    function _mfUpdateNavBadge(){
+        var btn   = document.getElementById('mfNavBtn');
+        var badge = document.getElementById('mfNavBadge');
+        if(!badge) return;
+
+        // 총 페이지: Firebase 저장값 우선, 로컬 렌더링 정보로 보완
+        var totalPages = _mfTotalPdfPages || 0;
+        if(_mfRendered){
+            var _rEnd = _mfRendered.startFrom + _mfRendered.numPages - 1;
+            if(_rEnd > totalPages) totalPages = _rEnd;
+        }
+
+        // 대기 중 항목이 커버하는 페이지 수
+        var pendingPages = 0;
+        if(_mfPending) _mfPending.forEach(function(e){ pendingPages += Math.max(0, (e.to||0)-(e.from||0)+1); });
+
+        var registeredPages = _mfSavedPageCnt + pendingPages;
+        var hasPending  = _mfPending && _mfPending.length > 0;
+        var active = _mfIsConverting || _mfImgUploading || hasPending || totalPages > 0;
+
+        var cancelBtn = document.getElementById('mfNavCancelBtn');
+        if(!active){
+            badge.style.display = 'none';
+            if(cancelBtn) cancelBtn.style.display = 'none';
+            if(btn){ btn.style.borderColor='var(--border-ui)'; btn.style.color='var(--text-main)'; }
+            return;
+        }
+        if(cancelBtn) cancelBtn.style.display = (_mfIsConverting || hasPending) ? '' : 'none';
+
+        badge.style.display = '';
+        if(_mfImgUploading){
+            var _ups = _mfImgUploadState;
+            badge.textContent      = '업로드 중 ' + (_ups ? _ups.count : '...');
+            badge.style.background = '#0284c7';
+            badge.style.color      = '#fff';
+            if(btn){ btn.style.borderColor='#0284c7'; btn.style.color='#7dd3fc'; }
+        } else if(_mfIsConverting){
+            badge.textContent      = '변환 중 ' + (_mfConvertStatus || '...');
+            badge.style.background = '#7c3aed';
+            badge.style.color      = '#fff';
+            if(btn){ btn.style.borderColor='#7c3aed'; btn.style.color='#a78bfa'; }
+        } else if(hasPending){
+            badge.textContent      = _mfPending.length + '개 대기중';
+            badge.style.background = '#f59e0b';
+            badge.style.color      = '#0f172a';
+            if(btn){ btn.style.borderColor='#f59e0b'; btn.style.color='#f59e0b'; }
+        } else {
+            badge.textContent      = registeredPages + ' / ' + totalPages;
+            badge.style.background = '#334155';
+            badge.style.color      = '#94a3b8';
+            if(btn){ btn.style.borderColor='var(--border-ui)'; btn.style.color='var(--text-main)'; }
+        }
+    }
     var _MANIA_CATS = ['일반','충전','결제','사고'];
     var _BAY_CATS   = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
-    var _mfPending  = [];   // 신규 등록 대기 항목
-    var _mfRendered = null; // {mode, startFrom, numPages, fileName, storePath, downloadURL}
+    var _mfPending      = [];   // 신규 등록 대기 항목
+    var _mfRendered     = null; // {mode, startFrom, numPages, fileName, storePath, downloadURL}
+    var _mfSavedPageCnt = 0;    // Firebase에 저장된 항목이 커버하는 페이지 수 합계
+    var _mfTotalPdfPages= 0;    // 이 모드 PDF 총 페이지 수 (Firebase manual_meta에서 로드)
+    var _mfRegisteredRanges = []; // 저장된 항목의 페이지 범위 [{start,end}]
+    var _mfCancelRender = false;// PDF 변환 중 취소 플래그
+    var _mfIsConverting = false;// 변환 진행 중 여부
+    var _mfConvertStatus= '';   // 변환 중 상태 문자열 (예: "3 / 181")
+    var _mfProgressHtml = '';   // 마지막 progress 영역 HTML (모달 재진입 시 복원)
+    var _mfImgUploading = false;// 이미지 직접 업로드 진행 중 여부
+    var _mfImgUploadState = null; // {current, total, pct, text, done, failed}
 
     function _renderManualMgmt(){
         var wrap = document.getElementById('mfContent');
@@ -1835,6 +1938,24 @@
         h += '📄 PDF 선택 → 이미지 변환 시작';
         h += '<input type="file" id="mfNewFile" accept=".pdf" style="display:none;" onchange="_mfDoRender()">';
         h += '</label>';
+        h += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
+        h += '<div style="flex:1;height:1px;background:#334155;"></div>';
+        h += '<span style="font-size:10px;color:#475569;flex-shrink:0;">또는 이미 변환된 이미지 파일 있으면</span>';
+        h += '<div style="flex:1;height:1px;background:#334155;"></div>';
+        h += '</div>';
+        h += '<label id="mfImgUploadLabel" style="display:block;margin-top:8px;padding:9px 14px;border-radius:8px;border:1.5px dashed #0284c7;color:#7dd3fc;font-size:11px;font-weight:900;cursor:pointer;text-align:center;background:#0c1a2e;">';
+        h += '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
+        h += '<input type="file" id="mfImgFiles" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="_mfUploadImgFiles()">';
+        h += '</label>';
+        h += '<div id="mfImgUploadProgress" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:#0c1a2e;border:1px solid #1e3a5f;">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+        h += '<span id="mfImgUploadText" style="font-size:11px;font-weight:700;color:#7dd3fc;"></span>';
+        h += '<span id="mfImgUploadCount" style="font-size:11px;font-weight:900;color:#e2e8f0;"></span>';
+        h += '</div>';
+        h += '<div style="background:#1e293b;border-radius:4px;height:8px;overflow:hidden;">';
+        h += '<div id="mfImgUploadBar" style="height:100%;background:linear-gradient(90deg,#0284c7,#38bdf8);border-radius:4px;transition:width 0.2s;width:0%;"></div>';
+        h += '</div>';
+        h += '</div>';
         h += '<div id="mfNewProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
         h += '</div>';
 
@@ -1845,6 +1966,7 @@
         h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;flex:1;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
         h += '<button onclick="_mfLoadStorageThumbs()" id="mfLoadThumbsBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #334155;background:none;color:#64748b;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">📷 저장된 이미지 불러오기</button>';
         h += '</div>';
+        h += '<div id="mfThumbResumeBanner" style="display:none;margin-bottom:8px;padding:8px 12px;border-radius:8px;background:#0f2e1a;border:1.5px solid #166534;font-size:11px;color:#4ade80;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>';
         h += '<div id="mfPageThumbs" style="display:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:8px;margin-bottom:10px;background:#0a1120;"></div>';
         h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">썸네일 클릭 → 시작 페이지 자동 입력. 항목별로 범위 지정 후 추가하세요.</div>';
         h += '<div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;">';
@@ -1927,10 +2049,37 @@
         }
 
         wrap.innerHTML = h;
-        _mfPending  = [];
-        _mfRendered = null;
         _mfSetMgmtMode(_mfMgmtMode);
         _mfSetRegTab(_mfRegTab);
+        // 모달 닫았다 다시 열어도 상태 복원
+        _mfRenderPageThumbs();
+        _mfRenderPendingList();
+        if(_mfProgressHtml){
+            var _pg = document.getElementById('mfNewProgress');
+            if(_pg) _pg.innerHTML = _mfProgressHtml;
+        }
+        if(_mfRendered){
+            var _infoEl = document.getElementById('mfRenderedInfo');
+            var _fromEl = document.getElementById('mfEntryFrom');
+            var _toEl   = document.getElementById('mfEntryTo');
+            var _endPg  = _mfRendered.startFrom + _mfRendered.numPages - 1;
+            if(_infoEl) _infoEl.textContent = '(p.'+_mfRendered.startFrom+' ~ p.'+_endPg+', '+_mfRendered.numPages+'페이지)';
+            if(_fromEl) _fromEl.value = _mfRendered.startFrom;
+            if(_toEl)   _toEl.value   = _endPg;
+        }
+        // 이미지 직접 업로드 진행 상태 복원
+        if(_mfImgUploadState){
+            var _pw = document.getElementById('mfImgUploadProgress');
+            var _pt = document.getElementById('mfImgUploadText');
+            var _pc = document.getElementById('mfImgUploadCount');
+            var _pb = document.getElementById('mfImgUploadBar');
+            var _lbl= document.getElementById('mfImgUploadLabel');
+            if(_pw) _pw.style.display='block';
+            if(_pt){ _pt.textContent=_mfImgUploadState.text; if(_mfImgUploadState.done) _pt.style.color='#4ade80'; }
+            if(_pc) _pc.textContent=_mfImgUploadState.count;
+            if(_pb){ _pb.style.width=_mfImgUploadState.pct+'%'; if(_mfImgUploadState.done) _pb.style.background='#22c55e'; }
+            if(_lbl && _mfImgUploading){ _lbl.style.pointerEvents='none'; _lbl.style.opacity='0.5'; }
+        }
     }
 
     function _mfSetMgmtMode(mode){
@@ -1944,6 +2093,13 @@
             btn.style.borderColor = active ? col : '#334155';
             btn.style.color = active ? '#fff' : '#94a3b8';
         });
+        // 모드 전환 시 이전 모드 이미지 초기화
+        window._mfPageUrls = [];
+        _mfRegisteredRanges = [];
+        _mfRenderPageThumbs();
+        // 불러오기 버튼 텍스트 초기화
+        var loadBtn = document.getElementById('mfLoadThumbsBtn');
+        if(loadBtn){ loadBtn.disabled=false; loadBtn.textContent='📷 저장된 이미지 불러오기'; }
         _mfFillEntryCat(mode);
         _mfFillEditSel(mode);
         _mfLoadRanges(mode);
@@ -2034,6 +2190,110 @@
     }
 
     // ── 신규: 렌더링만 먼저 실행 ──
+    function _mfCancelRenderNow(){
+        _mfCancelRender = true;
+        var btn = document.getElementById('mfCancelBtn');
+        if(btn){ btn.disabled=true; btn.textContent='취소 중...'; }
+    }
+
+    async function _mfUploadImgFiles(){
+        var input    = document.getElementById('mfImgFiles');
+        var progWrap = document.getElementById('mfImgUploadProgress');
+        var progText = document.getElementById('mfImgUploadText');
+        var progCnt  = document.getElementById('mfImgUploadCount');
+        var progBar  = document.getElementById('mfImgUploadBar');
+        var label    = document.getElementById('mfImgUploadLabel');
+        var startEl  = document.getElementById('mfNewStart');
+        if(!input || !input.files || !input.files.length) return;
+        var startPage = parseInt(startEl ? startEl.value : '1', 10);
+        if(!startPage || startPage < 1){ alert('시작 페이지를 먼저 입력해주세요.'); return; }
+        var mode = _mfMgmtMode;
+
+        // 파일명 기준 정렬 (숫자 순서)
+        var files = Array.from(input.files).sort(function(a,b){
+            return a.name.localeCompare(b.name, undefined, {numeric:true});
+        });
+        var total = files.length;
+
+        // UI 잠금 + 전역 상태 시작 (동기적으로 즉시 표시)
+        _mfImgUploading = true;
+        _mfImgUploadState = {text:'⬆ 업로드 중...', count:'0 / '+total, pct:0, done:false};
+        if(label){
+            label.style.pointerEvents='none';
+            label.style.opacity='0.5';
+            // 라벨 첫 줄 텍스트를 즉시 변경 (async 이전에 보장)
+            var _firstNode = label.firstChild;
+            if(_firstNode && _firstNode.nodeType===3) _firstNode.nodeValue = '⬆ 업로드 준비 중... ('+total+'장)';
+        }
+        if(progWrap){ progWrap.style.display='block'; }
+        if(progText) progText.textContent = '⬆ 업로드 준비 중...';
+        if(progCnt)  progCnt.textContent  = '0 / '+total;
+        if(progBar)  progBar.style.width  = '0%';
+        // 브라우저가 DOM 변경을 화면에 반영한 뒤 업로드 시작
+        await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
+
+        var uploaded = 0, failed = 0;
+        for(var i=0; i<files.length; i++){
+            var pageNum = startPage + i;
+            var padded  = String(pageNum).padStart(3,'0');
+            var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
+            try{
+                await storage.ref(storagePath).put(files[i]);
+                uploaded++;
+            }catch(e){
+                failed++;
+                console.warn('업로드 실패:', files[i].name, e);
+            }
+            var pct = Math.round((i+1)/total*100);
+            var txt = '⬆ 업로드 중... p.'+(startPage+i);
+            var cnt = (i+1)+' / '+total+' ('+pct+'%)';
+            // 전역 상태 저장 (모달 닫혀있어도 유지)
+            _mfImgUploadState = {text:txt, count:cnt, pct:pct, done:false};
+            _mfUpdateNavBadge();
+            // 라이브 DOM 업데이트 (열려있으면)
+            var _lpt = document.getElementById('mfImgUploadText');
+            var _lpc = document.getElementById('mfImgUploadCount');
+            var _lpb = document.getElementById('mfImgUploadBar');
+            if(_lpt) _lpt.textContent = txt;
+            if(_lpc) _lpc.textContent = cnt;
+            if(_lpb) _lpb.style.width = pct+'%';
+        }
+
+        // maxPage 저장
+        var lastPage = startPage + files.length - 1;
+        await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',lastPage);
+        _mfTotalPdfPages = lastPage;
+
+        // 완료 상태
+        var failMsg = failed ? ' ⚠ '+failed+'장 실패' : '';
+        var doneText = '✅ 완료'+failMsg;
+        var doneCnt  = uploaded+'장 업로드됨 (p.'+startPage+'~p.'+lastPage+')';
+        _mfImgUploading = false;
+        _mfImgUploadState = {text:doneText, count:doneCnt, pct:100, done:true};
+
+        var _lpt2 = document.getElementById('mfImgUploadText');
+        var _lpc2 = document.getElementById('mfImgUploadCount');
+        var _lpb2 = document.getElementById('mfImgUploadBar');
+        if(_lpt2){ _lpt2.textContent=doneText; _lpt2.style.color='#4ade80'; }
+        if(_lpc2) _lpc2.textContent=doneCnt;
+        if(_lpb2){ _lpb2.style.width='100%'; _lpb2.style.background='#22c55e'; }
+
+        // 렌더링 상태 업데이트
+        _mfRendered = {mode:mode, startFrom:startPage, numPages:files.length, fileName:'이미지 직접 업로드', storePath:'', downloadURL:''};
+        _mfUpdateNavBadge();
+
+        // 버튼 복구 + 자동 로드
+        var _lbl2 = document.getElementById('mfImgUploadLabel');
+        if(_lbl2){
+            _lbl2.style.pointerEvents='';
+            _lbl2.style.opacity='';
+            var _fn = _lbl2.firstChild;
+            if(_fn && _fn.nodeType===3) _fn.nodeValue = '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
+        }
+        input.value = '';
+        if(!failed){ _mfLoadStorageThumbs(); }
+    }
+
     async function _mfDoRender(){
         var startEl = document.getElementById('mfNewStart');
         var fileEl  = document.getElementById('mfNewFile');
@@ -2042,6 +2302,9 @@
         var file    = fileEl ? fileEl.files[0] : null;
         if(!file) return;
         if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
+        // 취소 버튼 표시
+        _mfCancelRender = false;
+        if(prog) prog.innerHTML = '이미지 변환 준비 중... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
 
         var mode = _mfMgmtMode;
         var ts   = Date.now();
@@ -2050,6 +2313,16 @@
 
         // PDF → 이미지 변환
         var numPages = await _renderPdfToManualPages(mode, file, prog, start);
+        // 취소 버튼 제거
+        var cancelBtn = document.getElementById('mfCancelBtn');
+        if(cancelBtn) cancelBtn.remove();
+        if(_mfCancelRender){
+            _mfCancelRender = false;
+            if(prog) prog.textContent = '⚠ 변환이 취소되었습니다.';
+            if(fileEl) fileEl.value='';
+            _mfRenderPageThumbs();
+            return;
+        }
         if(!numPages){ if(fileEl) fileEl.value=''; return; }
 
         // 원본 PDF → 파일 목록에도 자동 저장
@@ -2071,6 +2344,10 @@
         }
 
         var endPage = start + numPages - 1;
+        if(endPage > (_mfTotalPdfPages||0)){
+            _mfTotalPdfPages = endPage;
+            _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',endPage);
+        }
         if(prog) prog.textContent = '✅ '+numPages+'페이지 변환 완료 · 파일 목록 자동 저장됨';
 
         // 항목 등록 패널 활성화
@@ -2145,6 +2422,7 @@
         });
         listEl.innerHTML = h;
         if(saveBtn) saveBtn.style.display = '';
+        _mfUpdateNavBadge();
     }
 
     function _mfRemovePending(idx){
@@ -2153,22 +2431,52 @@
     }
 
     function _mfRenderPageThumbs(){
-        var thumbsEl = document.getElementById('mfPageThumbs');
+        var thumbsEl   = document.getElementById('mfPageThumbs');
+        var resumeBar  = document.getElementById('mfThumbResumeBanner');
         if(!thumbsEl) return;
-        if(!window._mfPageUrls || !window._mfPageUrls.length){ thumbsEl.style.display='none'; return; }
+        if(!window._mfPageUrls || !window._mfPageUrls.length){
+            thumbsEl.style.display='none';
+            if(resumeBar) resumeBar.style.display='none';
+            return;
+        }
         thumbsEl.style.display = '';
         var h = '';
         window._mfPageUrls.forEach(function(p){
-            h += '<div onclick="_mfThumbClick('+p.page+')" id="mfThumb_'+p.page+'" style="display:inline-block;cursor:pointer;text-align:center;margin-right:6px;vertical-align:top;border-radius:6px;padding:2px;border:2px solid #1e293b;transition:border-color 0.15s;" title="p.'+p.page+'">';
-            h += '<img src="'+p.url+'" style="width:70px;height:90px;object-fit:cover;border-radius:4px;display:block;">';
-            h += '<div style="font-size:9px;color:#64748b;margin-top:3px;font-weight:700;">p.'+p.page+'</div>';
+            var isReg = _mfRegisteredRanges.some(function(r){ return r.start && r.end && p.page >= r.start && p.page <= r.end; });
+            h += '<div onclick="_mfThumbClick('+p.page+')" id="mfThumb_'+p.page+'" style="display:inline-block;cursor:pointer;text-align:center;margin-right:8px;vertical-align:top;border-radius:8px;padding:3px;border:2px solid '+(isReg?'#22c55e':'#1e293b')+';transition:border-color 0.15s;position:relative;" title="p.'+p.page+(isReg?' (등록됨)':' 클릭하여 크게 보기')+'">';
+            h += '<img src="'+p.url+'" style="width:120px;height:155px;object-fit:cover;border-radius:5px;display:block;">';
+            if(isReg) h += '<div style="position:absolute;top:3px;left:3px;right:3px;bottom:18px;border-radius:5px;background:rgba(34,197,94,0.18);display:flex;align-items:center;justify-content:center;pointer-events:none;"><span style="font-size:28px;color:#22c55e;font-weight:900;text-shadow:0 0 8px #000;">✓</span></div>';
+            h += '<div style="font-size:10px;color:'+(isReg?'#22c55e':'#64748b')+';margin-top:4px;font-weight:700;">p.'+p.page+'</div>';
             h += '</div>';
         });
         thumbsEl.innerHTML = h;
+        _mfUpdateNavBadge();
+        // 이어서 등록 배너
+        if(resumeBar){
+            if(_mfRegisteredRanges.length > 0){
+                var maxEnd = Math.max.apply(null, _mfRegisteredRanges.map(function(r){ return r.end||0; }));
+                var nextPage = maxEnd + 1;
+                var hasNext = window._mfPageUrls.some(function(p){ return p.page === nextPage; });
+                resumeBar.style.display = 'flex';
+                resumeBar.innerHTML = '<span>✅ 이미 '+_mfRegisteredRanges.length+'개 항목 등록됨 (마지막 p.'+maxEnd+')</span>'
+                    + (hasNext
+                        ? '<button onclick="_mfJumpToResume('+nextPage+')" style="padding:4px 12px;border-radius:6px;background:#22c55e;color:#000;font-size:11px;font-weight:900;border:none;cursor:pointer;flex-shrink:0;">▶ p.'+nextPage+'부터 이어서 등록</button>'
+                        : '<span style="color:#64748b;">(모든 페이지 등록 완료)</span>');
+            } else {
+                resumeBar.style.display = 'none';
+            }
+        }
     }
     function _mfThumbClick(page){
-        // 썸네일 클릭 → 큰 이미지 뷰어로 열기
         _mfOpenPageViewer(page);
+    }
+    function _mfJumpToResume(page){
+        _mfOpenPageViewer(page);
+        // 해당 페이지를 바로 시작 페이지로 자동 설정
+        document.getElementById('mfEntryFrom').value = page;
+        document.getElementById('mfEntryTo').value   = page;
+        _mfViewerUpdateRangeBar();
+        _mfUpdateThumbHighlight();
     }
 
     // ── 페이지 이미지 뷰어 ──
@@ -2181,6 +2489,7 @@
         _mfViewerIdx = window._mfPageUrls.findIndex(function(p){ return p.page === page; });
         if(_mfViewerIdx < 0) _mfViewerIdx = 0;
         document.getElementById('mfPageViewerModal').style.display = 'flex';
+        _mfViewerFillCat();
         _mfViewerRender();
         document.addEventListener('keydown', _mfViewerKeydown);
     }
@@ -2204,6 +2513,7 @@
         document.getElementById('mfViewerNavLabel').textContent = (_mfViewerIdx+1)+' / '+window._mfPageUrls.length;
         _mfViewerUpdateCropOverlay();
         _mfViewerUpdateRangeBar();
+        _mfViewerUpdateRegLabel();
     }
     function _mfViewerUpdateRangeBar(){
         var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
@@ -2213,6 +2523,7 @@
         if(from && to) bar.innerHTML = '선택 범위: <strong style="color:#4ade80;">p.'+from+' ~ p.'+to+'</strong>'
             +((_mfViewerCropTop||0)>0||_mfViewerCropBot<100 ? ' &nbsp;·&nbsp; <span style="color:#fb923c;">노출 '+_mfViewerCropTop+'%~'+_mfViewerCropBot+'%</span>' : '');
         else bar.textContent = '선택 범위: 없음 (아래 버튼으로 시작/끝 페이지 설정)';
+        _mfViewerUpdateRegLabel();
     }
     function _mfViewerUpdateCropOverlay(){
         var topDim = document.getElementById('mfViewerCropTopDim');
@@ -2258,6 +2569,65 @@
         };
         openCropEditor();
     }
+    function _mfViewerFillCat(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        if(!sel) return;
+        var cats = _mfMgmtMode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>'; }).join('');
+    }
+    function _mfViewerUpdateRegLabel(){
+        var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
+        var lbl = document.getElementById('mfViewerRegRangeLabel');
+        if(!lbl) return;
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        var to   = parseInt(document.getElementById('mfEntryTo').value)||0;
+        var cur  = p ? p.page : '?';
+        if(from && to && from!==to){
+            lbl.innerHTML = '현재: <strong style="color:#3abff8;">p.'+cur+'</strong> &nbsp; 범위: <strong style="color:#4ade80;">p.'+from+' ~ p.'+to+'</strong>';
+        } else {
+            lbl.innerHTML = '현재: <strong style="color:#3abff8;">p.'+cur+'</strong>';
+        }
+    }
+    function _mfViewerRegFromTo(from, to){
+        var nameEl = document.getElementById('mfViewerEntryName');
+        var catEl  = document.getElementById('mfViewerEntryCat');
+        var kwsEl  = document.getElementById('mfViewerEntryKeywords');
+        var name = nameEl ? nameEl.value.trim() : '';
+        if(!name){ alert('항목명을 입력해주세요.'); if(nameEl) nameEl.focus(); return; }
+        var cat = catEl ? catEl.value : '';
+        var kws = kwsEl ? kwsEl.value.trim() : '';
+        if(_mfRendered){
+            var rEnd = _mfRendered.startFrom + _mfRendered.numPages - 1;
+            if(from < _mfRendered.startFrom || to > rEnd){
+                if(!confirm('입력한 범위(p.'+from+'~p.'+to+')가 렌더링된 범위(p.'+_mfRendered.startFrom+'~p.'+rEnd+') 밖입니다.\n계속 추가하시겠습니까?')) return;
+            }
+        }
+        _mfPending.push({name:name, cat:cat, from:from, to:to, keywords:kws, cropTop:_mfViewerCropTop||0, cropBottom:(_mfViewerCropBot!==undefined?_mfViewerCropBot:100)});
+        _mfViewerCropTop=0; _mfViewerCropBot=100;
+        if(nameEl) nameEl.value='';
+        if(kwsEl)  kwsEl.value='';
+        // 다음 항목 시작 자동 설정
+        var nextFrom = to+1;
+        var nextTo   = _mfRendered ? (_mfRendered.startFrom+_mfRendered.numPages-1) : nextFrom;
+        document.getElementById('mfEntryFrom').value = nextFrom;
+        document.getElementById('mfEntryTo').value   = nextTo;
+        _mfViewerUpdateRangeBar();
+        _mfUpdateThumbHighlight();
+        _mfViewerUpdateRegLabel();
+        _mfRenderPendingList();
+        _mfUpdateNavBadge();
+    }
+    function _mfViewerRegisterSingle(){
+        var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
+        if(!p){ alert('페이지 이미지가 없습니다.'); return; }
+        _mfViewerRegFromTo(p.page, p.page);
+    }
+    function _mfViewerRegisterRange(){
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        var to   = parseInt(document.getElementById('mfEntryTo').value)||0;
+        if(!from||!to||from<1||to<from){ alert('먼저 "📌 시작 페이지로" / "📌 끝 페이지로" 버튼으로 범위를 지정해주세요.'); return; }
+        _mfViewerRegFromTo(from, to);
+    }
 
     function _mfUpdateThumbHighlight(){
         var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
@@ -2290,6 +2660,7 @@
             }
             _mfRenderPageThumbs();
             if(btn) btn.textContent = '✅ '+window._mfPageUrls.length+'장 로드됨';
+            _mfLoadRanges(_mfMgmtMode); // 등록된 범위 로드 → 썸네일에 ✓ 표시
         }catch(e){
             alert('이미지 불러오기 실패: '+e.message);
         }finally{
@@ -2347,6 +2718,7 @@
         if(prog) prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!';
         _mfPending = [];
         _mfRenderPendingList();
+        _mfUpdateNavBadge();
         if(btn){ btn.disabled=false; btn.textContent='💾 전체 저장'; btn.style.display='none'; }
         _mfLoadRanges(mode);
         _mfFillEditSel(mode);
@@ -2445,10 +2817,21 @@
         var listEl = document.getElementById('mfRangeList');
         if(!listEl) return;
         listEl.innerHTML = '<div style="font-size:11px;color:#475569;padding:8px 0;">로딩 중...</div>';
-        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
-        if(!raw||typeof raw!=='object'){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
+        var [raw, meta] = await Promise.all([
+            _authFetch('manual_page_ranges/'+mode+'.json'),
+            _authFetch('manual_meta/'+mode+'.json')
+        ]);
+        if(meta && meta.maxPage) _mfTotalPdfPages = meta.maxPage;
+        if(!raw||typeof raw!=='object'){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
         var entries = Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
-        if(!entries.length){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
+        if(!entries.length){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
+        // 저장된 항목이 커버하는 총 페이지 수 집계
+        var _savedPages = 0;
+        entries.forEach(function(e){ _savedPages += Math.max(0,(e[1].end||0)-(e[1].start||0)+1); });
+        _mfSavedPageCnt = _savedPages;
+        _mfRegisteredRanges = entries.map(function(e){ return {start:e[1].start||0, end:e[1].end||0}; });
+        _mfUpdateNavBadge();
+        _mfRenderPageThumbs();
         var h='';
         entries.forEach(function(e){
             var key=e[0], r=e[1], title=r.title||key;
@@ -2464,11 +2847,13 @@
         listEl.innerHTML=h;
     }
 
-    async function _mfDeleteRange(mode, key, title){
+    function _mfDeleteRange(mode, key, title){
         if(!confirm('"'+title+'" 항목을 삭제하시겠습니까?')) return;
-        await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','DELETE');
-        _mfLoadRanges(mode);
-        _mfFillEditSel(mode);
+        db.ref('manual_page_ranges/'+mode+'/'+key).set(null, function(err){
+            if(err){ alert('삭제 실패: '+err.message); return; }
+            _mfLoadRanges(mode);
+            _mfFillEditSel(mode);
+        });
     }
 
     async function _mfResetAll(){
@@ -2480,9 +2865,11 @@
         var btn = document.querySelector('button[onclick="_mfResetAll()"]');
         if(btn){ btn.disabled=true; btn.textContent='삭제 중...'; }
 
-        // DB 삭제
-        await _authFetch('manual_page_ranges/'+mode+'.json','DELETE');
+        // DB 삭제 (SDK 사용 - 키 인코딩 안전)
+        await new Promise(function(res){ db.ref('manual_page_ranges/'+mode).set(null, res); });
         await _authFetch('imi_manual_index/'+mode+'.json','DELETE');
+        await new Promise(function(res){ db.ref('manual_meta/'+mode).set(null, res); });
+        _mfTotalPdfPages = 0; _mfSavedPageCnt = 0;
 
         // Storage 이미지 삭제
         try{
@@ -2493,14 +2880,20 @@
 
         if(btn){ btn.disabled=false; btn.textContent='🗑 매뉴얼 전체 초기화 (DB + 이미지)'; }
         alert('['+label+'] 매뉴얼 전체 삭제 완료!');
+        _mfPending = [];
+        _mfRendered = null;
         _mfLoadRanges(mode);
         _mfFillEditSel(mode);
         window._mfPageUrls = [];
         _mfRenderPageThumbs();
+        _mfUpdateNavBadge();
     }
 
     async function _renderPdfToManualPages(mode, file, prog, startFrom){
         startFrom = startFrom||1;
+        _mfIsConverting = true;
+        _mfConvertStatus = '';
+        _mfProgressHtml  = '';
         window._mfPageUrls = [];
         if(prog) prog.textContent = 'PDF 로딩 중...';
         var numPages = 0;
@@ -2513,7 +2906,14 @@
             var canvas = document.createElement('canvas');
             var ctx    = canvas.getContext('2d');
             for(var i=1;i<=numPages;i++){
-                if(prog) prog.textContent = '이미지 변환 중 '+i+'/'+numPages+'...';
+                if(_mfCancelRender){ numPages = i-1; break; }
+                _mfConvertStatus = i + ' / ' + pdfDoc.numPages;
+                var _ph = '이미지 변환 중 '+i+'/'+pdfDoc.numPages+'... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
+                _mfProgressHtml = _ph;
+                // 항상 현재 DOM 직접 조회 (모달 재빌드 후에도 최신 엘리먼트에 반영)
+                var _liveP = document.getElementById('mfNewProgress');
+                if(_liveP) _liveP.innerHTML = _ph; else if(prog) prog.innerHTML = _ph;
+                _mfUpdateNavBadge();
                 try{
                     var page     = await pdfDoc.getPage(i);
                     var viewport = page.getViewport({scale:1.2}); // 메모리 절약
@@ -2534,12 +2934,18 @@
                 }
             }
         }catch(e){
-            if(prog) prog.textContent='오류: '+e.message;
+            _mfIsConverting = false; _mfConvertStatus = ''; _mfUpdateNavBadge();
+            _mfProgressHtml = '오류: '+e.message;
+            if(prog) prog.textContent=_mfProgressHtml;
             console.error(e);
             return 0;
         }
+        _mfIsConverting = false;
+        _mfConvertStatus = '';
+        _mfUpdateNavBadge();
         if(failedPages.length){
-            if(prog) prog.textContent = '⚠ '+numPages+'페이지 중 '+failedPages.length+'개 실패 ('+failedPages.join(',')+') — 나머지 완료';
+            _mfProgressHtml = '⚠ '+numPages+'페이지 중 '+failedPages.length+'개 실패 — 나머지 완료';
+            if(prog) prog.textContent = _mfProgressHtml;
         }
         return numPages;
     }
@@ -6599,8 +7005,8 @@
     function openUrgentCreate(){
         var inp=document.getElementById('urgentInput'); if(inp) inp.value='';
         var d48=document.getElementById('urgentDur48'); if(d48) d48.checked=true;
-        var an=document.getElementById('urgentAlsoNotice'); if(an) an.checked=false;
-        var ml=document.getElementById('urgentNoticeModeLabel'); if(ml) ml.textContent='('+(currentMode==='bay'?'베이':'매니아')+' 공지)';
+        var am=document.getElementById('urgentAlsoMania'); if(am) am.checked=false;
+        var ab=document.getElementById('urgentAlsoBay'); if(ab) ab.checked=false;
         document.getElementById('urgentCreateModal').classList.remove('hidden');
     }
     function closeUrgentCreateModal(){
@@ -6615,20 +7021,22 @@
         _urgentSaving=true;
         var now=Date.now();
         var durEl=document.querySelector('input[name="urgentDuration"]:checked');
-        var hours=durEl?parseInt(durEl.value):48;
+        var durVal=durEl?durEl.value:'48';
+        var permanent=durVal==='0';
+        var hours=permanent?0:parseInt(durVal);
         var dateStr=new Date(now).toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',weekday:'short'});
         var author=_currentUser&&_currentUser.name?_currentUser.name:'알 수 없음';
-        var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:now+hours*3600000,showInTicker:true,permanent:false,author:author};
+        var obj={title:content.split('\n')[0].substring(0,60),content:content,timestamp:now,date:dateStr,expiresAt:permanent?null:now+hours*3600000,showInTicker:true,permanent:permanent,author:author};
         db.ref('urgent_notices').child(String(now)).set(obj, function(err){
             if(err){ alert('🚨 Firebase 오류: '+err.message+'\n\n경로: urgent_notices'); }
         });
         urgentNotices[String(now)]=obj; updateTicker(); updateBellBadge();
-        // 오른쪽 공지에도 등록 (체크 시, 핀 고정 없음)
-        var alsoNotice=document.getElementById('urgentAlsoNotice');
-        if(alsoNotice&&alsoNotice.checked){
-            var noticeObj={title:obj.title,content:content,date:dateStr};
-            db.ref('notices_'+currentMode).child(String(now)).set(noticeObj);
-        }
+        // 오른쪽 공지 등록 (매니아/베이 각각 체크)
+        var alsoMania=document.getElementById('urgentAlsoMania');
+        var alsoBay=document.getElementById('urgentAlsoBay');
+        var noticeObj={title:obj.title,content:content,date:dateStr};
+        if(alsoMania&&alsoMania.checked) db.ref('notices_mania').child(String(now)).set(noticeObj);
+        if(alsoBay&&alsoBay.checked)     db.ref('notices_bay').child(String(now)).set(noticeObj);
         closeUrgentCreateModal();
         setTimeout(function(){_urgentSaving=false;},1500);
     }
@@ -6819,16 +7227,6 @@
                 var changed=false;
                 s.keywords.forEach(function(kw){if(existing.indexOf(kw)<0){existing.push(kw);changed=true;}});
                 if(changed) db.ref(dbKey).set(existing);
-            });
-        });
-        // 페이지 범위 등록 (없을 때만)
-        var pageSeeds=[
-            {path:'manual_page_ranges/mania/협의정정 마일리지 권한 직원 주의사항', start:90, end:91},
-            {path:'manual_page_ranges/mania/출금 보류 및 서류 안내', start:19, end:22}
-        ];
-        pageSeeds.forEach(function(p){
-            db.ref(p.path).once('value',function(snap){
-                if(!snap.val()) db.ref(p.path).set({start:p.start, end:p.end});
             });
         });
     }
@@ -7084,28 +7482,6 @@
         switchMode('mania'); updateFontSize(16); loadMemos(); switchChatTab(1);
         if(localStorage.getItem('tickerCollapsed')==='1') toggleTicker();
         window.addEventListener('resize', function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); });
-        // Firebase 마이그레이션: 1:1 대화함 통합 (구 항목 3개 → 신규 1개)
-        (function(){
-            var _base = 'manual_page_ranges/mania/';
-            var _new = '1:1 대화함';
-            var _old = ['클릭 > 1:1대화함', '클릭', '클릭 > 실시간 채팅'];
-            db.ref(_base + _new).once('value', function(snap){
-                if(snap.val()) return; // 이미 존재하면 스킵
-                var _done = false;
-                _old.forEach(function(k){
-                    db.ref(_base + k).once('value', function(s){
-                        if(_done) return;
-                        var existing = s.val() || {};
-                        db.ref(_base + _new).set({
-                            start: 68, end: 69,
-                            cropTop: existing.cropTop || 0,
-                            cropBottom: existing.cropBottom || 100
-                        });
-                        _done = true;
-                    });
-                });
-            });
-        })();
         // 채팅창 휠 스크롤 세분화 (기본 스크롤보다 작은 고정 단계)
         (function(){
             var cb = document.getElementById('chatBox');

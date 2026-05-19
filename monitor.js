@@ -593,14 +593,16 @@ function _triggerMonitorAlert(id, rule, items) {
     db.ref('monitor_flash_state').set({
         active: true,
         ruleName: rule.name,
+        ruleKeyword: rule.keyword || '',
         itemCount: items.length,
-        itemRows: items.slice(0,3).map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
+        itemRows: items.map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
         at: _at
     });
     db.ref('/monitor_history').push({
         ruleName: rule.name,
+        ruleKeyword: rule.keyword || '',
         itemCount: items.length,
-        itemRows: items.slice(0,3).map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
+        itemRows: items.map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
         at: _at
     });
 }
@@ -654,8 +656,8 @@ function _showMonitorFlash(s) {
     // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
     if ('Notification' in window) {
         var _fireNotif = function() {
-            new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' — 물품 감지!', {
-                body: (s.itemCount||0) + '개 감지됨' + ((s.itemRows&&s.itemRows[0]) ? '\n' + (s.itemRows[0].t||'') : ''),
+            new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
+                body: (s.itemCount||0) + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
                 icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico'
             });
         };
@@ -874,11 +876,12 @@ function loadMonitorLog() {
                         + '</div>';
                 }).join('');
                 return '<div style="border:1.5px solid var(--border-ui);border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
-                    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+                    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
                     + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(d.ruleName || '') + '</div>'
                     + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">' + timeStr + '</div>'
                     + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">' + (d.itemCount || 0) + '개 감지</div>'
                     + '</div>'
+                    + (d.ruleKeyword ? '<div style="font-size:10px;color:#64748b;margin-bottom:7px;">🔑 ' + _esc(d.ruleKeyword) + '</div>' : '')
                     + '<div style="display:flex;flex-direction:column;gap:5px;">' + rows + '</div>'
                     + '</div>';
             }
