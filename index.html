@@ -2941,12 +2941,16 @@
             var arrayBuf = await file.arrayBuffer();
             var pdfDoc   = await pdfjsLib.getDocument({data:arrayBuf}).promise;
             numPages = pdfDoc.numPages;
+            var _lastPage = numPages; // 실제 마지막으로 처리된 PDF 페이지
+            var _total = numPages - startFrom + 1; // 렌더링할 페이지 수
             var canvas = document.createElement('canvas');
             var ctx    = canvas.getContext('2d');
-            for(var i=1;i<=numPages;i++){
-                if(_mfCancelRender){ numPages = i-1; break; }
-                _mfConvertStatus = i + ' / ' + pdfDoc.numPages;
-                var _ph = '이미지 변환 중 '+i+'/'+pdfDoc.numPages+'... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
+            // startFrom부터 시작 — 이미 업로드된 앞 페이지는 건너뜀 (이어올리기 지원)
+            for(var i=startFrom;i<=numPages;i++){
+                if(_mfCancelRender){ _lastPage = i-1; break; }
+                var _done = i - startFrom + 1;
+                _mfConvertStatus = _done + ' / ' + _total;
+                var _ph = '이미지 변환 중 p.'+i+' ('+_done+'/'+_total+')... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
                 _mfProgressHtml = _ph;
                 // 항상 현재 DOM 직접 조회 (모달 재빌드 후에도 최신 엘리먼트에 반영)
                 var _liveP = document.getElementById('mfNewProgress');
@@ -2958,11 +2962,11 @@
                     canvas.width=viewport.width; canvas.height=viewport.height;
                     await page.render({canvasContext:ctx,viewport:viewport}).promise;
                     var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.80); });
-                    var pageNum   = String(startFrom+i-1).padStart(3,'0');
+                    var pageNum   = String(i).padStart(3,'0'); // i가 곧 시스템 페이지 번호
                     var storePath = 'manual_pages/'+mode+'/page-'+pageNum+'.jpg';
                     var ref = storage.ref(storePath);
                     await ref.put(blob,{contentType:'image/jpeg'});
-                    try{ var dlUrl = await ref.getDownloadURL(); window._mfPageUrls.push({page:startFrom+i-1, url:dlUrl}); }catch(e2){}
+                    try{ var dlUrl = await ref.getDownloadURL(); window._mfPageUrls.push({page:i, url:dlUrl}); }catch(e2){}
                     // 캔버스 메모리 해제
                     ctx.clearRect(0,0,canvas.width,canvas.height);
                     blob = null;
@@ -2971,6 +2975,7 @@
                     failedPages.push(i);
                 }
             }
+            numPages = _lastPage; // 완료된 마지막 페이지 번호로 갱신
         }catch(e){
             _mfIsConverting = false; _mfConvertStatus = ''; _mfUpdateNavBadge();
             _mfProgressHtml = '오류: '+e.message;
@@ -2981,11 +2986,12 @@
         _mfIsConverting = false;
         _mfConvertStatus = '';
         _mfUpdateNavBadge();
+        var _renderedCount = numPages >= startFrom ? numPages - startFrom + 1 : 0;
         if(failedPages.length){
-            _mfProgressHtml = '⚠ '+numPages+'페이지 중 '+failedPages.length+'개 실패 — 나머지 완료';
+            _mfProgressHtml = '⚠ '+_renderedCount+'페이지 중 '+failedPages.length+'개 실패 — 나머지 완료';
             if(prog) prog.textContent = _mfProgressHtml;
         }
-        return numPages;
+        return _renderedCount;
     }
 
     async function _migrateManualToFirebase(){
