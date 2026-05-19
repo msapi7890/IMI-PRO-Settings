@@ -877,6 +877,9 @@
         </div>
         <!-- 탭1: 감지 로그 -->
         <div id="logTabContent1" class="log-body">
+            <div id="logFullDayBtnWrap" style="display:none;flex-shrink:0;padding-bottom:8px;">
+                <button id="logFullDayBtn" onclick="loadFullDayLog()" style="font-size:11px;padding:6px 0;border-radius:8px;border:1.5px solid #38bdf8;color:#38bdf8;background:none;cursor:pointer;font-weight:700;width:100%;letter-spacing:0.02em;transition:opacity .15s;">📅 24시간 전체 기록 불러오기</button>
+            </div>
             <div id="monitorLogEmpty" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">감지된 물품이 없습니다.<br><span style="font-size:11px;">봇이 물품을 감지하면 여기에 기록됩니다.</span></div>
             <div id="monitorLogList"></div>
         </div>

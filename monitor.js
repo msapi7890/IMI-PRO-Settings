@@ -791,8 +791,17 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
 });
 
 // ===== 로그 패널 =====
+var _logFullMode = false;
+
 function openLogPanel() {
     document.getElementById('logPanel').classList.remove('hidden');
+    _logFullMode = false;
+    var btnWrap = document.getElementById('logFullDayBtnWrap');
+    if (btnWrap) {
+        btnWrap.style.display = _isBotPrivileged() ? '' : 'none';
+        var btn = document.getElementById('logFullDayBtn');
+        if (btn) { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.disabled = false; btn.onclick = loadFullDayLog; }
+    }
     switchLogTab(1);
 }
 function closeLogPanel() {
@@ -803,12 +812,28 @@ function switchLogTab(n) {
     document.getElementById('logTab2').classList.toggle('mon-tab-active', n === 2);
     document.getElementById('logTabContent1').style.display = n === 1 ? '' : 'none';
     document.getElementById('logTabContent2').style.display = n === 2 ? '' : 'none';
-    if (n === 1) loadMonitorLog();
+    if (n === 1) loadMonitorLog(_logFullMode);
     if (n === 2) loadBlockedItems();
 }
 
-function loadMonitorLog() {
+function loadFullDayLog() {
+    _logFullMode = true;
+    var btn = document.getElementById('logFullDayBtn');
+    if (btn) { btn.textContent = '⏳ 불러오는 중...'; btn.disabled = true; btn.style.opacity = '0.55'; }
+    loadMonitorLog(true);
+}
+function loadRecentLog() {
+    _logFullMode = false;
+    var btn = document.getElementById('logFullDayBtn');
+    if (btn) { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLog; }
+    loadMonitorLog(false);
+}
+
+function loadMonitorLog(fullDay) {
     var cutoff = Date.now() - 86400000; // 24시간
+    var histRef = fullDay
+        ? db.ref('/monitor_history').limitToLast(2000)
+        : db.ref('/monitor_history').limitToLast(100);
     db.ref('/imi_blocked').once('value', function(blockedSnap) {
         var blockedList = blockedSnap.val() || [];
         if (!Array.isArray(blockedList)) blockedList = [];
@@ -818,12 +843,14 @@ function loadMonitorLog() {
             if (k) blockedSet[k] = true;
         });
 
-        db.ref('/monitor_history').limitToLast(100).once('value', function(snap) {
+        histRef.once('value', function(snap) {
             var val = snap.val() || {};
             var entries = [];
             Object.keys(val).forEach(function(k) {
                 var e = val[k];
-                if (e) entries.push({ key: k, data: e });
+                if (!e) return;
+                if (fullDay && e.at < cutoff) return; // 24시간 이내 필터
+                entries.push({ key: k, data: e });
             });
             entries.sort(function(a, b) { return b.data.at - a.data.at; });
 
@@ -832,6 +859,12 @@ function loadMonitorLog() {
             if (!entries.length) {
                 if (empty) empty.style.display = '';
                 if (list)  list.innerHTML = '';
+                var emptyBtn = document.getElementById('logFullDayBtn');
+                if (emptyBtn && _isBotPrivileged()) {
+                    emptyBtn.disabled = false; emptyBtn.style.opacity = '1';
+                    emptyBtn.textContent = fullDay ? '↩ 최근 100건 보기' : '📅 24시간 전체 기록 불러오기';
+                    emptyBtn.onclick = fullDay ? loadRecentLog : loadFullDayLog;
+                }
                 return;
             }
             if (empty) empty.style.display = 'none';
@@ -900,6 +933,20 @@ function loadMonitorLog() {
             });
 
             if (list) list.innerHTML = html;
+
+            // 버튼 상태 복원
+            var btn = document.getElementById('logFullDayBtn');
+            if (btn && _isBotPrivileged()) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                if (fullDay) {
+                    btn.textContent = '↩ 최근 100건 보기';
+                    btn.onclick = loadRecentLog;
+                } else {
+                    btn.textContent = '📅 24시간 전체 기록 불러오기';
+                    btn.onclick = loadFullDayLog;
+                }
+            }
         });
     });
 }
