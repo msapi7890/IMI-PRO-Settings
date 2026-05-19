@@ -270,15 +270,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         fireSet(msg.path, msg.data).then(async () => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 showAlertPopup(msg.data);
-                // monitor_history 기록을 별도 FIREBASE_PUSH 메시지 없이 여기서 직접 처리
-                // (서비스워커가 두 번째 메시지를 놓치는 MV3 문제 방지)
-                await firePush('/monitor_history', {
-                    ruleName: msg.data.ruleName || '',
-                    ruleKeyword: msg.data.ruleKeyword || '',
-                    itemCount: msg.data.itemCount || 0,
-                    itemRows: msg.data.itemRows || [],
-                    at: msg.data.at || Date.now()
-                });
+                // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
+                const logRows = msg.data.logItemRows;
+                if (Array.isArray(logRows) && logRows.length > 0) {
+                    await firePush('/monitor_history', {
+                        ruleName: msg.data.ruleName || '',
+                        ruleKeyword: msg.data.ruleKeyword || '',
+                        itemCount: logRows.length,
+                        itemRows: logRows,
+                        at: msg.data.at || Date.now()
+                    });
+                }
             }
             sendResponse({ ok: true });
         }).catch(e => sendResponse({ ok: false, error: e.message }));

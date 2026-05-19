@@ -9,11 +9,24 @@
     let isRunning = false;
     let blockedItems = new Set();
 
+    // 재감지 중복 로그 방지 — 이미 기록된 키를 sessionStorage에 유지 (페이지 리로드 후에도 유효)
+    function _getLoggedKeys() {
+        try { return new Set(JSON.parse(sessionStorage.getItem('_imi_logged_keys') || '[]')); }
+        catch(e) { return new Set(); }
+    }
+    function _saveLoggedKeys(s) {
+        try { sessionStorage.setItem('_imi_logged_keys', JSON.stringify([...s])); }
+        catch(e) {}
+    }
+    function _clearLoggedKeys() { sessionStorage.removeItem('_imi_logged_keys'); }
+    function _itemKey(it) { return it.tid ? ('tid_' + it.tid) : (it.t.substring(0, 20) + '_' + it.p); }
+
     // --- 메시지 핸들러 ---
     chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (msg.type === 'STOP_BOT') {
             isRunning = false;
             sessionStorage.removeItem('_imi_page2_scan');
+            _clearLoggedKeys(); // 정지 시 리셋 → 재시작하면 첫 감지로 취급
             setStatus('⏹ 정지됨', '#94a3b8');
             sendResponse({ ok: true });
             return true;
@@ -273,7 +286,8 @@
     }
 
     // --- Firebase 알림 ---
-    function sendAlert(items) {
+    // logRows: 이번에 새로 감지된 항목만 (재감지면 null → history 기록 안 함)
+    function sendAlert(items, logRows) {
         const _at = Date.now();
         const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' }));
         chrome.runtime.sendMessage({
@@ -287,6 +301,7 @@
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,
+                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' })) : null,
                 at: _at
             }
         });
@@ -320,10 +335,17 @@
         const intervalMs = (rule.scanInterval || 5) * 1000;
 
         if (items.length > 0) {
+            // 이전에 이미 기록된 키와 비교해 신규 항목만 추출
+            const prevKeys = _getLoggedKeys();
+            const newItems = items.filter(it => !prevKeys.has(_itemKey(it)));
+            // 현재 감지된 키 전체를 저장 (페이지 리로드 후에도 유지)
+            _saveLoggedKeys(new Set(items.map(_itemKey)));
+
             setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
             document.getElementById('_imi_box').style.borderColor = '#ef4444';
             renderAlertItems(items);
-            sendAlert(items);
+            // newItems가 없으면 null → background.js가 history 기록 스킵
+            sendAlert(items, newItems.length > 0 ? newItems : null);
             sessionStorage.removeItem('_imi_page2_scan');
             setTimeout(() => {
                 if (!isRunning) return;
@@ -335,8 +357,9 @@
         } else if (!onPage2) {
             // 1페이지 완료 → 2페이지 링크 있을 때만 이동
             if (!findPage2Link()) {
-                // 2페이지 없음(1페이지짜리 검색결과) → 다음 사이클
+                // 2페이지 없음(1페이지짜리 검색결과) → 감지 없음이므로 키 리셋
                 sessionStorage.removeItem('_imi_page2_scan');
+                _clearLoggedKeys();
                 const t = new Date().toLocaleTimeString('ko-KR');
                 setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
                 document.getElementById('_imi_items').innerHTML = '';
@@ -353,8 +376,9 @@
                 setTimeout(() => { if (!isRunning) return; doCheck(); }, 1500);
             }, 400);
         } else {
-            // 2페이지도 없음 → 다음 사이클
+            // 2페이지도 없음 → 감지 없음이므로 키 리셋
             sessionStorage.removeItem('_imi_page2_scan');
+            _clearLoggedKeys();
             const t = new Date().toLocaleTimeString('ko-KR');
             setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
             document.getElementById('_imi_items').innerHTML = '';
