@@ -2873,13 +2873,11 @@
         listEl.innerHTML=h;
     }
 
-    function _mfDeleteRange(mode, key, title){
+    async function _mfDeleteRange(mode, key, title){
         if(!confirm('"'+title+'" 항목을 삭제하시겠습니까?')) return;
-        db.ref('manual_page_ranges/'+mode+'/'+key).set(null, function(err){
-            if(err){ alert('삭제 실패: '+err.message); return; }
-            _mfLoadRanges(mode);
-            _mfFillEditSel(mode);
-        });
+        var res = await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json', 'DELETE');
+        _mfLoadRanges(mode);
+        _mfFillEditSel(mode);
     }
 
     async function _mfResetAll(){
