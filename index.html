@@ -2221,10 +2221,19 @@
     }
 
     async function _mfGetMaxPage(mode){
-        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
-        if(!raw) return 0;
+        // DB 등록 항목 기준
         var max = 0;
-        Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(raw) Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
+
+        // Storage 실제 업로드 파일 기준 — 중단된 업로드 후 DB 미반영 케이스 커버
+        try{
+            var listResult = await storage.ref('manual_pages/'+mode+'/').listAll();
+            listResult.items.forEach(function(ref){
+                var m = ref.name.match(/page-(\d+)\.jpg$/i);
+                if(m) max = Math.max(max, parseInt(m[1], 10));
+            });
+        }catch(e){}
         return max;
     }
 
