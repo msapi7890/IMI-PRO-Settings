@@ -775,7 +775,8 @@
         <!-- 탭 -->
         <div class="mon-tabs">
             <button id="monTab1" class="mon-tab mon-tab-active" onclick="switchMonTab(1)">👁 현황</button>
-            <button id="monTab2" class="mon-tab" onclick="switchMonTab(2)">🔔 알림 설정</button>
+            <button id="monTab2" class="mon-tab" onclick="switchMonTab(2)">📋 봇 규칙</button>
+            <button id="monTab3" class="mon-tab" onclick="switchMonTab(3)">🔔 알림 설정</button>
         </div>
         <!-- 탭1: 현황 -->
         <div id="monTabContent1" class="mon-body">
@@ -796,13 +797,35 @@
             </div>
             <!-- 안내 -->
             <div style="background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.9;opacity:0.65;">
-                🤖 감시 규칙 추가/삭제는 <b>크롬 확장프로그램 IMI BOT</b>에서 관리합니다.<br>
-                ➡ 크롬 우측 상단 퍼즐 아이콘 → <b>IMI 물리 검색봇</b> 클릭<br>
+                🤖 봇 규칙은 <b>📋 봇 규칙 탭</b>에서 웹으로 관리할 수 있습니다.<br>
                 📡 봇이 물품을 감지하면 이 화면에 즉시 알림이 표시됩니다.
             </div>
         </div>
-        <!-- 탭2: 알림 설정 -->
+        <!-- 탭2: 봇 규칙 관리 -->
         <div id="monTabContent2" class="mon-body" style="display:none;">
+            <div id="botRuleList"></div>
+            <div id="botRuleFormWrap" style="display:none;background:var(--bg-body);border:2px dashed var(--border-ui);border-radius:10px;padding:12px;">
+                <div id="brFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:9px;">➕ 새 규칙 추가</div>
+                <input id="brName" placeholder="규칙 이름 (예: 린클 내용 감시)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="brUrl"  placeholder="아이템매니아 카테고리 URL (https://...)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="brKw"   placeholder="키워드 (쉼표로 여러개 가능)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <input id="brMin" type="number" placeholder="최소가격 (원)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
+                    <input id="brMax" type="number" placeholder="최대가격 (원)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <input id="brInterval" type="number" placeholder="재검색 간격 (초)" value="300" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
+                    <input id="brExclude" placeholder="제외 키워드 (쉼표 구분)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <button id="brCancelBtn" onclick="_cancelBotRuleEdit()" style="display:none;flex:1;padding:8px;border-radius:7px;background:none;border:1.5px solid var(--border-ui);color:var(--text-main);font-size:12px;font-weight:900;cursor:pointer;">취소</button>
+                    <button id="brAddBtn" onclick="addBotRule()" style="flex:1;padding:8px;border-radius:7px;background:var(--active-focus-color);color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">✅ 규칙 등록</button>
+                </div>
+            </div>
+            <div style="font-size:11px;opacity:0.5;text-align:center;padding:6px 0;">📡 등록/수정 후 1분 내 봇에 자동 반영됩니다</div>
+        </div>
+        <!-- 탭3: 알림 설정 -->
+        <div id="monTabContent3" class="mon-body" style="display:none;">
             <div style="font-size:10px;font-weight:900;opacity:0.4;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:2px;">알림 설정 — 내 브라우저에만 적용</div>
             <!-- 빨간불 -->
             <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-body);border-radius:10px;border:1.5px solid var(--border-ui);">
@@ -3361,11 +3384,16 @@
         });
     }
     function switchMonTab(n){
-        [1,2].forEach(function(i){
+        [1,2,3].forEach(function(i){
             document.getElementById('monTab'+i).classList.toggle('mon-tab-active',i===n);
             document.getElementById('monTabContent'+i).style.display=i===n?'flex':'none';
         });
-        if(n===2) _applyNotifPrefs();
+        if(n===3) _applyNotifPrefs();
+        if(n===2) {
+            _renderBotRuleList();
+            var fw = document.getElementById('botRuleFormWrap');
+            if(fw) fw.style.display = _isBotPrivileged() ? '' : 'none';
+        }
     }
     function toggleNotif(key){
         _notifPrefs[key]=!_notifPrefs[key];

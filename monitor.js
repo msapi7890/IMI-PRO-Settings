@@ -960,3 +960,137 @@ function clearAllBlocked() {
         loadMonitorLog();
     });
 }
+
+// ===== 봇 규칙 관리 (Firebase /imi_rules 배열) =====
+var _botRules = [];
+var _botRuleEditingId = null;
+
+db.ref('/imi_rules').on('value', function(snap) {
+    var val = snap.val();
+    _botRules = Array.isArray(val) ? val.filter(Boolean)
+              : (val && typeof val === 'object') ? Object.values(val).filter(Boolean)
+              : [];
+    _renderBotRuleList();
+});
+
+function _renderBotRuleList() {
+    var list = document.getElementById('botRuleList');
+    if (!list) return;
+    if (!_botRules.length) {
+        list.innerHTML = '<div style="text-align:center;padding:20px 0;opacity:0.35;font-size:12px;">등록된 봇 규칙이 없습니다</div>';
+        return;
+    }
+    var canEdit = _isBotPrivileged();
+    list.innerHTML = _botRules.map(function(r) {
+        var runStatus = (_botStatus && _botStatus.rules) ? _botStatus.rules.find(function(sr){ return sr.id === r.id; }) : null;
+        var isRunning = !!(runStatus && runStatus.tabOpen);
+        var runColor  = isRunning ? '#22c55e' : '#94a3b8';
+        var runLabel  = isRunning ? '● 감시중' : '■ 대기';
+        return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
+            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+            + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canEdit?'pointer':'default')+';flex:1;min-width:0;">'
+            + '<input type="checkbox" onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" '+(r.enabled?'checked':'')+' '+(canEdit?'':'disabled')+' style="width:15px;height:15px;accent-color:var(--active-focus-color);cursor:'+(canEdit?'pointer':'default')+';">'
+            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
+            + '</label>'
+            + '<span style="font-size:10px;font-weight:900;color:'+runColor+';flex-shrink:0;">'+runLabel+'</span>'
+            + (canEdit ? '<button onclick="startEditBotRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>' : '')
+            + (canEdit ? '<button onclick="deleteBotRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>' : '')
+            + '</div>'
+            + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+            + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + (r.minPrice       ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
+            + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
+            + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + '</div>'
+            + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
+            + '</div>';
+    }).join('');
+}
+
+function _saveBotRules(rules) {
+    db.ref('/imi_rules').set(rules);
+}
+
+function toggleBotRuleEnabled(id, enabled) {
+    if (!_isBotPrivileged()) return;
+    _saveBotRules(_botRules.map(function(r) {
+        return r.id === id ? Object.assign({}, r, { enabled: enabled }) : r;
+    }));
+}
+
+function deleteBotRule(id) {
+    if (!_isBotPrivileged()) return;
+    if (!confirm('이 봇 규칙을 삭제하시겠습니까?')) return;
+    _saveBotRules(_botRules.filter(function(r) { return r.id !== id; }));
+    if (_botRuleEditingId === id) _cancelBotRuleEdit();
+}
+
+function startEditBotRule(id) {
+    var r = _botRules.find(function(r) { return r.id === id; });
+    if (!r) return;
+    _botRuleEditingId = id;
+    document.getElementById('brName').value     = r.name || '';
+    document.getElementById('brUrl').value      = r.url  || '';
+    document.getElementById('brKw').value       = r.keyword || '';
+    document.getElementById('brMin').value      = r.minPrice || '';
+    document.getElementById('brMax').value      = r.maxPrice || '';
+    document.getElementById('brInterval').value = r.scanInterval || 300;
+    document.getElementById('brExclude').value  = r.excludeKeyword || '';
+    document.getElementById('brAddBtn').textContent   = '✏️ 수정 완료';
+    document.getElementById('brAddBtn').style.background = '#f59e0b';
+    document.getElementById('brFormTitle').textContent  = '✏️ 규칙 수정 중';
+    document.getElementById('brCancelBtn').style.display = '';
+    document.getElementById('brName').focus();
+}
+
+function _cancelBotRuleEdit() {
+    _botRuleEditingId = null;
+    ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('brInterval').value = '300';
+    document.getElementById('brAddBtn').textContent   = '✅ 규칙 등록';
+    document.getElementById('brAddBtn').style.background = '';
+    document.getElementById('brFormTitle').textContent  = '➕ 새 규칙 추가';
+    document.getElementById('brCancelBtn').style.display = 'none';
+}
+
+function addBotRule() {
+    if (!_isBotPrivileged()) { alert('관리자 또는 부관리자만 봇 규칙을 관리할 수 있습니다.'); return; }
+    var name           = (document.getElementById('brName').value || '').trim();
+    var url            = (document.getElementById('brUrl').value  || '').trim();
+    var keyword        = (document.getElementById('brKw').value   || '').trim();
+    var minPrice       = parseInt(document.getElementById('brMin').value)      || 0;
+    var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
+    var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
+    var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
+
+    if (!name) { alert('규칙 이름을 입력하세요.'); return; }
+    if (!url || !/^https?:\/\//.test(url)) { alert('올바른 URL을 입력하세요. (https://...)'); return; }
+    if (!keyword && !minPrice) { alert('키워드 또는 최소가격 중 하나는 필요합니다.'); return; }
+
+    if (_botRuleEditingId) {
+        _saveBotRules(_botRules.map(function(r) {
+            return r.id === _botRuleEditingId
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword })
+                : r;
+        }));
+        _cancelBotRuleEdit();
+        alert('✅ 규칙이 수정됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
+    } else {
+        var newRule = {
+            id: 'r_' + Date.now(),
+            name: name, url: url, keyword: keyword,
+            minPrice: minPrice, maxPrice: maxPrice,
+            scanInterval: scanInterval, excludeKeyword: excludeKeyword,
+            enabled: true, createdAt: Date.now()
+        };
+        _saveBotRules(_botRules.concat([newRule]));
+        ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
+            document.getElementById(id).value = '';
+        });
+        document.getElementById('brInterval').value = '300';
+        alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
+    }
+}
