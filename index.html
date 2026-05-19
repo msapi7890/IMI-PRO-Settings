@@ -2365,7 +2365,7 @@
             if(_fn && _fn.nodeType===3) _fn.nodeValue = '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
         }
         input.value = '';
-        if(!failed){ _mfLoadStorageThumbs(); }
+        if(!failed){ _mfLoadStorageThumbs(uploaded, skipped); }
     }
 
     async function _mfDoRender(){
@@ -2714,7 +2714,7 @@
         });
     }
 
-    async function _mfLoadStorageThumbs(){
+    async function _mfLoadStorageThumbs(newlyUploaded, skippedCount){
         var btn = document.getElementById('mfLoadThumbsBtn');
         if(btn){ btn.disabled=true; btn.textContent='불러오는 중...'; }
         var mode = _mfMgmtMode;
@@ -2733,7 +2733,15 @@
                 if(btn && i%10===9) btn.textContent = '로딩 중... '+(i+1)+'/'+sorted.length;
             }
             _mfRenderPageThumbs();
-            if(btn) btn.textContent = '✅ '+window._mfPageUrls.length+'장 로드됨';
+            var total = window._mfPageUrls.length;
+            if(btn){
+                if(typeof newlyUploaded === 'number'){
+                    var skipTxt = skippedCount ? ' ('+skippedCount+'장 건너뜀)' : '';
+                    btn.textContent = '✅ '+newlyUploaded+'장 업로드됨'+skipTxt+' — Storage 총 '+total+'장';
+                } else {
+                    btn.textContent = '✅ '+total+'장 불러옴';
+                }
+            }
             _mfLoadRanges(_mfMgmtMode); // 등록된 범위 로드 → 썸네일에 ✓ 표시
         }catch(e){
             alert('이미지 불러오기 실패: '+e.message);
