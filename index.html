@@ -236,6 +236,7 @@
         #monitorAlertFlash { position:fixed; bottom:20px; right:20px; z-index:9700; background:var(--bg-card); border:2.5px solid #ef4444; border-radius:14px; padding:14px 16px; width:min(94vw,420px); max-height:min(90vh,380px); display:flex; flex-direction:column; box-shadow:0 6px 32px rgba(239,68,68,0.35); }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
+        @keyframes mfBadgePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
         .log-box { background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); width:min(96vw,960px); height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.45); overflow:hidden; }
         .log-hdr { padding:16px 22px 14px; border-bottom:2px solid var(--border-ui); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
         .log-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
@@ -1647,6 +1648,8 @@
     function _isPrivileged(){ return _currentUser && (_currentUser.role==='admin'||_currentUser.role==='subadmin'); }
 
     function openManualFilesModal(){
+        _mfUploadDone = false;
+        _mfUpdateNavBadge();
         var tab1 = document.getElementById('mfTab1');
         if(tab1) tab1.style.display = _isPrivileged() ? '' : 'none';
         document.getElementById('manualFilesModal').style.display='flex';
@@ -1893,6 +1896,15 @@
         if(cancelBtn) cancelBtn.style.display = (_mfIsConverting || hasPending) ? '' : 'none';
 
         badge.style.display = '';
+        if(_mfUploadDone && !_mfImgUploading && !_mfIsConverting && !hasPending){
+            badge.textContent      = '✅ 완료 — 눌러서 확인';
+            badge.style.background = '#15803d';
+            badge.style.color      = '#4ade80';
+            badge.style.animation  = 'mfBadgePulse 1.5s ease-in-out infinite';
+            if(btn){ btn.style.borderColor='#22c55e'; btn.style.color='#4ade80'; }
+            return;
+        }
+        badge.style.animation = '';
         if(_mfImgUploading){
             var _ups = _mfImgUploadState;
             badge.textContent      = '업로드 중 ' + (_ups ? _ups.count : '...');
@@ -1928,6 +1940,7 @@
     var _mfConvertStatus= '';   // 변환 중 상태 문자열 (예: "3 / 181")
     var _mfProgressHtml = '';   // 마지막 progress 영역 HTML (모달 재진입 시 복원)
     var _mfImgUploading = false;// 이미지 직접 업로드 진행 중 여부
+    var _mfUploadDone   = false;// 업로드 완료 후 배지 표시용
     var _mfImgUploadState = null; // {current, total, pct, text, done, failed}
 
     function _renderManualMgmt(){
@@ -2295,6 +2308,7 @@
         var doneText = '✅ 완료'+failMsg;
         var doneCnt  = uploaded+'장 업로드됨 (p.'+startPage+'~p.'+lastPage+')';
         _mfImgUploading = false;
+        _mfUploadDone   = true;
         _mfImgUploadState = {text:doneText, count:doneCnt, pct:100, done:true};
 
         var _lpt2 = document.getElementById('mfImgUploadText');
