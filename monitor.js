@@ -883,24 +883,10 @@ function loadMonitorLog(fullDay) {
             });
 
             function _tidListTime(tid) {
-                if (!tid || tid.length < 10) return '';
+                if (!tid || tid.length < 8) return '';
                 var y = parseInt(tid.substring(0, 4));
                 if (y < 2020 || y > 2035) return '';
-                var mo = tid.substring(4, 6), d = tid.substring(6, 8);
-                var h = parseInt(tid.substring(8, 10));
-                if (h < 0 || h > 23) return '';
-                var s = mo + '.' + d + ' ' + String(h).padStart(2, '0');
-                if (tid.length >= 12) {
-                    var mi = parseInt(tid.substring(10, 12));
-                    if (mi >= 0 && mi <= 59) {
-                        s += ':' + String(mi).padStart(2, '0');
-                        if (tid.length >= 14) {
-                            var ss = parseInt(tid.substring(12, 14));
-                            if (ss >= 0 && ss <= 59) s += ':' + String(ss).padStart(2, '0');
-                        }
-                    }
-                }
-                return s + ' 등록';
+                return tid.substring(4, 6) + '.' + tid.substring(6, 8) + ' 등록';
             }
 
             function _renderEntry(entry) {
