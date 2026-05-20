@@ -2828,7 +2828,7 @@
             return;
         }
         var entries = Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
-        if(q){ entries = entries.filter(function(e){ var r=e[1]; return (r.title||e[0]).includes(q)||(r.keywords||'').includes(q); }); }
+        if(q){ var qL=q.toLowerCase(); entries = entries.filter(function(e){ var r=e[1]; return (r.title||e[0]).toLowerCase().includes(qL); }); }
         if(!entries.length){
             listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px;">검색 결과가 없습니다.</div>';
             return;
@@ -5244,6 +5244,7 @@
             var range=snap.val();
             if(!range){
                 var content=manualIdx[title];
+                if(content && typeof content==='object') content=content.text||content.content||'';
                 var kwHtml2 = buildKeywordBar(title);
                 botD.innerHTML=content
                     ?'<div class="mt-card"><div class="mt-header">\uD83D\uDCCB '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content)+'</pre>'+kwHtml2+'</div>'
@@ -5272,6 +5273,7 @@
                 var urls=succeeded.map(function(r){return r.url;});
                 if(!urls.length){
                     var content=manualIdx[title];
+                    if(content && typeof content==='object') content=content.text||content.content||'';
                     botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content||'내용 없음')+'</pre></div>';
                     _appendRelatedNotices(title, botD);
                     _appendTemplateBtn(title, botD);
