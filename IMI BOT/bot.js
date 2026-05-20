@@ -337,9 +337,35 @@
         // 링크 없으면 이동 안 함 (1페이지만 있는 경우)
     }
 
+    // --- 시간대 체크 ---
+    function _inTimeRange(from, to) {
+        if (!from || !to) return true;
+        const now  = new Date();
+        const cur  = now.getHours() * 60 + now.getMinutes();
+        const [fh, fm] = from.split(':').map(Number);
+        const [th, tm] = to.split(':').map(Number);
+        const f = fh * 60 + fm, t = th * 60 + tm;
+        return f <= t ? (cur >= f && cur < t) : (cur >= f || cur < t); // 자정 넘김 지원
+    }
+    async function _isInActiveHours() {
+        const gh = await new Promise(r => chrome.storage.local.get('imi_global_hours', d => r(d.imi_global_hours || null)));
+        if (gh && gh.enabled && gh.from && gh.to) return _inTimeRange(gh.from, gh.to);
+        if (rule && rule.activeFrom && rule.activeTo)  return _inTimeRange(rule.activeFrom, rule.activeTo);
+        return true;
+    }
+
     // --- 메인 스캔 루프 ---
-    function doCheck() {
+    async function doCheck() {
         if (!isRunning || !rule) return;
+
+        // 시간대 범위 체크
+        const inHours = await _isInActiveHours();
+        if (!inHours) {
+            const now = new Date().toLocaleTimeString('ko-KR');
+            setStatus('⏰ 비활성 시간대 — 1분 후 재확인 (' + now + ')', '#64748b');
+            setTimeout(() => { if (isRunning) submitSearch(); }, 60000);
+            return;
+        }
         const onPage2 = sessionStorage.getItem('_imi_page2_scan') === '1';
         setStatus('🔍 스캔 중...' + (onPage2 ? ' (2p)' : ' (1p)'), '#3abff8');
 

@@ -1,9 +1,11 @@
 const DB_URL = 'https://manual-9a47c-default-rtdb.firebaseio.com';
 
-function getRules()   { return new Promise(r => chrome.storage.local.get('imi_rules',   d => r(d.imi_rules   || []))); }
-function saveRules(v) { return new Promise(r => chrome.storage.local.set({ imi_rules: v }, r)); }
-function getTabMap()  { return new Promise(r => chrome.storage.local.get('imi_tab_map', d => r(d.imi_tab_map || {}))); }
-function isActive()   { return new Promise(r => chrome.storage.local.get('imi_active',  d => r(!!d.imi_active))); }
+function getRules()        { return new Promise(r => chrome.storage.local.get('imi_rules',        d => r(d.imi_rules        || []))); }
+function saveRules(v)      { return new Promise(r => chrome.storage.local.set({ imi_rules: v }, r)); }
+function getTabMap()       { return new Promise(r => chrome.storage.local.get('imi_tab_map',       d => r(d.imi_tab_map       || {}))); }
+function isActive()        { return new Promise(r => chrome.storage.local.get('imi_active',        d => r(!!d.imi_active))); }
+function getGlobalHours()  { return new Promise(r => chrome.storage.local.get('imi_global_hours',  d => r(d.imi_global_hours  || null))); }
+function saveGlobalHours(v){ return new Promise(r => chrome.storage.local.set({ imi_global_hours: v }, r)); }
 
 // Firebase 규칙 동기화
 async function fireGetRules() {
@@ -37,6 +39,26 @@ let currentActive = false;
 let editingRuleId = null;
 let _initialSynced = false;
 
+// ── 전체 시간대 UI ──
+async function initGlobalHoursUI() {
+    const gh = await getGlobalHours();
+    const chk  = document.getElementById('globalHoursEnabled');
+    const wrap  = document.getElementById('globalHoursInputs');
+    const from  = document.getElementById('globalFrom');
+    const to    = document.getElementById('globalTo');
+    const stat  = document.getElementById('globalHoursStatus');
+    if (!chk) return;
+    const enabled = !!(gh && gh.enabled);
+    chk.checked = enabled;
+    wrap.style.display = enabled ? 'flex' : 'none';
+    if (gh && gh.from) from.value = gh.from;
+    if (gh && gh.to)   to.value   = gh.to;
+    if (enabled && gh && gh.from && gh.to) {
+        stat.style.display = '';
+        stat.textContent = '⏰ 전체 시간: ' + gh.from + ' ~ ' + gh.to;
+    } else { stat.style.display = 'none'; }
+}
+
 async function refresh() {
     // 첫 로드 시 Firebase에서 최신 규칙 pull
     if (!_initialSynced) {
@@ -57,6 +79,7 @@ async function refresh() {
     currentActive = active;
     renderStatus(rules, tabMap, active);
     renderRules(rules, tabMap);
+    initGlobalHoursUI();
 }
 
 function renderStatus(rules, tabMap, active) {
@@ -94,6 +117,7 @@ function renderRules(rules, tabMap) {
                 ${r.maxPrice       ? `<span class="tag">💰 ${Number(r.maxPrice).toLocaleString()}원↓</span>` : ''}
                 <span class="tag">⏱ ${r.scanInterval || 5}초</span>
                 ${r.excludeKeyword ? `<span class="tag">🚫 ${esc(r.excludeKeyword)}</span>` : ''}
+                ${(r.activeFrom && r.activeTo) ? `<span class="tag">⏰ ${esc(r.activeFrom)}~${esc(r.activeTo)}</span>` : ''}
             </div>
             <div class="rule-url">${esc(r.url)}</div>
         </div>`;
@@ -113,6 +137,8 @@ async function startEdit(id) {
     document.getElementById('inMax').value      = r.maxPrice || '';
     document.getElementById('inInterval').value = r.scanInterval || 5;
     document.getElementById('inExclude').value  = r.excludeKeyword || '';
+    document.getElementById('inFrom').value     = r.activeFrom || '';
+    document.getElementById('inTo').value       = r.activeTo   || '';
     document.getElementById('addBtn').textContent = '✏️ 수정 완료';
     document.getElementById('addBtn').style.background = '#f59e0b';
     document.querySelector('.add-form-title').textContent = '✏️ 규칙 수정 중';
@@ -122,7 +148,7 @@ async function startEdit(id) {
 
 function cancelEdit() {
     editingRuleId = null;
-    ['inName','inUrl','inKw','inMin','inMax','inInterval','inExclude'].forEach(id => document.getElementById(id).value = '');
+    ['inName','inUrl','inKw','inMin','inMax','inInterval','inExclude','inFrom','inTo'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('addBtn').textContent = '✅ 규칙 등록';
     document.getElementById('addBtn').style.background = '';
     document.querySelector('.add-form-title').textContent = '➕ 새 규칙 추가';
@@ -170,6 +196,8 @@ async function addRule() {
     const maxPrice     = parseInt(document.getElementById('inMax').value) || 0;
     const scanInterval = parseInt(document.getElementById('inInterval').value) || 5;
     const excludeKeyword = document.getElementById('inExclude').value.trim();
+    const activeFrom   = document.getElementById('inFrom').value || '';
+    const activeTo     = document.getElementById('inTo').value   || '';
 
     if (!name)                             return alert('규칙 이름을 입력하세요.');
     if (!url || !/^https?:\/\//.test(url)) return alert('올바른 URL을 입력하세요. (https://...)');
@@ -179,7 +207,7 @@ async function addRule() {
         // 기존 규칙 수정
         const rules = (await getRules()).map(r =>
             r.id === editingRuleId
-                ? { ...r, name, url, keyword, minPrice, maxPrice, scanInterval, excludeKeyword }
+                ? { ...r, name, url, keyword, minPrice, maxPrice, scanInterval, excludeKeyword, activeFrom, activeTo }
                 : r
         );
         await saveRules(rules);
@@ -192,13 +220,13 @@ async function addRule() {
         // 새 규칙 등록
         const newRule = {
             id: 'r_' + Date.now(),
-            name, url, keyword, minPrice, maxPrice, scanInterval, excludeKeyword,
+            name, url, keyword, minPrice, maxPrice, scanInterval, excludeKeyword, activeFrom, activeTo,
             enabled: true, createdAt: Date.now()
         };
         const rules = [...(await getRules()), newRule];
         await saveRules(rules);
         fireSaveRules(rules);
-        ['inName','inUrl','inKw','inMin','inMax','inInterval','inExclude'].forEach(id => document.getElementById(id).value = '');
+        ['inName','inUrl','inKw','inMin','inMax','inInterval','inExclude','inFrom','inTo'].forEach(id => document.getElementById(id).value = '');
         await refresh();
         sendBg({ type: 'SYNC_STATUS' });
         alert('✅ 규칙이 등록됐습니다: ' + name);
@@ -221,6 +249,29 @@ document.getElementById('ruleList').addEventListener('click', e => {
 
 document.getElementById('toggleBtn').addEventListener('click', toggleAll);
 document.getElementById('addBtn').addEventListener('click', addRule);
+
+// ── 전체 시간대 이벤트 ──
+document.getElementById('globalHoursEnabled').addEventListener('change', async function() {
+    const wrap = document.getElementById('globalHoursInputs');
+    const stat = document.getElementById('globalHoursStatus');
+    wrap.style.display = this.checked ? 'flex' : 'none';
+    if (!this.checked) {
+        await saveGlobalHours({ enabled: false, from: '', to: '' });
+        stat.style.display = 'none';
+        sendBg({ type: 'SYNC_STATUS' });
+    }
+});
+document.getElementById('saveGlobalHoursBtn').addEventListener('click', async function() {
+    const from = document.getElementById('globalFrom').value;
+    const to   = document.getElementById('globalTo').value;
+    if (!from || !to) { alert('시작 시간과 종료 시간을 모두 입력해주세요.'); return; }
+    await saveGlobalHours({ enabled: true, from, to });
+    const stat = document.getElementById('globalHoursStatus');
+    stat.style.display = '';
+    stat.textContent = '⏰ 전체 시간: ' + from + ' ~ ' + to;
+    sendBg({ type: 'SYNC_STATUS' });
+    alert('✅ 저장됐습니다. ' + from + ' ~ ' + to + ' 에만 작동합니다.');
+});
 
 refresh();
 setInterval(refresh, 2500);
