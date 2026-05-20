@@ -2078,10 +2078,6 @@
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
             h += '<button id="mfSyncIndexBtn" onclick="_mfSyncSearchIndex()" style="padding:7px 0;border-radius:7px;background:#0369a1;color:#bae6fd;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">🔄 검색 인덱스 전체 동기화</button>';
             h += '</div>';
-            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #334155;">';
-            h += '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:6px;">🔧 HTML → Firebase 마이그레이션 (최초 1회)</div>';
-            h += '<button id="mfMigrateBtn" onclick="_migrateManualToFirebase()" style="padding:7px 0;border-radius:7px;background:#334155;color:#94a3b8;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">기존 MANUAL_INDEX 데이터 Firebase로 이전</button>';
-            h += '</div>';
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #7f1d1d;">';
             h += '<div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:6px;">⚠ 위험 — 현재 모드 매뉴얼 전체 삭제</div>';
             h += '<button onclick="_mfResetAll()" style="padding:7px 0;border-radius:7px;background:#7f1d1d;color:#fca5a5;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">🗑 매뉴얼 전체 초기화 (DB + 이미지)</button>';
@@ -3072,22 +3068,6 @@
             alert('✅ 검색 인덱스 동기화 완료!\n새로 추가된 항목: '+added+'개');
         }catch(e){
             if(btn){ btn.disabled=false; btn.textContent='🔄 검색 인덱스 전체 동기화'; }
-            alert('오류: '+e.message);
-        }
-    }
-
-    async function _migrateManualToFirebase(){
-        var btn = document.getElementById('mfMigrateBtn');
-        if(btn){ btn.disabled=true; btn.textContent='마이그레이션 중...'; }
-        try{
-            await _authFetch('imi_manual_index/mania.json','PUT',MANUAL_INDEX);
-            await _authFetch('imi_manual_index/bay.json','PUT',BAY_MANUAL_INDEX);
-            await _authFetch('imi_page_ranges/mania.json','PUT',PAGE_RANGES);
-            await _authFetch('imi_page_ranges/bay.json','PUT',BAY_PAGE_RANGES);
-            if(btn){ btn.textContent='✓ 마이그레이션 완료'; }
-            alert('✓ 매뉴얼 인덱스 데이터를 Firebase에 저장했습니다.');
-        }catch(e){
-            if(btn){ btn.disabled=false; btn.textContent='Firebase로 마이그레이션'; }
             alert('오류: '+e.message);
         }
     }
