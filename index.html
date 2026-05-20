@@ -1884,7 +1884,8 @@
 
         var registeredPages = _mfSavedPageCnt + pendingPages;
         var hasPending  = _mfPending && _mfPending.length > 0;
-        var active = _mfIsConverting || _mfImgUploading || hasPending || totalPages > 0;
+        // 작업 중일 때만 배지 표시 (완료된 카운터는 상시 표시 안 함)
+        var active = _mfIsConverting || _mfImgUploading || hasPending || _mfUploadDone;
 
         var cancelBtn = document.getElementById('mfNavCancelBtn');
         if(!active){
@@ -1921,11 +1922,6 @@
             badge.style.background = '#f59e0b';
             badge.style.color      = '#0f172a';
             if(btn){ btn.style.borderColor='#f59e0b'; btn.style.color='#f59e0b'; }
-        } else {
-            badge.textContent      = registeredPages + ' / ' + totalPages;
-            badge.style.background = '#334155';
-            badge.style.color      = '#94a3b8';
-            if(btn){ btn.style.borderColor='var(--border-ui)'; btn.style.color='var(--text-main)'; }
         }
     }
     var _MANIA_CATS = ['일반','충전','결제','사고'];
