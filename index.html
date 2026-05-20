@@ -1928,6 +1928,8 @@
     }
     var _MANIA_CATS = ['일반','충전','결제','사고'];
     var _BAY_CATS   = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    var MANUAL_RANGES = {};      // manual_page_ranges/mania (카테고리 포함)
+    var BAY_MANUAL_RANGES = {};  // manual_page_ranges/bay
     var _mfPending      = [];   // 신규 등록 대기 항목
     var _mfRendered     = null; // {mode, startFrom, numPages, fileName, storePath, downloadURL}
     var _mfSavedPageCnt = 0;    // Firebase에 저장된 항목이 커버하는 페이지 수 합계
@@ -2917,11 +2919,11 @@
         // 검색 인덱스 갱신 (제목 바뀌면 이전 키 삭제 후 새 키 등록)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         if(oldTitle && oldTitle!==newTitle){
-            await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(oldTitle)+'.json','DELETE');
+            await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(oldTitle)+'.json','DELETE');
             delete idx[oldTitle];
         }
         if(!idx[newTitle]){
-            await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(newTitle)+'.json','PUT','');
+            await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(newTitle)+'.json','PUT',newTitle);
             idx[newTitle]='';
         }
 
@@ -2943,7 +2945,7 @@
             var e   = _mfPending[i];
             var key = e.name.replace(/[.#$\[\]\/]/g,'_');
             await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','PUT',{start:e.from,end:e.to,title:e.name,category:e.cat,keywords:e.keywords||'',cropTop:e.cropTop||0,cropBottom:(e.cropBottom!==undefined?e.cropBottom:100)});
-            if(!idx[e.name]){ await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(e.name)+'.json','PUT',''); idx[e.name]=''; }
+            if(!idx[e.name]){ await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(e.name)+'.json','PUT',e.name); idx[e.name]=''; }
         }
         var prog = document.getElementById('mfNewProgress');
         if(prog) prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!';
@@ -3145,7 +3147,7 @@
         if(!confirm('"'+title+'" 항목을 삭제하시겠습니까?')) return;
         await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json', 'DELETE');
         // 챗봇 검색 인덱스에서도 삭제 (여기 안 지우면 검색에 계속 뜸)
-        await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(title)+'.json', 'DELETE');
+        await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(title)+'.json', 'DELETE');
         // 메모리 캐시 즉시 반영 (페이지 새로고침 없이 검색에서 바로 사라짐)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         if(idx && idx[title] !== undefined) delete idx[title];
@@ -3257,24 +3259,29 @@
     async function _mfSyncSearchIndex(){
         var btn = document.getElementById('mfSyncIndexBtn');
         if(btn){ btn.disabled=true; btn.textContent='동기화 중...'; }
-        var added = 0;
         try{
             for(var mode of ['mania','bay']){
                 var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
-                if(!raw || typeof raw !== 'object'){ continue; }
-                var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
-                for(var key of Object.keys(raw)){
-                    var entry = raw[key];
-                    var title = (entry && entry.title) ? entry.title : key;
-                    if(idx[title] === undefined){
-                        await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(title)+'.json','PUT','');
-                        idx[title] = '';
-                        added++;
-                    }
+                // normalizeKey(title)을 키, 실제 제목을 값으로 저장
+                // 고아 항목(대리 등) 제거: PUT으로 전체 교체
+                var newIdxFb = {};
+                var newIdxMem = {};
+                if(raw && typeof raw === 'object'){
+                    Object.keys(raw).forEach(function(k){
+                        var entry = raw[k];
+                        var title = (entry && entry.title) ? entry.title : k;
+                        newIdxFb[normalizeKey(title)] = title;
+                        newIdxMem[title] = '';
+                    });
                 }
+                await _authFetch('imi_manual_index/'+mode+'.json','PUT', newIdxFb);
+                if(mode==='bay') BAY_MANUAL_INDEX = newIdxMem;
+                else MANUAL_INDEX = newIdxMem;
             }
-            if(btn){ btn.disabled=false; btn.textContent='✅ 동기화 완료 (+'+added+'개)'; }
-            alert('✅ 검색 인덱스 동기화 완료!\n새로 추가된 항목: '+added+'개');
+            var cntM = Object.keys(MANUAL_INDEX).length;
+            var cntB = Object.keys(BAY_MANUAL_INDEX).length;
+            if(btn){ btn.disabled=false; btn.textContent='✅ 동기화 완료'; }
+            alert('✅ 검색 인덱스 재구성 완료! (고아 항목 제거)\n\n매니아: '+cntM+'개 항목\n베이: '+cntB+'개 항목\n\n※ 항목 수 = 이미지 묶음(제목) 수 (페이지 수 아님)\n\n페이지를 새로고침하면 챗봇 검색에 반영됩니다.');
         }catch(e){
             if(btn){ btn.disabled=false; btn.textContent='🔄 검색 인덱스 전체 동기화'; }
             alert('오류: '+e.message);
@@ -3287,10 +3294,29 @@
             var bI  = await _authFetch('imi_manual_index/bay.json');
             var pR  = await _authFetch('imi_page_ranges/mania.json');
             var bpR = await _authFetch('imi_page_ranges/bay.json');
-            if(mI  && typeof mI  === 'object') MANUAL_INDEX     = mI;
-            if(bI  && typeof bI  === 'object') BAY_MANUAL_INDEX = bI;
+            if(mI  && typeof mI  === 'object'){
+                // 값이 실제 제목인 새 포맷: {normalizeKey(title): title}
+                // 값이 ""인 구형 포맷도 대응 (키 자체를 제목으로 사용)
+                var _mi={};
+                Object.keys(mI).forEach(function(k){
+                    var t=mI[k]; if(t&&typeof t==='string') _mi[t]=''; else _mi[k]='';
+                });
+                MANUAL_INDEX = _mi;
+            }
+            if(bI  && typeof bI  === 'object'){
+                var _bi={};
+                Object.keys(bI).forEach(function(k){
+                    var t=bI[k]; if(t&&typeof t==='string') _bi[t]=''; else _bi[k]='';
+                });
+                BAY_MANUAL_INDEX = _bi;
+            }
             if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
             if(bpR && typeof bpR === 'object') BAY_PAGE_RANGES  = bpR;
+            // manual_page_ranges 로드 (카테고리 필드 포함)
+            var mR  = await _authFetch('manual_page_ranges/mania.json');
+            var bR2 = await _authFetch('manual_page_ranges/bay.json');
+            if(mR  && typeof mR  === 'object') MANUAL_RANGES     = mR;
+            if(bR2 && typeof bR2 === 'object') BAY_MANUAL_RANGES = bR2;
         }catch(e){ /* Firebase 실패 시 HTML 하드코딩 값 유지 */ }
     }
 
@@ -4985,12 +5011,9 @@
         if(currentMode==='mania'&&(kw==='일반'||kw==='충전'||kw==='결제'||kw==='사고')){
             var _catLabel = kw==='충전'?'충전':kw==='결제'?'결제':kw;
             var _catList=titles.filter(function(t){
-                var pr=PAGE_RANGES[normalizeKey(t)];
-                if(kw==='사고')  return pr&&pr.start>=139;
-                if(kw==='충전')  return pr&&pr.start>=99&&pr.start<=127;
-                if(kw==='결제')  return pr&&pr.start>=128&&pr.start<=134;
-                // 일반: 페이지 없음 OR p1~p98 OR p135~p138 (가상계좌충전체크필터/휴면마일리지)
-                return !pr||pr.start<99||(pr.start>=135&&pr.start<=138);
+                var pr=MANUAL_RANGES[normalizeKey(t)];
+                var cat=pr&&pr.category?pr.category:'일반';
+                return cat===kw;
             });
             if(_catList.length){
                 var _ch='<strong>📂 '+escHtml(_catLabel)+' 카테고리 전체 ('+_catList.length+'건):</strong><div class="choice-card-wrap">';
@@ -6183,11 +6206,9 @@
             var _catLabel2=q==='충전'?'충전':q==='결제'?'결제':q;
             var _titles2=Object.keys(MANUAL_INDEX);
             var _catList2=_titles2.filter(function(t){
-                var pr=PAGE_RANGES[normalizeKey(t)];
-                if(q==='사고') return pr&&pr.start>=139;
-                if(q==='충전') return pr&&pr.start>=99&&pr.start<=127;
-                if(q==='결제') return pr&&pr.start>=128&&pr.start<=134;
-                return !pr||pr.start<99||(pr.start>=135&&pr.start<=138);
+                var pr=MANUAL_RANGES[normalizeKey(t)];
+                var cat=pr&&pr.category?pr.category:'일반';
+                return cat===q;
             });
             if(_catList2.length){
                 var _ch2='<strong>📂 '+escHtml(_catLabel2)+' 카테고리 전체 ('+_catList2.length+'건):</strong><br><div style="font-size:10px;opacity:0.55;margin-bottom:8px;">항목을 클릭하면 예상 QNA를 바로 생성합니다</div><div class="choice-card-wrap">';
