@@ -253,8 +253,20 @@
             if (seen.has(key)) return;
             seen.add(key);
             chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
+
+            // 등록일시 DOM에서 추출
+            let listTime = '';
+            const allTds = el.querySelectorAll('td, .date, .reg_date, .col_date, [class*="date"], [class*="time"]');
+            for (const td of allTds) {
+                const t = (td.innerText || td.textContent || '').trim();
+                if (/\d{4}[-./]\d{2}[-./]\d{2}/.test(t) || /\d{2}:\d{2}:\d{2}/.test(t)) {
+                    listTime = t.replace(/\s+/g, ' ').substring(0, 30);
+                    break;
+                }
+            }
+
             // _el: DOM 참조 저장 → 클릭 시 직접 사용
-            items.push({ t: title, p: price, u: href, key: itemKey, tid, _el: el });
+            items.push({ t: title, p: price, u: href, key: itemKey, tid, listTime, _el: el });
         });
         return items;
     }
@@ -301,7 +313,7 @@
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,
-                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '' })) : null,
+                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', listTime: it.listTime || '' })) : null,
                 at: _at
             }
         });

@@ -882,6 +882,27 @@ function loadMonitorLog(fullDay) {
                 hourGroups[hKey].push(entry);
             });
 
+            function _tidListTime(tid) {
+                if (!tid || tid.length < 10) return '';
+                var y = parseInt(tid.substring(0, 4));
+                if (y < 2020 || y > 2035) return '';
+                var mo = tid.substring(4, 6), d = tid.substring(6, 8);
+                var h = parseInt(tid.substring(8, 10));
+                if (h < 0 || h > 23) return '';
+                var s = mo + '.' + d + ' ' + String(h).padStart(2, '0');
+                if (tid.length >= 12) {
+                    var mi = parseInt(tid.substring(10, 12));
+                    if (mi >= 0 && mi <= 59) {
+                        s += ':' + String(mi).padStart(2, '0');
+                        if (tid.length >= 14) {
+                            var ss = parseInt(tid.substring(12, 14));
+                            if (ss >= 0 && ss <= 59) s += ':' + String(ss).padStart(2, '0');
+                        }
+                    }
+                }
+                return s + ' 등록';
+            }
+
             function _renderEntry(entry) {
                 var d = entry.data;
                 var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
@@ -891,13 +912,16 @@ function loadMonitorLog(fullDay) {
                     var isBlocked = blockedSet[rawKey];
                     var titleAttr = _esc(it.t || '');
                     var tidAttr = _esc(it.tid || '');
+                    var listTime = it.listTime || _tidListTime(it.tid || '');
                     var btnHtml = bk
                         ? (isBlocked
                             ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
                             : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
-                        + (it.tid ? '<div style="font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid) + '</div>' : '')
+                        + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid)
+                            + (listTime ? '<span style="font-size:10px;font-weight:500;color:#64748b;">· ' + listTime + '</span>' : '')
+                            + '</div>' : '')
                         + '<div style="display:flex;align-items:center;gap:6px;">'
                         + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
                         + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(it.p).toLocaleString() + '원</div>' : '')
@@ -921,10 +945,11 @@ function loadMonitorLog(fullDay) {
                 var groupEntries = hourGroups[hKey];
                 var parts = hKey.split(' ');
                 var label = parts[0] + ' ' + parseInt(parts[1]) + '시';
+                var totalItems = groupEntries.reduce(function(s, e){ return s + (e.data.itemCount || 0); }, 0);
                 html += '<details ' + (idx === 0 ? 'open' : '') + ' style="border:2px solid var(--border-ui);border-radius:12px;margin-bottom:8px;overflow:hidden;">'
                     + '<summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-weight:900;font-size:12px;background:var(--bg-body);user-select:none;list-style:none;">'
                     + '<span style="flex:1;">🕐 ' + label + '</span>'
-                    + '<span style="font-size:11px;font-weight:700;color:#ef4444;">' + groupEntries.length + '건</span>'
+                    + '<span style="font-size:11px;font-weight:700;color:#ef4444;">' + groupEntries.length + '회 감지 · 총 ' + totalItems + '개</span>'
                     + '</summary>'
                     + '<div style="padding:10px 10px 2px;">'
                     + groupEntries.map(_renderEntry).join('')
