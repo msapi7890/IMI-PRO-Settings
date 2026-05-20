@@ -882,13 +882,6 @@ function loadMonitorLog(fullDay) {
                 hourGroups[hKey].push(entry);
             });
 
-            function _tidListTime(tid) {
-                if (!tid || tid.length < 8) return '';
-                var y = parseInt(tid.substring(0, 4));
-                if (y < 2020 || y > 2035) return '';
-                return tid.substring(4, 6) + '.' + tid.substring(6, 8) + ' 등록';
-            }
-
             function _renderEntry(entry) {
                 var d = entry.data;
                 var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
@@ -898,7 +891,7 @@ function loadMonitorLog(fullDay) {
                     var isBlocked = blockedSet[rawKey];
                     var titleAttr = _esc(it.t || '');
                     var tidAttr = _esc(it.tid || '');
-                    var listTime = it.listTime || _tidListTime(it.tid || '');
+                    var listTime = it.listTime || '';
                     var btnHtml = bk
                         ? (isBlocked
                             ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
