@@ -2067,11 +2067,15 @@
         // 저장 버튼
         h += '<button id="mfEditSaveBtn" onclick="_mfSaveEditItem()" style="width:100%;padding:9px;border-radius:7px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;margin-bottom:10px;">💾 저장</button>';
 
-        // PDF 교체 구분선
+        // 이미지/PDF 교체
         h += '<div style="border-top:1px solid #1e293b;padding-top:10px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#475569;margin-bottom:6px;">📄 이미지 교체 (PDF 재변환)</div>';
+        h += '<div style="font-size:10px;font-weight:900;color:#475569;margin-bottom:6px;">🔄 이미지 교체</div>';
+        h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;margin-bottom:6px;">';
+        h += '🖼 이미지 파일 선택 (JPG/PNG, 여러 장) → 직접 교체';
+        h += '<input type="file" id="mfEditImgFiles" accept="image/*" multiple style="display:none;" onchange="_mfDoModifyByImages()">';
+        h += '</label>';
         h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-        h += '📄 수정된 PDF 선택 → 자동 교체';
+        h += '📄 PDF 선택 → 이미지 자동 변환 교체';
         h += '<input type="file" id="mfEditFile" accept=".pdf" style="display:none;" onchange="_mfDoModify()">';
         h += '</label>';
         h += '<div id="mfEditProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
@@ -2949,6 +2953,71 @@
         if(btn){ btn.disabled=false; btn.textContent='💾 전체 저장'; btn.style.display='none'; }
         _mfLoadRanges(mode);
         _mfFillEditSel(mode);
+    }
+
+    // ── 수정: 이미지 직접 교체 ──
+    async function _mfDoModifyByImages(){
+        var input  = document.getElementById('mfEditImgFiles');
+        var prog   = document.getElementById('mfEditProgress');
+        var key    = _mfCurrentEditKey || '';
+        var files  = input && input.files ? Array.from(input.files) : [];
+        if(!key){ alert('항목을 먼저 선택해주세요.'); return; }
+        if(!files.length) return;
+
+        var startPage = parseInt((_mfCurrentEditData||{}).start, 10);
+        if(!startPage){ alert('항목 시작 페이지를 확인할 수 없습니다.'); return; }
+        var mode  = _mfMgmtMode;
+        var title = (_mfCurrentEditData||{}).title || key;
+
+        // 파일명 순 정렬
+        files.sort(function(a,b){ return a.name.localeCompare(b.name, undefined, {numeric:true}); });
+        var total = files.length;
+
+        // 진행 UI
+        if(prog) prog.textContent = '⬆ 업로드 준비 중...';
+        var imgLabel = document.getElementById('mfEditImgFiles') ? document.getElementById('mfEditImgFiles').parentElement : null;
+        if(imgLabel){ imgLabel.style.pointerEvents='none'; imgLabel.style.opacity='0.5'; }
+
+        var uploaded = 0, failed = 0;
+        var endPage = startPage + total - 1;
+
+        for(var i=0; i<files.length; i++){
+            var pageNum = startPage + i;
+            var padded  = String(pageNum).padStart(3,'0');
+            var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
+            try{
+                await storage.ref(storagePath).put(files[i]);
+                uploaded++;
+            }catch(e){
+                failed++;
+                console.warn('업로드 실패:', files[i].name, e);
+            }
+            if(prog) prog.textContent = '⬆ 업로드 중... '+(i+1)+' / '+total+' (p.'+pageNum+')';
+        }
+
+        // end 페이지 업데이트
+        await _authFetch('manual_page_ranges/'+mode+'/'+key+'/end.json','PUT',endPage);
+        _mfCurrentEditData = Object.assign({},_mfCurrentEditData,{end:endPage});
+
+        // end 입력창 갱신
+        var endEl = document.getElementById('mfEditFEnd');
+        if(endEl) endEl.value = endPage;
+
+        // 미리보기 이미지 갱신
+        try{
+            var url = await storage.ref('manual_pages/'+mode+'/page-'+String(startPage).padStart(3,'0')+'.jpg').getDownloadURL();
+            var previewImg = document.getElementById('mfEditPreviewImg');
+            if(previewImg){ previewImg.src = url+'&_t='+Date.now(); }
+            var previewWrap = document.getElementById('mfEditPreviewWrap');
+            if(previewWrap) previewWrap.style.display='';
+        }catch(e){}
+
+        _mfLoadRanges(mode);
+
+        var failMsg = failed ? ' (⚠ '+failed+'장 실패)' : '';
+        if(prog){ prog.style.color='#4ade80'; prog.textContent='✅ 교체 완료! "'+title+'" · p.'+startPage+'~p.'+endPage+' · '+uploaded+'장 업로드'+failMsg; }
+        if(imgLabel){ imgLabel.style.pointerEvents=''; imgLabel.style.opacity=''; }
+        if(input) input.value='';
     }
 
     // ── 수정: PDF 렌더링 + 파일목록 저장 ──
