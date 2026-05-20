@@ -194,13 +194,7 @@
             if (text.length < 15) return;
             if (text.includes('물품제목') && text.includes('등록일시')) return;
 
-            if (kws.length && !kws.some(k => text.includes(k))) return;
-            if (exKws.length && exKws.some(k => text.includes(k))) return;
-
-            const price = extractMaxPrice(text);
-            if (minPrice > 0 && price < minPrice) return;
-            if (maxPrice > 0 && price > maxPrice) return;
-
+            // 제목 요소 먼저 추출 → 키워드는 제목에서만 매칭 (가격·날짜 칼럼 오탐 방지)
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
             const title = titleEl
                 ? (() => {
@@ -210,6 +204,14 @@
                     return (raw || titleEl.innerText.split('\n')[0]).trim();
                 })()
                 : text.substring(0, 40) + '...';
+            const kwText = titleEl ? (titleEl.innerText || titleEl.textContent || '').replace(/\s+/g, ' ').trim() : text;
+
+            if (kws.length && !kws.some(k => kwText.includes(k))) return;
+            if (exKws.length && exKws.some(k => kwText.includes(k))) return;
+
+            const price = extractMaxPrice(text);
+            if (minPrice > 0 && price < minPrice) return;
+            if (maxPrice > 0 && price > maxPrice) return;
 
             const candidates = el.tagName === 'A'
                 ? [el, ...Array.from(el.querySelectorAll('a'))]
