@@ -1236,11 +1236,14 @@
     function _lockHide(){ document.body.classList.remove('auth-pending'); }
 
     // Firebase REST 헬퍼
+    var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
             var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now(), opts);
+            if(r.status===401||r.status===403){ _authFetchBlocked=true; return null; }
+            _authFetchBlocked = false;
             return r.ok ? (await r.json()) : null;
         }catch(e){ return null; }
     }
@@ -1313,7 +1316,12 @@
         if(!name||!pw){ errEl.textContent='이름과 비밀번호를 입력해주세요'; errEl.style.display=''; return; }
         var hash = await _sha256(pw);
         var user = await _authFetch('imi_users/'+_ukey(name)+'.json');
-        if(!user){ errEl.textContent='존재하지 않는 이름입니다'; errEl.style.display=''; return; }
+        if(!user){
+            errEl.textContent = _authFetchBlocked
+                ? '⚠ Firebase 연결 오류 — 관리자에게 문의하세요 (DB 규칙 확인 필요)'
+                : '존재하지 않는 이름입니다';
+            errEl.style.display=''; return;
+        }
         if(user.pw_hash !== hash){ errEl.textContent='비밀번호가 올바르지 않습니다'; errEl.style.display=''; document.getElementById('lockPwInput').value=''; return; }
         if(!user.approved){ errEl.textContent='승인 대기 중입니다. 관리자의 승인을 기다려 주세요.'; errEl.style.display=''; return; }
         // 아이디·비밀번호 기억
