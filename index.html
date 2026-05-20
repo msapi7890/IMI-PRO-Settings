@@ -2935,6 +2935,14 @@
             idx[newTitle]='';
         }
 
+        // 키워드를 검색 시스템(keywords/ 경로)에도 동기화
+        if(oldTitle && oldTitle!==newTitle){
+            db.ref('keywords/'+mode+'/'+encodeForDb(oldTitle)).remove();
+        }
+        var _kArr2=kws?kws.split(',').map(function(t){return t.trim();}).filter(function(t){return t.length>0;}):[];
+        if(_kArr2.length) db.ref('keywords/'+mode+'/'+encodeForDb(newTitle)).set(_kArr2);
+        else db.ref('keywords/'+mode+'/'+encodeForDb(newTitle)).remove();
+
         _mfCurrentEditData = Object.assign({},_mfCurrentEditData,{title:newTitle,category:cat,start:start,end:end,keywords:kws});
         _mfLoadRanges(mode);
         var q = ((document.getElementById('mfEditSearch')||{}).value||'').trim();
@@ -2954,6 +2962,11 @@
             var key = e.name.replace(/[.#$\[\]\/]/g,'_');
             await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','PUT',{start:e.from,end:e.to,title:e.name,category:e.cat,keywords:e.keywords||'',cropTop:e.cropTop||0,cropBottom:(e.cropBottom!==undefined?e.cropBottom:100)});
             if(!idx[e.name]){ await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(e.name)+'.json','PUT',e.name); idx[e.name]=''; }
+            // 키워드를 검색 시스템(keywords/ 경로)에도 동기화
+            if(e.keywords){
+                var _kArr=e.keywords.split(',').map(function(t){return t.trim();}).filter(function(t){return t.length>0;});
+                if(_kArr.length) db.ref('keywords/'+mode+'/'+encodeForDb(e.name)).set(_kArr);
+            }
         }
         var prog = document.getElementById('mfNewProgress');
         if(prog) prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!';
@@ -3280,6 +3293,11 @@
                         var title = (entry && entry.title) ? entry.title : k;
                         newIdxFb[normalizeKey(title)] = title;
                         newIdxMem[title] = '';
+                        // 키워드도 keywords/ 경로에 동기화
+                        if(entry && entry.keywords){
+                            var _ka=entry.keywords.split(',').map(function(t){return t.trim();}).filter(function(t){return t.length>0;});
+                            if(_ka.length) db.ref('keywords/'+mode+'/'+encodeForDb(title)).set(_ka);
+                        }
                     });
                 }
                 await _authFetch('imi_manual_index/'+mode+'.json','PUT', newIdxFb);
