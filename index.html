@@ -2938,7 +2938,12 @@
 
     async function _mfDeleteRange(mode, key, title){
         if(!confirm('"'+title+'" 항목을 삭제하시겠습니까?')) return;
-        var res = await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json', 'DELETE');
+        await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json', 'DELETE');
+        // 챗봇 검색 인덱스에서도 삭제 (여기 안 지우면 검색에 계속 뜸)
+        await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(title)+'.json', 'DELETE');
+        // 메모리 캐시 즉시 반영 (페이지 새로고침 없이 검색에서 바로 사라짐)
+        var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+        if(idx && idx[title] !== undefined) delete idx[title];
         _mfLoadRanges(mode);
         _mfFillEditSel(mode);
     }
