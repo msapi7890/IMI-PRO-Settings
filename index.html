@@ -2073,7 +2073,12 @@
         h += '</div>';
 
         if(isAdm){
-            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #334155;">';
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #0369a1;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
+            h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
+            h += '<button id="mfSyncIndexBtn" onclick="_mfSyncSearchIndex()" style="padding:7px 0;border-radius:7px;background:#0369a1;color:#bae6fd;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">🔄 검색 인덱스 전체 동기화</button>';
+            h += '</div>';
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #334155;">';
             h += '<div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:6px;">🔧 HTML → Firebase 마이그레이션 (최초 1회)</div>';
             h += '<button id="mfMigrateBtn" onclick="_migrateManualToFirebase()" style="padding:7px 0;border-radius:7px;background:#334155;color:#94a3b8;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">기존 MANUAL_INDEX 데이터 Firebase로 이전</button>';
             h += '</div>';
@@ -3042,6 +3047,33 @@
             if(prog) prog.textContent = _mfProgressHtml;
         }
         return _renderedCount;
+    }
+
+    async function _mfSyncSearchIndex(){
+        var btn = document.getElementById('mfSyncIndexBtn');
+        if(btn){ btn.disabled=true; btn.textContent='동기화 중...'; }
+        var added = 0;
+        try{
+            for(var mode of ['mania','bay']){
+                var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+                if(!raw || typeof raw !== 'object'){ continue; }
+                var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+                for(var key of Object.keys(raw)){
+                    var entry = raw[key];
+                    var title = (entry && entry.title) ? entry.title : key;
+                    if(idx[title] === undefined){
+                        await _authFetch('imi_manual_index/'+mode+'/'+encodeURIComponent(title)+'.json','PUT','');
+                        idx[title] = '';
+                        added++;
+                    }
+                }
+            }
+            if(btn){ btn.disabled=false; btn.textContent='✅ 동기화 완료 (+'+added+'개)'; }
+            alert('✅ 검색 인덱스 동기화 완료!\n새로 추가된 항목: '+added+'개');
+        }catch(e){
+            if(btn){ btn.disabled=false; btn.textContent='🔄 검색 인덱스 전체 동기화'; }
+            alert('오류: '+e.message);
+        }
     }
 
     async function _migrateManualToFirebase(){
