@@ -232,7 +232,7 @@ function ensureAlarms() {
     chrome.alarms.get('imi_watchdog',   a => { if (!a) chrome.alarms.create('imi_watchdog',   { periodInMinutes: 3 }); });
     chrome.alarms.get('imi_rule_sync',  a => { if (!a) chrome.alarms.create('imi_rule_sync',  { periodInMinutes: 1 }); });
     chrome.alarms.get('imi_cleanup',    a => { if (!a) chrome.alarms.create('imi_cleanup',    { periodInMinutes: 60 * 24 }); });
-    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 5 }); });
+    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 20 }); });
 }
 chrome.runtime.onInstalled.addListener(ensureAlarms);
 chrome.runtime.onStartup.addListener(ensureAlarms);
@@ -253,6 +253,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
     if (alarm.name === 'imi_tid_watch') await checkWatchedTids();
+    if (alarm.name === 'imi_rule_sync') await syncTidWatchInterval();
 });
 
 // 서비스워커 시작 시 밀린 명령 처리 + 현재 상태 즉시 Firebase 반영
@@ -593,7 +594,19 @@ async function showWatchPopup(data) {
     });
 }
 
-// 거래번호 감시 — 5분마다 숨김→노출 전환 감지
+// 거래번호 감시 체크 간격 동기화 (imi_rule_sync 때마다 실행)
+let _lastTidInterval = 20;
+async function syncTidWatchInterval() {
+    const v = await fireGet('/tid_watch_interval');
+    const mins = (typeof v === 'number' && v >= 5) ? v : 20;
+    if (mins === _lastTidInterval) return;
+    _lastTidInterval = mins;
+    chrome.alarms.clear('imi_tid_watch', () => {
+        chrome.alarms.create('imi_tid_watch', { periodInMinutes: mins });
+    });
+}
+
+// 거래번호 감시 — 숨김→노출 전환 감지
 async function checkWatchedTids() {
     const tids = await fireGet('/watched_tids');
     if (!tids || typeof tids !== 'object') return;

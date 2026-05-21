@@ -873,8 +873,14 @@
                 <input id="wtLabel" placeholder="메모 (선택, 예: 린클 거래건)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:8px;">
                 <button onclick="addWatchedTid()" style="width:100%;padding:8px;border-radius:7px;background:#22c55e;color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">🔍 감시 등록</button>
             </div>
+            <div style="background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;font-weight:900;flex:1;">⏱ 체크 간격</span>
+                <input id="wtInterval" type="number" min="5" max="120" value="20" style="width:70px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;text-align:center;">
+                <span style="font-size:11px;opacity:0.6;">분</span>
+                <button onclick="saveWatchInterval()" style="padding:5px 12px;border-radius:7px;background:var(--active-focus-color);color:#0f172a;border:none;font-size:11px;font-weight:900;cursor:pointer;">저장</button>
+            </div>
             <div id="watchedTidList"></div>
-            <div style="font-size:10px;opacity:0.4;text-align:center;padding:4px 0;">5분마다 자동 체크 · 노출 감지 시 초록 팝업 알림</div>
+            <div style="font-size:10px;opacity:0.4;text-align:center;padding:4px 0;">설정한 간격마다 자동 체크 · 노출 감지 시 초록 팝업 알림</div>
         </div>
     </div>
 </div>
@@ -3755,7 +3761,7 @@
             var fw = document.getElementById('botRuleFormWrap');
             if(fw) fw.style.display = _isBotPrivileged() ? '' : 'none';
         }
-        if(n===4) _renderWatchedTids();
+        if(n===4) { _renderWatchedTids(); _loadWatchInterval(); }
     }
     function toggleNotif(key){
         _notifPrefs[key]=!_notifPrefs[key];

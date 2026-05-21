@@ -1185,6 +1185,26 @@ function addWatchedTid() {
     });
 }
 
+function _loadWatchInterval() {
+    db.ref('/tid_watch_interval').once('value', function(snap) {
+        var v = snap.val();
+        var el = document.getElementById('wtInterval');
+        if (el && v) el.value = v;
+    });
+}
+
+function saveWatchInterval() {
+    var el = document.getElementById('wtInterval');
+    var v = parseInt(el ? el.value : '') || 20;
+    if (v < 5) v = 5;
+    if (v > 120) v = 120;
+    el.value = v;
+    db.ref('/tid_watch_interval').set(v, function(err) {
+        if (err) { alert('저장 실패: ' + err.message); return; }
+        alert('✅ 체크 간격이 ' + v + '분으로 저장됐습니다.\n다음 체크 주기부터 적용됩니다.');
+    });
+}
+
 function _renderWatchedTids() {
     var list = document.getElementById('watchedTidList');
     if (!list) return;
