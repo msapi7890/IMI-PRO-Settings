@@ -76,6 +76,11 @@ const THIRTY_DAYS_MS    = 30 * 24 * 60 * 60 * 1000;
 // 30일 경과 시 차단 목록 자동 초기화 (전체 실무자 공유)
 async function maybeCleanupBlocked() {
     const clearedAt = await getBlockedCleared();
+    if (!clearedAt) {
+        // 최초 실행 — 타임스탬프만 초기화, 목록은 건드리지 않음
+        await store.set('imi_blocked_cleared_at', Date.now());
+        return;
+    }
     if (Date.now() - clearedAt < THIRTY_DAYS_MS) return;
     await store.set('imi_blocked', []);
     await store.set('imi_blocked_cleared_at', Date.now());
@@ -121,7 +126,10 @@ async function syncStatus() {
         name: r.name,
         keyword: r.keyword || '',
         minPrice: r.minPrice || 0,
+        maxPrice: r.maxPrice || 0,
         scanInterval: r.scanInterval || 5,
+        excludeKeyword: r.excludeKeyword || '',
+        photoOnly: !!r.photoOnly,
         type: r.type || 'fraud',
         enabled: r.enabled,
         tabOpen: tabMap[r.id] !== undefined
@@ -233,11 +241,13 @@ function ensureAlarms() {
     chrome.alarms.get('imi_watchdog',   a => { if (!a) chrome.alarms.create('imi_watchdog',   { periodInMinutes: 3 }); });
     chrome.alarms.get('imi_rule_sync',  a => { if (!a) chrome.alarms.create('imi_rule_sync',  { periodInMinutes: 1 }); });
     chrome.alarms.get('imi_cleanup',    a => { if (!a) chrome.alarms.create('imi_cleanup',    { periodInMinutes: 60 * 24 }); });
-    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 20 }); });
+    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 1 }); });
 }
 chrome.runtime.onInstalled.addListener(ensureAlarms);
 chrome.runtime.onStartup.addListener(ensureAlarms);
 ensureAlarms(); // 서비스워커 재시작 시에도 보장
+// 재시작 시 즉시 비거래 배너 상태 동기화 (알람 대기 없이 바로 반영)
+setTimeout(() => { checkWatchedTids(); checkWatchScanRules(); }, 3000);
 chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_watchdog') {
         if (await isActive()) await startAll();
@@ -253,7 +263,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         await syncStatus();
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
-    if (alarm.name === 'imi_tid_watch') await checkWatchedTids();
+    if (alarm.name === 'imi_tid_watch') { await checkWatchedTids(); await checkWatchScanRules(); }
     if (alarm.name === 'imi_rule_sync') await syncTidWatchInterval();
 });
 
@@ -275,8 +285,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
                     showWatchPopup(msg.data);
-                } else {
-                    showAlertPopup(msg.data);
                 }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
                 const logRows = msg.data.logItemRows;
@@ -301,11 +309,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // 컨텐츠 스크립트가 자신의 규칙을 물어볼 때
     if (msg.type === 'GET_MY_RULE') {
         getTabMap().then(async tabMap => {
-            const [rules, active] = await Promise.all([getRules(), isActive()]);
+            const [rules, active, globalTodayOnly] = await Promise.all([getRules(), isActive(), fireGet('/global_today_only')]);
             const ruleId   = Object.entries(tabMap).find(([, tid]) => tid === sender.tab.id)?.[0];
             const rule     = ruleId ? (rules.find(r => r.id === ruleId) || null) : null;
+            // 글로벌 오늘만 설정으로 todayOnly 주입 → bot.js 초기값으로 사용
+            const ruleOut  = rule ? Object.assign({}, rule, { todayOnly: !!globalTodayOnly }) : null;
             // 봇이 정지 상태면 botStopped 플래그 반환 → 페이지 재로드 후 재시작 방지
-            sendResponse({ rule, botStopped: !active });
+            sendResponse({ rule: ruleOut, botStopped: !active });
         });
         return true;
     }
@@ -513,42 +523,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 });
 
-// 커스텀 팝업 창 (IMI PRO 스타일)
-let _alertWinId = null;
-let _lastAlertAt = 0;
-
-async function showAlertPopup(data) {
-    const popupOn = await store.get('imi_notif_popup');
-    if (popupOn === false) return;
-
-    const now = Date.now();
-    // 5초 이내 중복 방지
-    if (now - _lastAlertAt < 5000) return;
-    _lastAlertAt = now;
-
-    await store.set('imi_alert_popup_data', data);
-
-    // 기존 팝업 닫기
-    if (_alertWinId) {
-        try { await chrome.windows.remove(_alertWinId); } catch(e) {}
-        _alertWinId = null;
-    }
-
-    const win = await chrome.windows.create({
-        url: chrome.runtime.getURL('alert_popup.html'),
-        type: 'popup',
-        width: 540,
-        height: 440,
-        focused: true
-    });
-    _alertWinId = win.id;
-
-    // 창 닫히면 ID 초기화
-    chrome.windows.onRemoved.addListener(function onClose(wid) {
-        if (wid === _alertWinId) { _alertWinId = null; chrome.windows.onRemoved.removeListener(onClose); }
-    });
-}
-
 // 비거래 감지 팝업 (좌측 하단, 초록 테마)
 let _watchWinId = null;
 let _lastWatchAt = 0;
@@ -561,59 +535,40 @@ async function showWatchPopup(data) {
     if (now - _lastWatchAt < 5000) return;
     _lastWatchAt = now;
 
-    await store.set('imi_watch_popup_data', data);
-
-    if (_watchWinId) {
-        try { await chrome.windows.remove(_watchWinId); } catch(e) {}
-        _watchWinId = null;
-    }
-
-    const popupW = 420, popupH = 360;
-    let left = 10, top = 600;
+    // IMI PRO 인페이지 알림 (Firebase 경유 — 확장프로그램 없는 사용자도 수신)
     try {
-        const displays = await new Promise(r => chrome.system.display.getInfo({}, r));
-        const primary = displays.find(d => d.isPrimary) || displays[0];
-        if (primary) {
-            left = primary.workArea.left + 10;
-            top  = primary.workArea.top + primary.workArea.height - popupH - 50;
-        }
+        await firePush('/imi_watch_alerts', {
+            tid:     data.tid     || '',
+            label:   data.label   || data.ruleName || '',
+            keyword: data.keyword || '',
+            count:   data.count   || 0,
+            at:      now,
+            seen:    false
+        });
     } catch(e) {}
-
-    const win = await chrome.windows.create({
-        url: chrome.runtime.getURL('watch_popup.html'),
-        type: 'popup',
-        width: popupW,
-        height: popupH,
-        left: left,
-        top: Math.max(0, top),
-        focused: true
-    });
-    _watchWinId = win.id;
-
-    chrome.windows.onRemoved.addListener(function onClose(wid) {
-        if (wid === _watchWinId) { _watchWinId = null; chrome.windows.onRemoved.removeListener(onClose); }
-    });
 }
 
 // 거래번호 감시 체크 간격 동기화 (imi_rule_sync 때마다 실행)
-let _lastTidInterval = 20;
+// tid_watch_interval 단위: 초 (60~3600). Chrome alarm은 분 단위이므로 변환.
+let _lastTidInterval = 0;
 async function syncTidWatchInterval() {
     const v = await fireGet('/tid_watch_interval');
-    const mins = (typeof v === 'number' && v >= 5) ? v : 20;
-    if (mins === _lastTidInterval) return;
-    _lastTidInterval = mins;
+    const secs = (typeof v === 'number' && v >= 60) ? v : 1200; // 기본 20분(1200초)
+    if (secs === _lastTidInterval) return;
+    _lastTidInterval = secs;
+    const mins = Math.max(1, secs / 60);
     chrome.alarms.clear('imi_tid_watch', () => {
         chrome.alarms.create('imi_tid_watch', { periodInMinutes: mins });
     });
 }
 
-// 거래번호 감시 — 숨김→노출 전환 감지
+// 거래번호 감시 — 숨김→노출 전환 감지, 노출 유지 여부 지속 추적
 async function checkWatchedTids() {
     const tids = await fireGet('/watched_tids');
     if (!tids || typeof tids !== 'object') return;
 
     for (const [key, item] of Object.entries(tids)) {
-        if (!item || item.alertSent) continue;
+        if (!item) continue;
 
         const tid = String(item.tid || '');
         if (!tid) continue;
@@ -628,23 +583,226 @@ async function checkWatchedTids() {
 
             // 로그인 페이지로 리다이렉트 됐거나 tid가 페이지에 없으면 아직 숨김
             const stillHidden = !resp.url.includes('application.html') || !text.includes(tid);
-            if (stillHidden) continue;
+
+            if (stillHidden) {
+                // 숨김 확인 → 배너 비활성화, alertSent 초기화 (다음 노출 시 재알림)
+                await fireSet('/imi_watch_banner/' + key + '/active', false);
+                if (item.alertSent) {
+                    await fireSet('/watched_tids/' + key + '/alertSent', false);
+                }
+                continue;
+            }
 
             // 노출 감지 — 물품명 추출 시도
             const titleMatch = text.match(/<h2[^>]*class="[^"]*subject[^"]*"[^>]*>([^<]+)</) ||
                                text.match(/<title[^>]*>([^<|]+)/);
             const itemTitle = (titleMatch ? titleMatch[1].trim() : '') || item.label || ('거래번호 ' + tid);
 
-            await fireSet('/watched_tids/' + key + '/alertSent', true);
-            await fireSet('/watched_tids/' + key + '/detectedAt', Date.now());
+            const now = Date.now();
 
-            showWatchPopup({
-                ruleName: item.label || tid,
-                ruleId: key,
-                ruleType: 'watch',
-                itemCount: 1,
-                itemRows: [{ t: itemTitle, tid: tid, u: url, p: '' }]
+            // 배너 상태 항상 업데이트 (노출 중임을 표시)
+            await fireSet('/imi_watch_banner/' + key, {
+                active: true, tid, label: item.label || '', title: itemTitle, url, at: now
             });
+
+            // 최초 감지 시에만 팝업 알림 + 로그 기록
+            if (!item.alertSent) {
+                await fireSet('/watched_tids/' + key + '/alertSent', true);
+                await fireSet('/watched_tids/' + key + '/detectedAt', now);
+
+                showWatchPopup({
+                    ruleName: item.label || tid,
+                    ruleId: key, ruleType: 'watch',
+                    itemCount: 1,
+                    itemRows: [{ t: itemTitle, tid, u: url, p: '' }]
+                });
+
+                // 로그 기록 (사기글 감지와 동일한 경로)
+                await firePush('/monitor_history', {
+                    ruleName: (item.label || '') + ' (비거래 감시)',
+                    ruleKeyword: tid,
+                    itemCount: 1,
+                    itemRows: [{ t: itemTitle, tid, u: url, p: '', listTime: '' }],
+                    at: now
+                });
+            }
         } catch(e) {}
     }
+}
+
+// ─── 비거래 스캔 감지 (watch_scan_rules) ───────────────────────────────────
+// 탭/콘텐츠스크립트 불필요 — background.js가 직접 URL을 fetch해서 1페이지 스캔
+const _wsr_lastChecked = {}; // 규칙별 마지막 체크 시각
+let _cachedGlobalTodayOnly = null; // 변경 감지용 캐시
+
+async function checkWatchScanRules() {
+    const [rules, globalTodayOnly] = await Promise.all([
+        fireGet('/watch_scan_rules'),
+        fireGet('/global_today_only')
+    ]);
+    if (!rules || typeof rules !== 'object') return;
+
+    // 글로벌 오늘만 설정 변경 시 실행 중인 봇 탭에 실시간 전달
+    const newVal = !!globalTodayOnly;
+    if (_cachedGlobalTodayOnly !== null && _cachedGlobalTodayOnly !== newVal) {
+        const tabMap = await getTabMap();
+        for (const tabId of Object.values(tabMap)) {
+            try { chrome.tabs.sendMessage(tabId, { type: 'UPDATE_GLOBAL_TODAY_ONLY', val: newVal }); } catch(e) {}
+        }
+    }
+    _cachedGlobalTodayOnly = newVal;
+
+    for (const [key, rule] of Object.entries(rules)) {
+        if (!rule || !rule.enabled || !rule.url) continue;
+
+        const interval = (rule.scanInterval || 300) * 1000; // ms
+        if (_wsr_lastChecked[key] && Date.now() - _wsr_lastChecked[key] < interval) continue;
+        _wsr_lastChecked[key] = Date.now();
+
+        const kws = (rule.keyword || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+        if (!kws.length) continue;
+        const exKws = (rule.excludeKeyword || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+
+        // 글로벌 오늘만 설정으로만 제어
+        let todayDateStr = null;
+        if (newVal) {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            todayDateStr = y + '.' + m + '.' + d; // "2026.05.21"
+        }
+
+        let matched = [];
+        let scanOk = false;
+        let scanErr = '';
+        try {
+            matched = await _wsrScanViaTab(rule, kws, exKws, todayDateStr);
+            scanOk = true;
+        } catch(e) { scanErr = e.message || String(e); }
+
+        // 마지막 체크 시각 + 결과 기록 (UI 카드에 표시)
+        await fireSet('/watch_scan_rules/' + key + '/lastCheck', Date.now());
+        await fireSet('/watch_scan_rules/' + key + '/lastCount', scanOk ? matched.length : -1);
+        if (!scanOk) await fireSet('/watch_scan_rules/' + key + '/lastError', scanErr);
+        else await fireSet('/watch_scan_rules/' + key + '/lastError', null); // 성공 시 이전 오류 초기화
+
+        if (!scanOk) continue;
+
+        if (matched.length > 0) {
+            const now = Date.now();
+            // 이전 활성 상태 먼저 조회 (set 이전에 해야 prev 값이 정확함)
+            const prevActive = await fireGet('/imi_watch_banner/wsr_' + key + '/active');
+            await fireSet('/imi_watch_banner/wsr_' + key, {
+                active: true, label: rule.name || rule.keyword || '',
+                keyword: rule.keyword || '', count: matched.length, url: rule.url, at: now
+            });
+            // 최초 감지 또는 이전에 inactive 였을 때만 알림 발송
+            if (!prevActive) {
+                await firePush('/imi_watch_alerts', {
+                    label: rule.name || rule.keyword || '',
+                    keyword: rule.keyword || '',
+                    count: matched.length,
+                    at: now, seen: false
+                });
+                await firePush('/monitor_history', {
+                    ruleName: (rule.name || rule.keyword || '') + ' (비거래 스캔)',
+                    ruleKeyword: rule.keyword || '',
+                    itemCount: matched.length,
+                    itemRows: matched.map(it => ({ t: it.t, p: 0, u: it.u, tid: it.tid, listTime: '' })),
+                    at: now
+                });
+            }
+        } else {
+            await fireSet('/imi_watch_banner/wsr_' + key + '/active', false);
+        }
+    }
+}
+
+// 비거래 스캔: 실제 탭을 열어서 DOM에서 직접 긁음 (fetch+파싱 방식 대체)
+async function _wsrScanViaTab(rule, kws, exKws, todayDateStr) {
+    const todayPrefix = todayDateStr ? todayDateStr.replace(/\./g, '') : null;
+    const allItems = [];
+
+    for (let page = 1; page <= 2; page++) {
+        const pageUrl = page === 1 ? rule.url
+            : rule.url + (rule.url.includes('?') ? '&' : '?') + 'page=' + page;
+
+        const tab = await new Promise((resolve, reject) => {
+            chrome.tabs.create({ url: pageUrl, active: false }, t => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else resolve(t);
+            });
+        });
+
+        try {
+            // 페이지 로딩 완료 대기 (최대 20초)
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    chrome.tabs.onUpdated.removeListener(listener);
+                    reject(new Error('페이지 로딩 타임아웃'));
+                }, 20000);
+                const listener = (tabId, changeInfo) => {
+                    if (tabId === tab.id && changeInfo.status === 'complete') {
+                        clearTimeout(timeout);
+                        chrome.tabs.onUpdated.removeListener(listener);
+                        resolve();
+                    }
+                };
+                chrome.tabs.onUpdated.addListener(listener);
+            });
+
+            // JS 렌더링 여유 시간
+            await new Promise(r => setTimeout(r, 1500));
+
+            const res = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (kws, exKws, todayPrefix) => {
+                    const items = [];
+                    const seen = new Set();
+                    document.querySelectorAll('li, tr, .item_row, .item_wrap').forEach(el => {
+                        if (el.querySelector('li, tr')) return;
+                        const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+                        if (text.length < 10) return;
+                        const tl = text.toLowerCase();
+                        if (!kws.some(k => tl.includes(k))) return;
+                        if (exKws.length && exKws.some(k => tl.includes(k))) return;
+                        const a = el.querySelector('a[href*="application"]') || el.querySelector('a[href]');
+                        const href = a ? a.href : location.href;
+                        if (todayPrefix) {
+                            const m = href.match(/[?&]tid=(\d+)/);
+                            if (m && !m[1].startsWith(todayPrefix)) return;
+                        }
+                        const key = href || text.substring(0, 30);
+                        if (seen.has(key)) return;
+                        seen.add(key);
+                        const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, td:nth-child(2)');
+                        const title = titleEl ? (titleEl.innerText || '').trim().substring(0, 60) : text.substring(0, 60);
+                        const tidM = href.match(/[?&](?:tid|id)=(\d+)/);
+                        items.push({ t: title, u: href, tid: tidM ? tidM[1] : '' });
+                    });
+                    return items;
+                },
+                args: [kws, exKws, todayPrefix]
+            });
+
+            const pageItems = (res && res[0] && res[0].result) || [];
+            allItems.push(...pageItems);
+
+            // 1페이지 결과 없으면 2페이지 스킵
+            if (page === 1 && pageItems.length === 0) break;
+
+        } finally {
+            try { chrome.tabs.remove(tab.id); } catch(e) {}
+        }
+    }
+
+    // TID 기준 중복 제거
+    const seen = new Set();
+    return allItems.filter(item => {
+        const key = item.tid || item.u || item.t;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }

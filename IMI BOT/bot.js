@@ -8,6 +8,7 @@
     let rule = null;
     let isRunning = false;
     let blockedItems = new Set();
+    let _globalTodayOnly = false;
 
     // 재감지 중복 로그 방지 — 이미 기록된 키를 sessionStorage에 유지 (페이지 리로드 후에도 유효)
     function _getLoggedKeys() {
@@ -23,6 +24,11 @@
 
     // --- 메시지 핸들러 ---
     chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+        if (msg.type === 'UPDATE_GLOBAL_TODAY_ONLY') {
+            _globalTodayOnly = !!msg.val;
+            sendResponse({ ok: true });
+            return true;
+        }
         if (msg.type === 'STOP_BOT') {
             isRunning = false;
             sessionStorage.removeItem('_imi_page2_scan');
@@ -42,6 +48,7 @@
     chrome.runtime.sendMessage({ type: 'GET_MY_RULE' }, res => {
         rule = (res && res.rule) ? res.rule : null;
         if (!rule || res.botStopped) return;
+        _globalTodayOnly = !!rule.todayOnly; // background.js가 글로벌 설정 기준으로 주입
         chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
             blockedItems = new Set(bRes && bRes.blocked ? bRes.blocked : []);
             initUI();
@@ -213,6 +220,18 @@
             if (minPrice > 0 && price < minPrice) return;
             if (maxPrice > 0 && price > maxPrice) return;
 
+            if (rule.photoOnly) {
+                // 제목 열(td) 안에 있는 사진 아이콘 img만 감지
+                // 다른 열의 구글·카카오 로그인 아이콘 등은 제외됨
+                const titleTd = titleEl ? (titleEl.closest('td') || titleEl.parentElement) : null;
+                const searchEl = titleTd || el;
+                const hasPhoto = Array.from(searchEl.querySelectorAll('img')).some(img => {
+                    const src = (img.getAttribute('src') || '').trim();
+                    return src.length > 5 && !/noimg|no_img|blank|grade|rank/i.test(src);
+                });
+                if (!hasPhoto) return;
+            }
+
             const candidates = el.tagName === 'A'
                 ? [el, ...Array.from(el.querySelectorAll('a'))]
                 : Array.from(el.querySelectorAll('a'));
@@ -265,6 +284,16 @@
                     listTime = t.replace(/\s+/g, ' ').substring(0, 30);
                     break;
                 }
+            }
+
+            // 글로벌 오늘만 설정: TID 앞 8자리(YYYYMMDD)로 오늘 등록 여부 판별
+            // listTime 기반은 재등록 물품이 시간만 표시돼서 오탐 발생 → TID가 정확함
+            if (_globalTodayOnly) {
+                const now = new Date();
+                const todayPrefix = String(now.getFullYear())
+                    + String(now.getMonth() + 1).padStart(2, '0')
+                    + String(now.getDate()).padStart(2, '0');
+                if (!tid || !tid.startsWith(todayPrefix)) return;
             }
 
             // _el: DOM 참조 저장 → 클릭 시 직접 사용

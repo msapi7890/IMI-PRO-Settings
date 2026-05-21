@@ -349,7 +349,7 @@
 </div>
 
 <!-- 파일매뉴얼 모달 -->
-<div id="manualFilesModal" style="display:none;position:fixed;inset:0;z-index:99980;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;" onclick="if(event.target===this)closeManualFilesModal()">
+<div id="manualFilesModal" style="display:none;position:fixed;inset:0;z-index:99980;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
     <div style="width:min(96vw,580px);max-height:88vh;background:#1e293b;border:2px solid #334155;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
         <div style="padding:12px 20px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
             <span style="font-size:14px;font-weight:900;color:#e2e8f0;">&#x1f4c2; 파일 매뉴얼</span>
@@ -764,7 +764,7 @@
 
 <!-- 모니터링 모달 -->
 <div id="monitorModal" class="hidden">
-    <div class="mon-backdrop" onclick="closeMonitorModal()"></div>
+    <div class="mon-backdrop"></div>
     <div class="mon-box">
         <div class="mon-hdr">
             <div>
@@ -776,9 +776,10 @@
         <!-- 탭 -->
         <div class="mon-tabs">
             <button id="monTab1" class="mon-tab mon-tab-active" onclick="switchMonTab(1)">👁 현황</button>
-            <button id="monTab2" class="mon-tab" onclick="switchMonTab(2)">📋 봇 규칙</button>
-            <button id="monTab3" class="mon-tab" onclick="switchMonTab(3)">🔔 알림 설정</button>
+            <button id="monTab2" class="mon-tab" onclick="switchMonTab(2)">🚨 사기글 규칙</button>
+            <button id="monTab5" class="mon-tab" onclick="switchMonTab(5)">📦 비거래 규칙</button>
             <button id="monTab4" class="mon-tab" onclick="switchMonTab(4)">🔍 거래번호 감시</button>
+            <button id="monTab3" class="mon-tab" onclick="switchMonTab(3)">🔔 알림 설정</button>
         </div>
         <!-- 탭1: 현황 -->
         <div id="monTabContent1" class="mon-body">
@@ -792,6 +793,15 @@
                 <div id="monBotBadge" style="font-size:10px;font-weight:900;padding:4px 10px;border-radius:6px;background:#334155;color:#94a3b8;">연결 대기</div>
                 <button id="monBotToggleBtn" onclick="toggleBotFromWeb()" style="font-size:11px;font-weight:900;padding:6px 14px;border-radius:7px;border:none;cursor:pointer;background:#334155;color:#94a3b8;white-space:nowrap;transition:0.15s;">봇 상태 로딩...</button>
             </div>
+            <!-- 오늘만 감지 글로벌 토글 -->
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:var(--bg-body);border:1.5px solid var(--border-ui);">
+                <span style="font-size:13px;">📅</span>
+                <div style="flex:1;font-size:12px;font-weight:900;">오늘 등록 물품만 감지</div>
+                <span style="font-size:10px;opacity:0.45;font-weight:700;">켜면 전체 규칙에 적용</span>
+                <button id="tog-global-today" onclick="toggleGlobalTodayOnly()" style="width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s;background:#475569;">
+                    <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
+                </button>
+            </div>
             <!-- 규칙 목록 -->
             <div>
                 <div style="font-size:11px;font-weight:900;opacity:0.5;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;">📋 IMI BOT 감시 규칙</div>
@@ -799,19 +809,14 @@
             </div>
             <!-- 안내 -->
             <div style="background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.9;opacity:0.65;">
-                🤖 봇 규칙은 <b>📋 봇 규칙 탭</b>에서 웹으로 관리할 수 있습니다.<br>
+                🤖 규칙은 <b>🚨 사기글 규칙</b> / <b>📦 비거래 규칙</b> 탭에서 웹으로 관리할 수 있습니다.<br>
                 📡 봇이 물품을 감지하면 이 화면에 즉시 알림이 표시됩니다.
             </div>
         </div>
-        <!-- 탭2: 봇 규칙 관리 -->
+        <!-- 탭2: 사기글 규칙 관리 -->
         <div id="monTabContent2" class="mon-body" style="display:none;">
-            <div id="botRuleList"></div>
-            <div id="botRuleFormWrap" style="display:none;background:var(--bg-body);border:2px dashed var(--border-ui);border-radius:10px;padding:12px;">
-                <div id="brFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:9px;">➕ 새 규칙 추가</div>
-                <div style="display:flex;gap:16px;margin-bottom:8px;padding:7px 10px;background:var(--bg-main);border-radius:7px;border:1.5px solid var(--border-ui);">
-                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;color:#ef4444;"><input type="radio" name="brType" id="brTypeFraud" value="fraud" checked style="accent-color:#ef4444;"> 🚨 사기글 감지</label>
-                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;color:#22c55e;"><input type="radio" name="brType" id="brTypeWatch" value="watch" style="accent-color:#22c55e;"> 📦 비거래 감지</label>
-                </div>
+            <div id="botRuleFormWrap" style="display:none;background:var(--bg-body);border:2px dashed #ef444455;border-radius:10px;padding:12px;margin-bottom:10px;">
+                <div id="brFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:9px;">➕ 새 사기글 규칙 추가</div>
                 <input id="brName" placeholder="규칙 이름 (예: 린클 내용 감시)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
                 <input id="brUrl"  placeholder="아이템매니아 카테고리 URL (https://...)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
                 <input id="brKw"   placeholder="키워드 (쉼표로 여러개 가능)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
@@ -819,15 +824,21 @@
                     <input id="brMin" type="number" placeholder="최소가격 (원)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                     <input id="brMax" type="number" placeholder="최대가격 (원)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                 </div>
-                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
                     <input id="brInterval" type="number" placeholder="재검색 간격 (초)" value="300" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                     <input id="brExclude" placeholder="제외 키워드 (쉼표 구분)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                 </div>
-                <div style="display:flex;gap:6px;">
+                <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;margin-bottom:6px;cursor:pointer;">
+                    <input type="checkbox" id="brPhotoOnly" style="width:14px;height:14px;accent-color:#f59e0b;cursor:pointer;">
+                    <span style="font-size:11px;font-weight:700;">📸 사진 포함 물품만 감지</span>
+                    <span style="font-size:10px;opacity:0.45;margin-left:auto;">사기글엔 항상 사진 있음 → 오탐 줄이기</span>
+                </label>
+                <div style="width:100%;display:flex;gap:6px;">
                     <button id="brCancelBtn" onclick="_cancelBotRuleEdit()" style="display:none;flex:1;padding:8px;border-radius:7px;background:none;border:1.5px solid var(--border-ui);color:var(--text-main);font-size:12px;font-weight:900;cursor:pointer;">취소</button>
-                    <button id="brAddBtn" onclick="addBotRule()" style="flex:1;padding:8px;border-radius:7px;background:var(--active-focus-color);color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">✅ 규칙 등록</button>
+                    <button id="brAddBtn" onclick="addBotRule()" style="flex:1;width:100%;padding:8px;border-radius:7px;background:#ef4444;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;">✅ 규칙 등록</button>
                 </div>
             </div>
+            <div id="botRuleList"></div>
             <div style="font-size:11px;opacity:0.5;text-align:center;padding:6px 0;">📡 등록/수정 후 1분 내 봇에 자동 반영됩니다</div>
         </div>
         <!-- 탭3: 알림 설정 -->
@@ -878,18 +889,39 @@
             </div>
             <div style="background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
                 <span style="font-size:11px;font-weight:900;flex:1;">⏱ 체크 간격</span>
-                <input id="wtInterval" type="number" min="5" max="120" value="20" style="width:70px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;text-align:center;">
-                <span style="font-size:11px;opacity:0.6;">분</span>
+                <input id="wtInterval" type="number" min="60" max="3600" value="1200" style="width:80px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;text-align:center;">
+                <span style="font-size:11px;opacity:0.6;">초 (최소 60)</span>
                 <button onclick="saveWatchInterval()" style="padding:5px 12px;border-radius:7px;background:var(--active-focus-color);color:#0f172a;border:none;font-size:11px;font-weight:900;cursor:pointer;">저장</button>
             </div>
             <div id="watchedTidList"></div>
             <div style="font-size:10px;opacity:0.4;text-align:center;padding:4px 0;">설정한 간격마다 자동 체크 · 노출 감지 시 초록 팝업 알림</div>
         </div>
+        <!-- 탭5: 비거래 규칙 -->
+        <div id="monTabContent5" class="mon-body" style="display:none;">
+            <div id="wsrFormWrap" style="display:none;background:var(--bg-body);border:2px dashed #22c55e55;border-radius:10px;padding:12px;margin-bottom:10px;">
+                <div id="wsrFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:8px;">➕ 새 비거래 규칙 추가</div>
+                <input id="wsrName" placeholder="규칙 이름 (예: 게임물위 비거래)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="wsrUrl"  placeholder="물품 리스트 URL (https://...)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="wsrKw"   placeholder="감지 키워드 (쉼표로 여러 개 가능)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="wsrExclude" placeholder="제외 키워드 (쉼표로 여러 개, 없으면 빈칸)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+                    <span style="font-size:11px;font-weight:700;opacity:0.7;white-space:nowrap;">⏱ 주기</span>
+                    <input id="wsrInterval" type="number" min="60" max="3600" value="300" style="width:80px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:6px 8px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;text-align:center;">
+                    <span style="font-size:11px;opacity:0.5;">초</span>
+                </div>
+                <div style="width:100%;display:flex;gap:6px;">
+                    <button id="wsrCancelBtn" onclick="_cancelWsrEdit()" style="display:none;flex:1;padding:8px;border-radius:7px;background:none;border:1.5px solid var(--border-ui);color:var(--text-main);font-size:12px;font-weight:900;cursor:pointer;">취소</button>
+                    <button id="wsrAddBtn" onclick="addWatchScanRule()" style="flex:1;width:100%;padding:8px;border-radius:7px;background:#22c55e;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;">✅ 규칙 등록</button>
+                </div>
+            </div>
+            <div id="watchScanRuleList"></div>
+            <div style="font-size:11px;opacity:0.5;text-align:center;padding:6px 0;">📡 설정 주기마다 URL 1페이지를 직접 스캔 · 사기글 봇과 완전히 별개</div>
+        </div>
     </div>
 </div>
 
 <!-- 감지 로그 + 차단 목록 전체 패널 -->
-<div id="logPanel" class="hidden" onclick="closeLogPanel()">
+<div id="logPanel" class="hidden">
     <div class="log-box" onclick="event.stopPropagation()">
         <div class="log-hdr">
             <div>
@@ -937,7 +969,7 @@
 
 <!-- 벨 모달 -->
 <div id="bellModal" class="hidden">
-    <div class="bell-backdrop" onclick="closeBellModal()"></div>
+    <div class="bell-backdrop"></div>
     <div class="bell-box">
         <div class="bell-title" id="bellModalTitle">🔔 주요 공지</div>
         <div class="bell-list" id="bellModalList"></div>
@@ -1140,6 +1172,9 @@
             </div>
             <button id="tickerToggleBtn" onclick="toggleTicker()" title="공지바 접기/펼치기" style="flex-shrink:0;font-size:12px;padding:1px 7px;border-radius:6px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;color:var(--text-main);margin-left:4px;line-height:1.6;transition:0.15s;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">▲</button>
         </div>
+        <!-- 비거래 감지 배너 (urgentTicker 아래) -->
+        <div id="watchBanner" style="display:none;background:#0a1f10;border-bottom:2px solid #22c55e;padding:5px 12px;font-size:11px;font-weight:800;color:#f0fdf4;"></div>
+
         <!-- 채팅방 1: 매뉴얼 채팅 -->
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
             <div id="chatBox"></div>
@@ -3753,11 +3788,28 @@
             if(dot) dot.style.transform=on?'translateX(20px)':'translateX(0px)';
         });
     }
+    var _globalTodayOnly = false;
+    function _applyGlobalTodayOnlyUI(val) {
+        _globalTodayOnly = !!val;
+        var btn = document.getElementById('tog-global-today'); if (!btn) return;
+        btn.style.background = _globalTodayOnly ? '#f59e0b' : '#475569';
+        var dot = btn.querySelector('.sw-dot');
+        if (dot) dot.style.transform = _globalTodayOnly ? 'translateX(20px)' : 'translateX(0px)';
+    }
+    function _loadGlobalTodayOnly() {
+        db.ref('/global_today_only').once('value', function(snap) { _applyGlobalTodayOnlyUI(!!snap.val()); });
+    }
+    function toggleGlobalTodayOnly() {
+        _globalTodayOnly = !_globalTodayOnly;
+        db.ref('/global_today_only').set(_globalTodayOnly);
+        _applyGlobalTodayOnlyUI(_globalTodayOnly);
+    }
     function switchMonTab(n){
-        [1,2,3,4].forEach(function(i){
+        [1,2,3,4,5].forEach(function(i){
             document.getElementById('monTab'+i).classList.toggle('mon-tab-active',i===n);
             document.getElementById('monTabContent'+i).style.display=i===n?'flex':'none';
         });
+        if(n===1) _loadGlobalTodayOnly();
         if(n===3) _applyNotifPrefs();
         if(n===2) {
             _renderBotRuleList();
@@ -3765,6 +3817,11 @@
             if(fw) fw.style.display = _isBotPrivileged() ? '' : 'none';
         }
         if(n===4) { _renderWatchedTids(); _loadWatchInterval(); }
+        if(n===5) {
+            _renderWatchScanRules();
+            var wsrFW = document.getElementById('wsrFormWrap');
+            if(wsrFW) wsrFW.style.display = _isBotPrivileged() ? '' : 'none';
+        }
     }
     function toggleNotif(key){
         _notifPrefs[key]=!_notifPrefs[key];
@@ -5067,7 +5124,8 @@
             var _catLabel = kw==='충전'?'충전':kw==='결제'?'결제':kw;
             var _catList=titles.filter(function(t){
                 var pr=MANUAL_RANGES[normalizeKey(t)];
-                var cat=pr&&pr.category?pr.category:'일반';
+                if(!pr) return false;
+                var cat=pr.category?pr.category:'일반';
                 return cat===kw;
             });
             if(_catList.length){
@@ -5324,6 +5382,14 @@
         var dbPath = currentMode==='bay' ? 'manual_page_ranges/bay/'+key : 'manual_page_ranges/mania/'+key;
         db.ref(dbPath).once('value',function(snap){
             var range=snap.val();
+            // \uD0A4 \uBD88\uC77C\uCE58 \uD3F4\uBC31: title \uD544\uB4DC\uBA85\uC774 \uB2E4\uB97C \uB54C MANUAL_RANGES\uC5D0\uC11C title \uD544\uB4DC\uB85C \uC7AC\uD0D0\uC0C9
+            if(!range){
+                var mr = currentMode==='bay' ? BAY_MANUAL_RANGES : MANUAL_RANGES;
+                var found = Object.entries(mr).find(function(e){
+                    return e[1] && (e[1].title===title || normalizeKey(e[1].title||'')===key);
+                });
+                if(found){ range=found[1]; dbPath=(currentMode==='bay'?'manual_page_ranges/bay/':'manual_page_ranges/mania/')+found[0]; }
+            }
             if(!range){
                 var content=manualIdx[title];
                 if(content && typeof content==='object') content=content.text||content.content||'';
@@ -6266,7 +6332,8 @@
             var _titles2=Object.keys(MANUAL_INDEX);
             var _catList2=_titles2.filter(function(t){
                 var pr=MANUAL_RANGES[normalizeKey(t)];
-                var cat=pr&&pr.category?pr.category:'일반';
+                if(!pr) return false;
+                var cat=pr.category?pr.category:'일반';
                 return cat===q;
             });
             if(_catList2.length){
@@ -7760,6 +7827,7 @@
     window.onload = function(){
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
+        _loadGlobalTodayOnly();
         _authInit();
         updateClock(); setInterval(updateClock,1000);
         seedKeywords();
@@ -7860,6 +7928,8 @@
                 if(!document.getElementById('urgentDetailModal').classList.contains('hidden'))closeUrgentDetail();
                 else if(!document.getElementById('urgentHistoryModal').classList.contains('hidden'))closeUrgentHistory();
                 else if(!document.getElementById('urgentCreateModal').classList.contains('hidden'))closeUrgentCreateModal();
+                else if(!document.getElementById('allMemosModal').classList.contains('hidden'))closeAllMemosModal();
+                else if(document.getElementById('manualFilesModal').style.display==='flex')closeManualFilesModal();
                 else if(!document.getElementById('bellModal').classList.contains('hidden'))closeBellModal();
                 else if(!document.getElementById('logPanel').classList.contains('hidden'))closeLogPanel();
                 else if(!document.getElementById('monitorModal').classList.contains('hidden'))closeMonitorModal();
@@ -7906,7 +7976,92 @@
                 }
             }
         });
+
+        // 비거래 감지 인페이지 알림 — Firebase imi_watch_alerts 리스너
+        (function(){
+            var _shownAlerts = {};
+            var _startAt = Date.now();
+            db.ref('imi_watch_alerts').on('child_added', function(snap){
+                var d = snap.val();
+                if(!d || _shownAlerts[snap.key]) return;
+                if(d.seen) return; // 이미 확인한 알림 스킵 (새로고침 시 재표시 방지)
+                if((d.at||0) < _startAt - 300000) return; // 5분 이전 알림 무시
+                _shownAlerts[snap.key] = true;
+                db.ref('imi_watch_alerts/'+snap.key+'/seen').set(true);
+                _showWatchAlert(d);
+            });
+        })();
+
+        // 비거래 배너 — Firebase imi_watch_banner 리스너 (활성 항목이 있으면 배너 표시)
+        db.ref('imi_watch_banner').on('value', function(snap){
+            var data = snap.val() || {};
+            var active = Object.values(data).filter(function(v){ return v && v.active; });
+            var banner = document.getElementById('watchBanner');
+            if(!banner) return;
+            if(!active.length){ banner.style.display='none'; banner.innerHTML=''; return; }
+            banner.style.display = '';
+            var html = '📦 비거래 노출 감지 — ';
+            html += active.map(function(v){
+                var label = escHtml(v.label || '');
+                var tid = escHtml(v.tid || '');
+                var link = v.url
+                    ? '<a href="'+escHtml(v.url)+'" target="_blank" style="color:#4ade80;text-decoration:underline;font-weight:900;">'+(label||'#'+tid)+'</a>'
+                    : '<strong>'+(label||'#'+tid)+'</strong>';
+                return link + (tid&&label?' (#'+tid+')':'');
+            }).join(' &nbsp;|&nbsp; ');
+            banner.innerHTML = html;
+        });
     };
+
+    function _showWatchAlert(data){
+        // 기존 알림 제거 후 새 알림 표시 (스택 쌓지 않음)
+        var existing = document.getElementById('_imiWatchAlert');
+        if(existing) existing.remove();
+
+        var el = document.createElement('div');
+        el.id = '_imiWatchAlert';
+        el.style.cssText = [
+            'position:fixed','bottom:20px','left:20px','z-index:99999',
+            'background:#0a1f10','border:2px solid #22c55e','border-radius:14px',
+            'padding:14px 16px','width:300px','max-width:calc(100vw - 40px)',
+            'font-family:Segoe UI,sans-serif',
+            'box-shadow:0 4px 28px rgba(34,197,94,0.3)',
+            'animation:_watchSlideIn 0.3s ease'
+        ].join(';');
+        document.body.appendChild(el);
+
+        // 슬라이드인 애니메이션 (최초 1회만 주입)
+        if(!document.getElementById('_watchAlertStyle')){
+            var sty = document.createElement('style');
+            sty.id = '_watchAlertStyle';
+            sty.textContent = '@keyframes _watchSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
+            document.head.appendChild(sty);
+        }
+
+        var tid     = data.tid     || '';
+        var label   = data.label   || data.keyword || '감시 항목';
+        var keyword = data.keyword || '';
+        var count   = data.count   || '';
+        var tidLink = tid
+            ? '<a href="https://www.itemmania.com/sell/application.html?id='+tid
+              +'" target="_blank" style="color:#4ade80;text-decoration:none;font-weight:900;">거래 #'+tid+'</a>'
+            : '';
+
+        el.innerHTML =
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+            +'<span style="background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;">🔔 비거래 감지</span>'
+            +'<span onclick="document.getElementById(\'_imiWatchAlert\').remove()" style="margin-left:auto;cursor:pointer;opacity:0.4;font-size:18px;line-height:1;">✕</span>'
+            +'</div>'
+            +'<div style="font-size:13px;font-weight:800;color:#f0fdf4;margin-bottom:4px;">'+escHtml(label)+'</div>'
+            +(keyword&&keyword!==label?'<div style="font-size:11px;color:#86efac;margin-bottom:3px;">키워드: '+escHtml(keyword)+'</div>':'')
+            +(count?'<div style="font-size:11px;color:#86efac;margin-bottom:4px;">감지: <strong>'+count+'</strong>건</div>':'')
+            +(tidLink?'<div style="font-size:11px;margin-bottom:10px;">'+tidLink+'</div>':'<div style="margin-bottom:10px;"></div>')
+            +'<button onclick="document.getElementById(\'_imiWatchAlert\').remove()" '
+            +'style="width:100%;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;">확인</button>';
+
+        clearTimeout(el._t);
+        el._t = setTimeout(function(){ if(el.parentNode) el.remove(); }, 30000);
+    }
 
     db.ref('notices_mania').on('value',function(s){
         allNotices.mania=s.val()||{};

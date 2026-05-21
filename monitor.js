@@ -117,7 +117,10 @@ function _renderBotStatus() {
         dot.classList.remove('active');
         if (text) text.textContent = 'IMI BOT 미연결 — 확장프로그램을 실행하세요';
         if (badge) { badge.textContent = '오프라인'; badge.style.background = '#374151'; badge.style.color = '#6b7280'; }
-        if (ruleList) ruleList.innerHTML = '<div style="text-align:center;padding:18px 0;opacity:0.35;font-size:12px;">봇 연결 없음</div>';
+        if (ruleList) {
+            ruleList.innerHTML = '<div style="text-align:center;padding:18px 0;opacity:0.35;font-size:12px;">봇 연결 없음</div>';
+            _appendWsrToStatus(ruleList);
+        }
         return;
     }
 
@@ -180,12 +183,41 @@ function _renderBotStatus() {
             + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
-            + (r.keyword      ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
-            + (r.minPrice     ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + (r.minPrice       ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
+            + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + '</div>'
             + '</div>';
     }).join('');
+    _appendWsrToStatus(ruleList);
+}
+
+function _appendWsrToStatus(ruleList) {
+    var wsrKeys = Object.keys(_wsrRules || {});
+    if (!wsrKeys.length) return;
+    var header = '<div style="font-size:11px;font-weight:900;opacity:0.5;margin:10px 0 8px;text-transform:uppercase;letter-spacing:0.1em;">📦 비거래 감시 규칙</div>';
+    var cards = wsrKeys.map(function(key) {
+        var r = _wsrRules[key];
+        var runColor = r.enabled !== false ? '#22c55e' : '#94a3b8';
+        var runLabel = r.enabled !== false ? '● 활성' : '■ 비활성';
+        return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid #22c55e;border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
+            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+            + '<span style="flex:1;font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name || key) + '</span>'
+            + '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
+            + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
+            + '</div>'
+            + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+            + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + '<span class="mon-tag">⏱ ' + (r.scanInterval || 300) + '초</span>'
+            + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + (r.lastError      ? '<span class="mon-tag" style="color:#f87171;">❌ ' + _esc(r.lastError.substring(0,30)) + '</span>' : '')
+            + '</div>'
+            + '</div>';
+    }).join('');
+    ruleList.innerHTML += header + cards;
 }
 
 
@@ -977,20 +1009,22 @@ function loadBlockedItems() {
             return;
         }
         empty.style.display = 'none';
-        container.innerHTML = list.map(function(item, i) {
+        var reversed = list.slice().reverse();
+        container.innerHTML = reversed.map(function(item, displayIdx) {
+            var originalIdx = list.length - 1 - displayIdx; // 해제 시 원본 인덱스 사용
             var key     = typeof item === 'object' ? (item.key   || '') : item;
             var title   = typeof item === 'object' ? (item.title || '') : '';
             var tid     = typeof item === 'object' ? (item.tid   || '') : '';
             var addedBy = typeof item === 'object' ? (item.addedBy || '') : '';
             var addedAt = typeof item === 'object' && item.addedAt ? new Date(item.addedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-            var subText = tid ? ('#' + tid) : key; // 거래번호 있으면 우선 표시
+            var subText = tid ? ('#' + tid) : key;
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
                 + '<div style="flex:1;min-width:0;">'
                 + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>' : '')
                 + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(subText) + '</div>'
                 + (addedBy ? '<div style="font-size:10px;opacity:0.45;margin-top:2px;">✍️ ' + _esc(addedBy) + (addedAt ? ' · ' + addedAt : '') + '</div>' : '')
                 + '</div>'
-                + '<button onclick="unblockItem(' + i + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
+                + '<button onclick="unblockItem(' + originalIdx + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
                 + '</div>';
         }).join('');
     });
@@ -1063,6 +1097,7 @@ function _renderBotRuleList() {
             + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + '</div>'
             + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
             + '</div>';
@@ -1098,6 +1133,7 @@ function startEditBotRule(id) {
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
     document.getElementById('brExclude').value  = r.excludeKeyword || '';
+    document.getElementById('brPhotoOnly').checked = !!r.photoOnly;
     var brTypeEl = document.querySelector('input[name="brType"][value="'+(r.type||'fraud')+'"]');
     if (brTypeEl) brTypeEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✏️ 수정 완료';
@@ -1113,6 +1149,7 @@ function _cancelBotRuleEdit() {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
+    document.getElementById('brPhotoOnly').checked = false;
     var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✅ 규칙 등록';
     document.getElementById('brAddBtn').style.background = '';
@@ -1129,6 +1166,7 @@ function addBotRule() {
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
     var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
+    var photoOnly      = document.getElementById('brPhotoOnly').checked;
     var typeEl         = document.querySelector('input[name="brType"]:checked');
     var ruleType       = typeEl ? typeEl.value : 'fraud';
 
@@ -1139,7 +1177,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1150,13 +1188,14 @@ function addBotRule() {
             name: name, url: url, keyword: keyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
-            type: ruleType, enabled: true, createdAt: Date.now()
+            photoOnly: photoOnly, type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
         ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
             document.getElementById(id).value = '';
         });
         document.getElementById('brInterval').value = '300';
+        document.getElementById('brPhotoOnly').checked = false;
         var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
         alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
     }
@@ -1237,19 +1276,22 @@ function _loadWatchInterval() {
     db.ref('/tid_watch_interval').once('value', function(snap) {
         var v = snap.val();
         var el = document.getElementById('wtInterval');
-        if (el && v) el.value = v;
+        // 구형 데이터(분)를 초로 자동 변환: 값이 120 이하면 분 단위 레거시
+        if (el && v) el.value = (v <= 120 ? v * 60 : v);
     });
 }
 
 function saveWatchInterval() {
     var el = document.getElementById('wtInterval');
-    var v = parseInt(el ? el.value : '') || 20;
-    if (v < 5) v = 5;
-    if (v > 120) v = 120;
+    var v = parseInt(el ? el.value : '') || 1200;
+    if (v < 60) v = 60;
+    if (v > 3600) v = 3600;
     el.value = v;
     db.ref('/tid_watch_interval').set(v, function(err) {
         if (err) { alert('저장 실패: ' + err.message); return; }
-        alert('✅ 체크 간격이 ' + v + '분으로 저장됐습니다.\n다음 체크 주기부터 적용됩니다.');
+        var min = Math.floor(v/60), sec = v%60;
+        var label = min > 0 ? min + '분' + (sec > 0 ? ' ' + sec + '초' : '') : sec + '초';
+        alert('✅ 체크 간격이 ' + label + '으로 저장됐습니다.\n다음 체크 주기부터 적용됩니다.');
     });
 }
 
@@ -1283,4 +1325,155 @@ function _renderWatchedTids() {
             + (addedAt ? '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;">' + (v.addedBy ? v.addedBy + ' · ' : '') + addedAt + '</div>' : '')
             + '</div>';
     }).join('');
+}
+
+// ===== 비거래 스캔 규칙 (watch_scan_rules) =====
+var _wsrRules = {};
+var _wsrEditingKey = null;
+
+db.ref('/watch_scan_rules').on('value', function(snap) {
+    _wsrRules = snap.val() || {};
+    _renderWatchScanRules();
+    _renderBotStatus();
+});
+
+function _renderWatchScanRules() {
+    var list = document.getElementById('watchScanRuleList');
+    if (!list) return;
+    var entries = Object.entries(_wsrRules || {});
+    if (!entries.length) {
+        list.innerHTML = '<div style="text-align:center;padding:20px 0;opacity:0.35;font-size:12px;">등록된 비거래 규칙이 없습니다</div>';
+        return;
+    }
+    var canEdit = _isBotPrivileged();
+    entries.sort(function(a,b){ return (b[1].createdAt||0)-(a[1].createdAt||0); });
+    list.innerHTML = entries.map(function(e) {
+        var k = e[0]; var v = e[1];
+        var enabled = v.enabled !== false;
+        var lastCheckStr = v.lastCheck ? new Date(v.lastCheck).toLocaleTimeString('ko-KR') : '';
+        var lastCountStr = v.lastCount === -1 ? '❌ 오류' + (v.lastError ? ': ' + v.lastError : '') : (v.lastCount > 0 ? '⚠️ '+v.lastCount+'개 감지' : (v.lastCount === 0 ? '✅ 이상없음' : ''));
+        return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid #22c55e;border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
+            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+            + '<div style="flex:1;min-width:0;">'
+            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">'+_esc(v.name||'(이름없음)')+'</span>'
+            + '</div>'
+            + '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
+            + '<span style="font-size:10px;font-weight:900;color:'+(enabled?'#22c55e':'#94a3b8')+';flex-shrink:0;">'+(enabled?'● 감시중':'■ 정지')+'</span>'
+            + (canEdit?'<button id="wsrtest_'+_esc(k)+'" onclick="_testWsrRule(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;flex-shrink:0;">🔍 테스트</button>':'')
+            + (canEdit?'<button onclick="_editWsr(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>':'')
+            + (canEdit?'<button onclick="_deleteWsr(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>':'')
+            + '</div>'
+            + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+            + (v.keyword?'<span class="mon-tag">🔑 '+_esc(v.keyword)+'</span>':'')
+            + (v.excludeKeyword?'<span class="mon-tag" style="color:#f87171;">🚫 '+_esc(v.excludeKeyword)+'</span>':'')
+            + '<span class="mon-tag">⏱ '+(v.scanInterval||300)+'초</span>'
+            + (enabled?'<button onclick="_toggleWsr(\''+_esc(k)+'\')" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #94a3b8;color:#94a3b8;background:none;cursor:pointer;">정지</button>':'<button onclick="_toggleWsr(\''+_esc(k)+'\')" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;">시작</button>')
+            + '</div>'
+            + (lastCheckStr?'<div style="font-size:9px;opacity:0.4;margin-top:4px;">🕐 마지막 체크: '+lastCheckStr+(lastCountStr?' · '+lastCountStr:'')+'</div>':'')
+            + '<div style="font-size:9.5px;opacity:0.25;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(v.url||'')+'</div>'
+            + '</div>';
+    }).join('');
+}
+
+async function _testWsrRule(key) {
+    var v = _wsrRules[key]; if (!v) return;
+    var btn = document.getElementById('wsrtest_' + key);
+    if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+    try {
+        var html = await _fetchViaProxy(v.url);
+        var allItems = _parseItemmaniaHtml(html, '', 0, v.url);
+        var matchItems = _parseItemmaniaHtml(html, v.keyword || '', 0, v.url);
+        var exKws = (v.excludeKeyword || '').split(',').map(function(k){ return k.trim().toLowerCase(); }).filter(Boolean);
+        if (exKws.length) {
+            matchItems = matchItems.filter(function(it) {
+                var tl = (it.title || '').toLowerCase();
+                return !exKws.some(function(k){ return tl.includes(k); });
+            });
+        }
+        var msg = '🔍 비거래 스캔 테스트 — ' + v.name + '\n─────────────────────\n';
+        msg += '📄 파싱된 물품: ' + allItems.length + '개\n';
+        msg += '✅ 키워드 일치: ' + matchItems.length + '개\n\n';
+        if (allItems.length === 0) {
+            msg += '⚠️ 물품을 하나도 파싱하지 못했습니다.\n→ URL이 목록 페이지인지, CORS 확장이 켜져 있는지 확인하세요.';
+        } else if (matchItems.length === 0) {
+            msg += '⚠️ 키워드 "' + (v.keyword || '') + '"에 맞는 물품 없음\n\n';
+            msg += '[ 파싱된 물품 예시 ]\n';
+            allItems.slice(0, 3).forEach(function(it, i) { msg += (i + 1) + '. ' + it.title + '\n'; });
+        } else {
+            msg += '[ 감지된 물품 ]\n';
+            matchItems.slice(0, 5).forEach(function(it, i) { msg += (i + 1) + '. ' + it.title + '\n'; });
+        }
+        alert(msg);
+    } catch(e) {
+        alert('❌ ' + e.message);
+    } finally {
+        if (btn) { btn.textContent = '🔍 테스트'; btn.disabled = false; }
+    }
+}
+
+function addWatchScanRule() {
+    if (!_isBotPrivileged()) { alert('관리자 또는 부관리자만 관리할 수 있습니다.'); return; }
+    var name           = (document.getElementById('wsrName').value||'').trim();
+    var url            = (document.getElementById('wsrUrl').value||'').trim();
+    var keyword        = (document.getElementById('wsrKw').value||'').trim();
+    var excludeKeyword = (document.getElementById('wsrExclude').value||'').trim();
+    var interval       = parseInt(document.getElementById('wsrInterval').value)||300;
+    if (!name) { alert('규칙 이름을 입력하세요.'); return; }
+    if (!url || !/^https?:\/\//.test(url)) { alert('올바른 URL을 입력하세요.'); return; }
+    if (!keyword) { alert('감지 키워드를 입력하세요.'); return; }
+    if (interval < 10) interval = 10; // Chrome 알람 최솟값이 1분이므로 실제 최소 주기는 60초
+
+    if (_wsrEditingKey) {
+        db.ref('/watch_scan_rules/'+_wsrEditingKey).update({ name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword, scanInterval:interval }, function(err) {
+            if (err) { alert('수정 실패: '+err.message); return; }
+            _cancelWsrEdit();
+            alert('✅ 수정됐습니다.');
+        });
+        return;
+    }
+    var key = 'wsr_'+Date.now();
+    var addedBy = (typeof _currentUser !== 'undefined' && _currentUser) ? (_currentUser.name||'') : '';
+    db.ref('/watch_scan_rules/'+key).set({ name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword, scanInterval:interval, enabled:true, addedBy:addedBy, createdAt:Date.now() }, function(err) {
+        if (err) { alert('등록 실패: '+err.message); return; }
+        ['wsrName','wsrUrl','wsrKw','wsrExclude'].forEach(function(id){ document.getElementById(id).value=''; });
+        document.getElementById('wsrInterval').value='300';
+        alert('✅ 비거래 감지 규칙 등록됐습니다: '+name);
+    });
+}
+
+function _cancelWsrEdit() {
+    _wsrEditingKey = null;
+    ['wsrName','wsrUrl','wsrKw','wsrExclude'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('wsrInterval').value='300';
+    document.getElementById('wsrAddBtn').textContent='✅ 규칙 등록';
+    document.getElementById('wsrAddBtn').style.background='#22c55e';
+    document.getElementById('wsrFormTitle').textContent='➕ 감지 규칙 추가';
+    document.getElementById('wsrCancelBtn').style.display='none';
+}
+
+function _editWsr(key) {
+    var v = _wsrRules[key]; if (!v) return;
+    _wsrEditingKey = key;
+    document.getElementById('wsrName').value     = v.name            || '';
+    document.getElementById('wsrUrl').value      = v.url             || '';
+    document.getElementById('wsrKw').value       = v.keyword         || '';
+    document.getElementById('wsrExclude').value  = v.excludeKeyword  || '';
+    document.getElementById('wsrInterval').value = v.scanInterval    || 300;
+    document.getElementById('wsrAddBtn').textContent = '✏️ 수정 완료';
+    document.getElementById('wsrAddBtn').style.background = '#f59e0b';
+    document.getElementById('wsrFormTitle').textContent = '✏️ 수정 중';
+    document.getElementById('wsrCancelBtn').style.display = '';
+    document.getElementById('wsrName').focus();
+}
+
+function _toggleWsr(key) {
+    var v = _wsrRules[key]; if (!v) return;
+    db.ref('/watch_scan_rules/'+key+'/enabled').set(v.enabled === false ? true : false);
+}
+
+function _deleteWsr(key) {
+    var v = _wsrRules[key]; if (!v) return;
+    if (!confirm('"'+(v.name||key)+'" 규칙을 삭제하시겠습니까?')) return;
+    db.ref('/watch_scan_rules/'+key).set(null);
+    db.ref('/imi_watch_banner/wsr_'+key).set(null);
 }
