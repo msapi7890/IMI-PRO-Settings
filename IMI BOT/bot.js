@@ -312,6 +312,7 @@
                 ruleId: rule.id,
                 ruleName: rule.name,
                 ruleKeyword: rule.keyword || '',
+                ruleType: rule.type || 'fraud',
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,

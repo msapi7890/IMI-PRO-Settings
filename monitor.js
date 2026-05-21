@@ -1037,12 +1037,16 @@ function _renderBotRuleList() {
         var isRunning = !!(runStatus && runStatus.tabOpen);
         var runColor  = isRunning ? '#22c55e' : '#94a3b8';
         var runLabel  = isRunning ? '● 감시중' : '■ 대기';
+        var typeTag = r.type === 'watch'
+            ? '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
+            : '<span style="font-size:9px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:4px;padding:1px 5px;flex-shrink:0;">🚨 사기글</span>';
         return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canEdit?'pointer':'default')+';flex:1;min-width:0;">'
             + '<input type="checkbox" onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" '+(r.enabled?'checked':'')+' '+(canEdit?'':'disabled')+' style="width:15px;height:15px;accent-color:var(--active-focus-color);cursor:'+(canEdit?'pointer':'default')+';">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
+            + typeTag
             + '<span style="font-size:10px;font-weight:900;color:'+runColor+';flex-shrink:0;">'+runLabel+'</span>'
             + (canEdit ? '<button onclick="startEditBotRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>' : '')
             + (canEdit ? '<button onclick="deleteBotRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>' : '')
@@ -1088,6 +1092,8 @@ function startEditBotRule(id) {
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
     document.getElementById('brExclude').value  = r.excludeKeyword || '';
+    var brTypeEl = document.querySelector('input[name="brType"][value="'+(r.type||'fraud')+'"]');
+    if (brTypeEl) brTypeEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✏️ 수정 완료';
     document.getElementById('brAddBtn').style.background = '#f59e0b';
     document.getElementById('brFormTitle').textContent  = '✏️ 규칙 수정 중';
@@ -1101,6 +1107,7 @@ function _cancelBotRuleEdit() {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
+    var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✅ 규칙 등록';
     document.getElementById('brAddBtn').style.background = '';
     document.getElementById('brFormTitle').textContent  = '➕ 새 규칙 추가';
@@ -1116,6 +1123,8 @@ function addBotRule() {
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
     var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
+    var typeEl         = document.querySelector('input[name="brType"]:checked');
+    var ruleType       = typeEl ? typeEl.value : 'fraud';
 
     if (!name) { alert('규칙 이름을 입력하세요.'); return; }
     if (!url || !/^https?:\/\//.test(url)) { alert('올바른 URL을 입력하세요. (https://...)'); return; }
@@ -1124,7 +1133,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1135,13 +1144,14 @@ function addBotRule() {
             name: name, url: url, keyword: keyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
-            enabled: true, createdAt: Date.now()
+            type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
         ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
             document.getElementById(id).value = '';
         });
         document.getElementById('brInterval').value = '300';
+        var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
         alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
     }
 }

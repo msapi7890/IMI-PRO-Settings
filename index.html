@@ -807,6 +807,10 @@
             <div id="botRuleList"></div>
             <div id="botRuleFormWrap" style="display:none;background:var(--bg-body);border:2px dashed var(--border-ui);border-radius:10px;padding:12px;">
                 <div id="brFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:9px;">➕ 새 규칙 추가</div>
+                <div style="display:flex;gap:16px;margin-bottom:8px;padding:7px 10px;background:var(--bg-main);border-radius:7px;border:1.5px solid var(--border-ui);">
+                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;color:#ef4444;"><input type="radio" name="brType" id="brTypeFraud" value="fraud" checked style="accent-color:#ef4444;"> 🚨 사기글 감지</label>
+                    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;color:#22c55e;"><input type="radio" name="brType" id="brTypeWatch" value="watch" style="accent-color:#22c55e;"> 📦 비거래 감지</label>
+                </div>
                 <input id="brName" placeholder="규칙 이름 (예: 린클 내용 감시)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
                 <input id="brUrl"  placeholder="아이템매니아 카테고리 URL (https://...)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
                 <input id="brKw"   placeholder="키워드 (쉼표로 여러개 가능)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">

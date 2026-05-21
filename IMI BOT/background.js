@@ -269,7 +269,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         fireSet(msg.path, msg.data).then(async () => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
-                showAlertPopup(msg.data);
+                if (msg.data.ruleType === 'watch') {
+                    showWatchPopup(msg.data);
+                } else {
+                    showAlertPopup(msg.data);
+                }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
                 const logRows = msg.data.logItemRows;
                 if (Array.isArray(logRows) && logRows.length > 0) {
@@ -538,5 +542,51 @@ async function showAlertPopup(data) {
     // 창 닫히면 ID 초기화
     chrome.windows.onRemoved.addListener(function onClose(wid) {
         if (wid === _alertWinId) { _alertWinId = null; chrome.windows.onRemoved.removeListener(onClose); }
+    });
+}
+
+// 비거래 감지 팝업 (좌측 하단, 초록 테마)
+let _watchWinId = null;
+let _lastWatchAt = 0;
+
+async function showWatchPopup(data) {
+    const popupOn = await store.get('imi_notif_popup');
+    if (popupOn === false) return;
+
+    const now = Date.now();
+    if (now - _lastWatchAt < 5000) return;
+    _lastWatchAt = now;
+
+    await store.set('imi_watch_popup_data', data);
+
+    if (_watchWinId) {
+        try { await chrome.windows.remove(_watchWinId); } catch(e) {}
+        _watchWinId = null;
+    }
+
+    const popupW = 420, popupH = 360;
+    let left = 10, top = 600;
+    try {
+        const displays = await new Promise(r => chrome.system.display.getInfo({}, r));
+        const primary = displays.find(d => d.isPrimary) || displays[0];
+        if (primary) {
+            left = primary.workArea.left + 10;
+            top  = primary.workArea.top + primary.workArea.height - popupH - 50;
+        }
+    } catch(e) {}
+
+    const win = await chrome.windows.create({
+        url: chrome.runtime.getURL('watch_popup.html'),
+        type: 'popup',
+        width: popupW,
+        height: popupH,
+        left: left,
+        top: Math.max(0, top),
+        focused: true
+    });
+    _watchWinId = win.id;
+
+    chrome.windows.onRemoved.addListener(function onClose(wid) {
+        if (wid === _watchWinId) { _watchWinId = null; chrome.windows.onRemoved.removeListener(onClose); }
     });
 }
