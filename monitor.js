@@ -1158,6 +1158,7 @@ function addBotRule() {
 
 // ===== 거래번호 감시 (watched_tids) =====
 var _watchedTids = {};
+var _watchEditingKey = null;
 
 db.ref('/watched_tids').on('value', function(snap) {
     _watchedTids = snap.val() || {};
@@ -1168,6 +1169,16 @@ function addWatchedTid() {
     var tid   = (document.getElementById('wtTid').value   || '').trim().replace(/\s/g, '');
     var label = (document.getElementById('wtLabel').value || '').trim();
     if (!tid || !/^\d+$/.test(tid)) { alert('거래번호는 숫자만 입력하세요.'); return; }
+
+    if (_watchEditingKey) {
+        db.ref('/watched_tids/' + _watchEditingKey).update({ tid: tid, label: label, alertSent: false }, function(err) {
+            if (err) { alert('수정 실패: ' + err.message); return; }
+            _cancelWatchEdit();
+            alert('✅ 수정됐습니다.');
+        });
+        return;
+    }
+
     if (_watchedTids) {
         var exists = Object.values(_watchedTids).some(function(v){ return v && String(v.tid) === tid; });
         if (exists) { alert('이미 등록된 거래번호입니다.'); return; }
@@ -1181,7 +1192,38 @@ function addWatchedTid() {
         if (err) { alert('등록 실패: ' + err.message); return; }
         document.getElementById('wtTid').value   = '';
         document.getElementById('wtLabel').value = '';
-        alert('✅ 거래번호 ' + tid + ' 감시 등록됐습니다.\n5분마다 자동 체크합니다.');
+        alert('✅ 거래번호 ' + tid + ' 감시 등록됐습니다.');
+    });
+}
+
+function startEditWatchedTid(key) {
+    var v = _watchedTids[key];
+    if (!v) return;
+    _watchEditingKey = key;
+    document.getElementById('wtTid').value   = v.tid   || '';
+    document.getElementById('wtLabel').value = v.label || '';
+    document.getElementById('wtAddBtn').textContent    = '✏️ 수정 완료';
+    document.getElementById('wtAddBtn').style.background = '#f59e0b';
+    document.getElementById('wtFormTitle').textContent = '✏️ 수정 중';
+    document.getElementById('wtCancelBtn').style.display = '';
+    document.getElementById('wtTid').focus();
+}
+
+function _cancelWatchEdit() {
+    _watchEditingKey = null;
+    document.getElementById('wtTid').value   = '';
+    document.getElementById('wtLabel').value = '';
+    document.getElementById('wtAddBtn').textContent    = '🔍 감시 등록';
+    document.getElementById('wtAddBtn').style.background = '#22c55e';
+    document.getElementById('wtFormTitle').textContent = '➕ 감시 등록';
+    document.getElementById('wtCancelBtn').style.display = 'none';
+}
+
+function deleteWatchedTid(key, tid) {
+    if (!confirm('"' + tid + '" 감시를 삭제하시겠습니까?')) return;
+    db.ref('/watched_tids/' + key).set(null, function(err) {
+        if (err) { alert('삭제 실패: ' + err.message); }
+        if (_watchEditingKey === key) _cancelWatchEdit();
     });
 }
 
@@ -1229,6 +1271,8 @@ function _renderWatchedTids() {
             + '<span style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#' + tidFmt + '</span>'
             + '</div>'
             + '<span style="font-size:10px;font-weight:900;color:' + statusColor + ';flex-shrink:0;">' + statusText + '</span>'
+            + '<button onclick="startEditWatchedTid(\'' + _esc(k) + '\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>'
+            + '<button onclick="deleteWatchedTid(\'' + _esc(k) + '\',\'' + tid + '\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>'
             + '</div>'
             + (addedAt ? '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;">' + (v.addedBy ? v.addedBy + ' · ' : '') + addedAt + '</div>' : '')
             + '</div>';

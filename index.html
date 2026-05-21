@@ -868,10 +868,13 @@
         <div id="monTabContent4" class="mon-body" style="display:none;">
             <div style="font-size:10px;font-weight:900;opacity:0.4;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">거래번호 감시 — 숨김→노출 자동 감지</div>
             <div style="background:var(--bg-body);border:2px dashed var(--border-ui);border-radius:10px;padding:12px;margin-bottom:10px;">
-                <div style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:8px;">➕ 감시 등록</div>
+                <div id="wtFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:8px;">➕ 감시 등록</div>
                 <input id="wtTid" placeholder="거래번호 (예: 2026051508739444)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
                 <input id="wtLabel" placeholder="메모 (선택, 예: 린클 거래건)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:8px;">
-                <button onclick="addWatchedTid()" style="width:100%;padding:8px;border-radius:7px;background:#22c55e;color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">🔍 감시 등록</button>
+                <div style="display:flex;gap:6px;">
+                    <button id="wtCancelBtn" onclick="_cancelWatchEdit()" style="display:none;flex:1;padding:8px;border-radius:7px;background:none;border:1.5px solid var(--border-ui);color:var(--text-main);font-size:12px;font-weight:900;cursor:pointer;">취소</button>
+                    <button id="wtAddBtn" onclick="addWatchedTid()" style="flex:1;padding:8px;border-radius:7px;background:#22c55e;color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">🔍 감시 등록</button>
+                </div>
             </div>
             <div style="background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
                 <span style="font-size:11px;font-weight:900;flex:1;">⏱ 체크 간격</span>
