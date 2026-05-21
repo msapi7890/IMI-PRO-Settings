@@ -165,12 +165,18 @@ function _renderBotStatus() {
         var runLabel = (r.enabled && r.tabOpen) ? '● 감시중' : (r.enabled ? '○ 대기' : '■ 비활성');
         var chkId = 'ruleChk_' + r.id;
         var chkDisabled = canCtrl ? '' : 'disabled';
-        return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
+        var isWatch = r.type === 'watch';
+        var borderColor = isWatch ? '#22c55e33' : '#ef444433';
+        var typeTag = isWatch
+            ? '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
+            : '<span style="font-size:9px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:4px;padding:1px 5px;flex-shrink:0;">🚨 사기글</span>';
+        return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid '+(isWatch?'#22c55e':'#ef4444')+';border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canCtrl?'pointer':'default')+';flex:1;min-width:0;">'
             + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' ' + chkDisabled + ' style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
+            + typeTag
             + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'

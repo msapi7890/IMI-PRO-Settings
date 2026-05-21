@@ -122,6 +122,7 @@ async function syncStatus() {
         keyword: r.keyword || '',
         minPrice: r.minPrice || 0,
         scanInterval: r.scanInterval || 5,
+        type: r.type || 'fraud',
         enabled: r.enabled,
         tabOpen: tabMap[r.id] !== undefined
     }));
