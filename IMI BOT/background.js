@@ -229,9 +229,10 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 
 // 알람: 탭 생존 확인(3분) + 차단목록 월간 정리(24시간)
 function ensureAlarms() {
-    chrome.alarms.get('imi_watchdog',  a => { if (!a) chrome.alarms.create('imi_watchdog',  { periodInMinutes: 3 }); });
-    chrome.alarms.get('imi_rule_sync', a => { if (!a) chrome.alarms.create('imi_rule_sync', { periodInMinutes: 1 }); });
-    chrome.alarms.get('imi_cleanup',   a => { if (!a) chrome.alarms.create('imi_cleanup',   { periodInMinutes: 60 * 24 }); });
+    chrome.alarms.get('imi_watchdog',   a => { if (!a) chrome.alarms.create('imi_watchdog',   { periodInMinutes: 3 }); });
+    chrome.alarms.get('imi_rule_sync',  a => { if (!a) chrome.alarms.create('imi_rule_sync',  { periodInMinutes: 1 }); });
+    chrome.alarms.get('imi_cleanup',    a => { if (!a) chrome.alarms.create('imi_cleanup',    { periodInMinutes: 60 * 24 }); });
+    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 5 }); });
 }
 chrome.runtime.onInstalled.addListener(ensureAlarms);
 chrome.runtime.onStartup.addListener(ensureAlarms);
@@ -251,6 +252,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         await syncStatus();
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
+    if (alarm.name === 'imi_tid_watch') await checkWatchedTids();
 });
 
 // 서비스워커 시작 시 밀린 명령 처리 + 현재 상태 즉시 Firebase 반영
@@ -589,4 +591,46 @@ async function showWatchPopup(data) {
     chrome.windows.onRemoved.addListener(function onClose(wid) {
         if (wid === _watchWinId) { _watchWinId = null; chrome.windows.onRemoved.removeListener(onClose); }
     });
+}
+
+// 거래번호 감시 — 5분마다 숨김→노출 전환 감지
+async function checkWatchedTids() {
+    const tids = await fireGet('/watched_tids');
+    if (!tids || typeof tids !== 'object') return;
+
+    for (const [key, item] of Object.entries(tids)) {
+        if (!item || item.alertSent) continue;
+
+        const tid = String(item.tid || '');
+        if (!tid) continue;
+
+        const url = 'https://www.itemmania.com/sell/application.html?id=' + tid;
+        try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 8000);
+            const resp = await fetch(url, { redirect: 'follow', signal: ctrl.signal });
+            clearTimeout(t);
+            const text = await resp.text();
+
+            // 로그인 페이지로 리다이렉트 됐거나 tid가 페이지에 없으면 아직 숨김
+            const stillHidden = !resp.url.includes('application.html') || !text.includes(tid);
+            if (stillHidden) continue;
+
+            // 노출 감지 — 물품명 추출 시도
+            const titleMatch = text.match(/<h2[^>]*class="[^"]*subject[^"]*"[^>]*>([^<]+)</) ||
+                               text.match(/<title[^>]*>([^<|]+)/);
+            const itemTitle = (titleMatch ? titleMatch[1].trim() : '') || item.label || ('거래번호 ' + tid);
+
+            await fireSet('/watched_tids/' + key + '/alertSent', true);
+            await fireSet('/watched_tids/' + key + '/detectedAt', Date.now());
+
+            showWatchPopup({
+                ruleName: item.label || tid,
+                ruleId: key,
+                ruleType: 'watch',
+                itemCount: 1,
+                itemRows: [{ t: itemTitle, tid: tid, u: url, p: '' }]
+            });
+        } catch(e) {}
+    }
 }

@@ -1155,3 +1155,62 @@ function addBotRule() {
         alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
     }
 }
+
+// ===== 거래번호 감시 (watched_tids) =====
+var _watchedTids = {};
+
+db.ref('/watched_tids').on('value', function(snap) {
+    _watchedTids = snap.val() || {};
+    _renderWatchedTids();
+});
+
+function addWatchedTid() {
+    var tid   = (document.getElementById('wtTid').value   || '').trim().replace(/\s/g, '');
+    var label = (document.getElementById('wtLabel').value || '').trim();
+    if (!tid || !/^\d+$/.test(tid)) { alert('거래번호는 숫자만 입력하세요.'); return; }
+    if (_watchedTids) {
+        var exists = Object.values(_watchedTids).some(function(v){ return v && String(v.tid) === tid; });
+        if (exists) { alert('이미 등록된 거래번호입니다.'); return; }
+    }
+    var key = 'wt_' + Date.now();
+    var addedBy = (typeof _currentUser !== 'undefined' && _currentUser) ? (_currentUser.name || '') : '';
+    db.ref('/watched_tids/' + key).set({
+        tid: tid, label: label, addedBy: addedBy,
+        addedAt: Date.now(), alertSent: false
+    }, function(err) {
+        if (err) { alert('등록 실패: ' + err.message); return; }
+        document.getElementById('wtTid').value   = '';
+        document.getElementById('wtLabel').value = '';
+        alert('✅ 거래번호 ' + tid + ' 감시 등록됐습니다.\n5분마다 자동 체크합니다.');
+    });
+}
+
+function _renderWatchedTids() {
+    var list = document.getElementById('watchedTidList');
+    if (!list) return;
+    var entries = Object.entries(_watchedTids || {});
+    if (!entries.length) {
+        list.innerHTML = '<div style="text-align:center;padding:16px 0;opacity:0.35;font-size:12px;">등록된 감시 거래번호가 없습니다</div>';
+        return;
+    }
+    entries.sort(function(a, b){ return (b[1].addedAt||0) - (a[1].addedAt||0); });
+    list.innerHTML = entries.map(function(e) {
+        var k = e[0]; var v = e[1];
+        var tid = _esc(String(v.tid || ''));
+        var label = v.label ? ('<span style="font-size:11px;font-weight:700;color:var(--text-main);">' + _esc(v.label) + '</span>') : '';
+        var tidFmt = tid.replace(/(.{4})(?=.)/g, '$1 ');
+        var statusColor = v.alertSent ? '#22c55e' : '#f59e0b';
+        var statusText  = v.alertSent ? '✅ 노출 감지됨' : '⏳ 감시중';
+        var addedAt = v.addedAt ? new Date(v.addedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+        return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
+            + '<div style="display:flex;align-items:center;gap:8px;">'
+            + '<div style="flex:1;min-width:0;">'
+            + (label ? label + '<br>' : '')
+            + '<span style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#' + tidFmt + '</span>'
+            + '</div>'
+            + '<span style="font-size:10px;font-weight:900;color:' + statusColor + ';flex-shrink:0;">' + statusText + '</span>'
+            + '</div>'
+            + (addedAt ? '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;">' + (v.addedBy ? v.addedBy + ' · ' : '') + addedAt + '</div>' : '')
+            + '</div>';
+    }).join('');
+}

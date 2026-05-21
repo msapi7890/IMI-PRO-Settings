@@ -778,6 +778,7 @@
             <button id="monTab1" class="mon-tab mon-tab-active" onclick="switchMonTab(1)">👁 현황</button>
             <button id="monTab2" class="mon-tab" onclick="switchMonTab(2)">📋 봇 규칙</button>
             <button id="monTab3" class="mon-tab" onclick="switchMonTab(3)">🔔 알림 설정</button>
+            <button id="monTab4" class="mon-tab" onclick="switchMonTab(4)">🔍 거래번호 감시</button>
         </div>
         <!-- 탭1: 현황 -->
         <div id="monTabContent1" class="mon-body">
@@ -862,6 +863,18 @@
                     <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
                 </button>
             </div>
+        </div>
+        <!-- 탭4: 거래번호 감시 -->
+        <div id="monTabContent4" class="mon-body" style="display:none;">
+            <div style="font-size:10px;font-weight:900;opacity:0.4;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">거래번호 감시 — 숨김→노출 자동 감지</div>
+            <div style="background:var(--bg-body);border:2px dashed var(--border-ui);border-radius:10px;padding:12px;margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:8px;">➕ 감시 등록</div>
+                <input id="wtTid" placeholder="거래번호 (예: 2026051508739444)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
+                <input id="wtLabel" placeholder="메모 (선택, 예: 린클 거래건)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:8px;">
+                <button onclick="addWatchedTid()" style="width:100%;padding:8px;border-radius:7px;background:#22c55e;color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">🔍 감시 등록</button>
+            </div>
+            <div id="watchedTidList"></div>
+            <div style="font-size:10px;opacity:0.4;text-align:center;padding:4px 0;">5분마다 자동 체크 · 노출 감지 시 초록 팝업 알림</div>
         </div>
     </div>
 </div>
@@ -3732,7 +3745,7 @@
         });
     }
     function switchMonTab(n){
-        [1,2,3].forEach(function(i){
+        [1,2,3,4].forEach(function(i){
             document.getElementById('monTab'+i).classList.toggle('mon-tab-active',i===n);
             document.getElementById('monTabContent'+i).style.display=i===n?'flex':'none';
         });
@@ -3742,6 +3755,7 @@
             var fw = document.getElementById('botRuleFormWrap');
             if(fw) fw.style.display = _isBotPrivileged() ? '' : 'none';
         }
+        if(n===4) _renderWatchedTids();
     }
     function toggleNotif(key){
         _notifPrefs[key]=!_notifPrefs[key];
