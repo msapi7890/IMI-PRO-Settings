@@ -825,15 +825,15 @@ function loadFullDayLog() {
 function loadRecentLog() {
     _logFullMode = false;
     var btn = document.getElementById('logFullDayBtn');
-    if (btn) { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLog; }
+    if (btn) { btn.textContent = '📅 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLog; }
     loadMonitorLog(false);
 }
 
 function loadMonitorLog(fullDay) {
-    var cutoff = Date.now() - 86400000; // 24시간
+    var cutoff = fullDay ? Date.now() - 86400000 : Date.now() - 7200000; // 전체: 24시간 / 기본: 2시간
     var histRef = fullDay
         ? db.ref('/monitor_history').limitToLast(2000)
-        : db.ref('/monitor_history').limitToLast(100);
+        : db.ref('/monitor_history').limitToLast(500);
     db.ref('/imi_blocked').once('value', function(blockedSnap) {
         var blockedList = blockedSnap.val() || [];
         if (!Array.isArray(blockedList)) blockedList = [];
@@ -849,7 +849,7 @@ function loadMonitorLog(fullDay) {
             Object.keys(val).forEach(function(k) {
                 var e = val[k];
                 if (!e) return;
-                if (fullDay && e.at < cutoff) return; // 24시간 이내 필터
+                if (e.at < cutoff) return; // 시간 필터 (기본: 2시간 / 전체: 24시간)
                 entries.push({ key: k, data: e });
             });
             entries.sort(function(a, b) { return b.data.at - a.data.at; });
