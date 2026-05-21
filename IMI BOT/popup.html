@@ -6,7 +6,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: #0f172a; }
-body { font-family: 'Segoe UI', sans-serif; color: #cbd5e1; width: 380px; min-height: 200px; padding: 14px; }
+body { font-family: 'Segoe UI', sans-serif; color: #cbd5e1; width: 320px; padding: 14px; }
 h1 { font-size: 15px; font-weight: 900; color: #3abff8; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
 .status-bar { display: flex; align-items: center; gap: 10px; background: #1e293b; border: 2px solid #334155; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
 #statusDot { width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; transition: 0.3s; }
@@ -15,37 +15,13 @@ h1 { font-size: 15px; font-weight: 900; color: #3abff8; margin-bottom: 12px; dis
 #statusText { flex: 1; font-size: 12px; font-weight: 800; }
 #toggleBtn { font-size: 12px; font-weight: 900; padding: 6px 16px; border-radius: 7px; border: none; cursor: pointer; background: #22c55e; color: #fff; transition: 0.15s; white-space: nowrap; }
 #toggleBtn.stop { background: #ef4444; }
-.section-title { font-size: 11px; font-weight: 900; opacity: 0.5; margin-bottom: 7px; letter-spacing: 0.05em; text-transform: uppercase; }
-#ruleList { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; max-height: 260px; overflow-y: auto; }
-.rule-card { background: #1e293b; border: 2px solid #334155; border-radius: 9px; padding: 9px 11px; }
-.rule-card.active-rule { border-color: #22c55e; }
-.rule-top { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-.rule-name { flex: 1; font-size: 12px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rule-toggle { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
-.rule-edit { font-size: 10px; font-weight: 900; color: #f59e0b; background: none; border: 1.5px solid #f59e0b; border-radius: 5px; padding: 2px 6px; cursor: pointer; flex-shrink: 0; transition: 0.15s; }
-.rule-edit:hover { background: #f59e0b; color: #fff; }
-.rule-del { font-size: 10px; font-weight: 900; color: #ef4444; background: none; border: 1.5px solid #ef4444; border-radius: 5px; padding: 2px 6px; cursor: pointer; flex-shrink: 0; transition: 0.15s; }
-.rule-del:hover { background: #ef4444; color: #fff; }
-.rule-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; border: 1.5px solid #334155; opacity: 0.8; }
-.rule-url { font-size: 9px; opacity: 0.3; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.empty-msg { text-align: center; padding: 20px 0; opacity: 0.35; font-size: 11px; font-style: italic; }
-.add-form { background: #1e293b; border: 2px dashed #334155; border-radius: 10px; padding: 11px; }
-.add-form-title { font-size: 11px; font-weight: 900; margin-bottom: 9px; opacity: 0.7; }
-input { width: 100%; background: #0f172a; border: 1.5px solid #334155; border-radius: 7px; padding: 7px 10px; font-size: 11px; font-weight: 700; color: #cbd5e1; outline: none; margin-bottom: 6px; }
-input:focus { border-color: #3abff8; }
-input::placeholder { opacity: 0.4; }
-.row2 { display: flex; gap: 6px; }
-.row2 input { flex: 1; }
-#addBtn { width: 100%; padding: 9px; border-radius: 7px; background: #3abff8; color: #0f172a; border: none; font-size: 12px; font-weight: 900; cursor: pointer; margin-top: 2px; transition: 0.15s; }
-#addBtn:hover { background: #38bdf8; }
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-input[type="time"] { color-scheme: dark; padding: 5px 8px; cursor: pointer; }
-input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 .time-label { font-size: 9px; font-weight: 800; opacity: 0.45; margin-bottom: 3px; }
 .gh-row { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
 .gh-sep { font-size: 13px; font-weight: 900; opacity: 0.5; flex-shrink: 0; }
+input[type="time"] { color-scheme: dark; padding: 5px 8px; cursor: pointer; width: 100%; background: #0f172a; border: 1.5px solid #334155; border-radius: 7px; font-size: 11px; font-weight: 700; color: #cbd5e1; outline: none; }
+input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+input[type="checkbox"] { width: 14px; height: 14px; margin: 0; cursor: pointer; flex-shrink: 0; }
+.note { font-size: 10px; opacity: 0.4; text-align: center; margin-top: 10px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -60,53 +36,25 @@ input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cur
 <!-- 전체 시간대 설정 -->
 <div style="background:#1e293b;border:2px solid #334155;border-radius:9px;padding:9px 12px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="globalHoursEnabled" style="width:14px;height:14px;margin:0;cursor:pointer;flex-shrink:0;">
+        <input type="checkbox" id="globalHoursEnabled">
         <label for="globalHoursEnabled" style="font-size:11px;font-weight:900;cursor:pointer;flex:1;">⏰ 전체 작동 시간대 (켜면 규칙별 설정 무시)</label>
     </div>
     <div id="globalHoursInputs" style="display:none;" class="gh-row">
         <div style="flex:1;">
             <div class="time-label">시작</div>
-            <input type="time" id="globalFrom" style="margin:0;width:100%;">
+            <input type="time" id="globalFrom">
         </div>
         <span class="gh-sep">~</span>
         <div style="flex:1;">
             <div class="time-label">종료</div>
-            <input type="time" id="globalTo" style="margin:0;width:100%;">
+            <input type="time" id="globalTo">
         </div>
         <button id="saveGlobalHoursBtn" style="padding:6px 12px;border-radius:7px;background:#3abff8;color:#0f172a;border:none;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:12px;">저장</button>
     </div>
     <div id="globalHoursStatus" style="font-size:10px;color:#22c55e;margin-top:5px;display:none;"></div>
 </div>
 
-<div class="section-title">감시 규칙 목록</div>
-<div id="ruleList"><div class="empty-msg">등록된 규칙이 없습니다</div></div>
-
-<div class="add-form">
-    <div class="add-form-title">➕ 새 규칙 추가</div>
-    <input id="inName" placeholder="규칙 이름 (예: 리니지클래식 내용 감시)">
-    <input id="inUrl"  placeholder="아이템매니아 카테고리 URL">
-    <input id="inKw"   placeholder="키워드 (쉼표로 여러개 가능)">
-    <div class="row2">
-        <input id="inMin" type="number" placeholder="최소가격 (원)">
-        <input id="inMax" type="number" placeholder="최대가격 (원)">
-    </div>
-    <div class="row2">
-        <input id="inInterval" type="number" placeholder="재검색 간격 (초, 기본 5)">
-        <input id="inExclude" placeholder="제외 키워드 (쉼표 구분)">
-    </div>
-    <div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:6px;">
-        <div style="flex:1;">
-            <div class="time-label">⏰ 규칙 작동 시작 (비우면 24시간)</div>
-            <input type="time" id="inFrom" style="margin:0;width:100%;">
-        </div>
-        <span class="gh-sep" style="margin-bottom:7px;">~</span>
-        <div style="flex:1;">
-            <div class="time-label">종료</div>
-            <input type="time" id="inTo" style="margin:0;width:100%;">
-        </div>
-    </div>
-    <button id="addBtn">✅ 규칙 등록</button>
-</div>
+<div class="note">규칙 등록 및 관리는 IMI PRO에서 하세요</div>
 
 <script src="popup.js"></script>
 </body>
