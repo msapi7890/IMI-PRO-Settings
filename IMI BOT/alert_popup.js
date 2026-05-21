@@ -11,7 +11,7 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
     (data.itemRows || []).slice(0, 3).forEach(function(it) {
         var row = document.createElement('div');
         row.className = 'item' + (it.u ? '' : ' no-link');
-        row.innerHTML = (it.tid ? '<div class="item-tid">#' + esc(it.tid) + '</div>' : '')
+        row.innerHTML = (it.tid ? '<div class="item-tid">#' + fmtTid(it.tid) + '</div>' : '')
             + '<div class="item-row2"><span class="item-title">' + esc(it.t) + '</span>'
             + (it.p ? '<span class="item-price">' + Number(it.p).toLocaleString() + '원</span>' : '')
             + '</div>';
@@ -42,4 +42,7 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
 
 function esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtTid(tid) {
+    return String(tid||'').replace(/(.{4})(?=.)/g, '$1 ');
 }
