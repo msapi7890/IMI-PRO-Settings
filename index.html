@@ -5029,11 +5029,13 @@
 
     function normalizeKey(k){ return k.replace(/[.#$\[\]\/]/g,'_'); }
 
+    var _lastAskTime = 0;
     async function ask(){
         var inp=document.getElementById('userInput');
         var q=inp.value.trim(); if(!q) return;
+        var _now=Date.now(); if(_now-_lastAskTime<500){return;} _lastAskTime=_now;
         addMsg(q,'user'); inp.value=""; inp.focus(); updateAssistPanel(q);
-        var lid="L"+Date.now();
+        var lid="L"+_now;
         addMsg("\uB9E4\uB274\uC5BC\uC744 \uAC80\uC0C9 \uC911\uC785\uB2C8\uB2E4...","bot",lid);
         var botD=document.getElementById(lid).querySelector('.bubble');
         var idx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
@@ -5136,9 +5138,13 @@
         inp.focus();
     }
 
+    var _lastShowById = 0;
     function showContentById(title){
+        var now = Date.now();
+        if(now - _lastShowById < 600) return;
+        _lastShowById = now;
         addMsg(title,'user');
-        var lid="L"+Date.now(); addMsg("","bot",lid);
+        var lid="L"+now; addMsg("","bot",lid);
         var botD=document.getElementById(lid).querySelector('.bubble');
         var idx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         showContent(title,botD,idx);
