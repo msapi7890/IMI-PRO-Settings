@@ -632,7 +632,7 @@ function _showMonitorFlash(s) {
     document.getElementById('monitorAlertItems').innerHTML = (s.itemRows||[]).map(function(it){
         var k = _esc(it.key || (it.t||'').substring(0,30).trim());
         return '<div style="padding:6px 0;border-bottom:1px solid var(--border-ui);">'
-            +(it.tid?'<div style="font-size:11px;font-weight:900;color:#38bdf8;margin-bottom:2px;">#'+_esc(it.tid)+'</div>':'')
+            +(it.tid?'<div style="font-size:20px;font-weight:900;color:#38bdf8;margin-bottom:2px;letter-spacing:0.03em;">#'+_esc(it.tid)+'</div>':'')
             +'<div style="display:flex;align-items:center;gap:6px;">'
             +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
             +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
@@ -898,7 +898,7 @@ function loadMonitorLog(fullDay) {
                             : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
-                        + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#38bdf8;">#' + _esc(it.tid)
+                        + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:20px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#' + _esc(it.tid)
                             + (listTime ? '<span style="font-size:10px;font-weight:500;color:#64748b;">· ' + listTime + '</span>' : '')
                             + '</div>' : '')
                         + '<div style="display:flex;align-items:center;gap:6px;">'
