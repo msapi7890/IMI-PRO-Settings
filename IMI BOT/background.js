@@ -789,9 +789,6 @@ async function _wsrScanViaTab(rule, kws, exKws, todayDateStr) {
             const pageItems = (res && res[0] && res[0].result) || [];
             allItems.push(...pageItems);
 
-            // 1페이지 결과 없으면 2페이지 스킵
-            if (page === 1 && pageItems.length === 0) break;
-
         } finally {
             try { chrome.tabs.remove(tab.id); } catch(e) {}
         }
