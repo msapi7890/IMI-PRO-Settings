@@ -241,7 +241,8 @@ function ensureAlarms() {
     chrome.alarms.get('imi_watchdog',   a => { if (!a) chrome.alarms.create('imi_watchdog',   { periodInMinutes: 3 }); });
     chrome.alarms.get('imi_rule_sync',  a => { if (!a) chrome.alarms.create('imi_rule_sync',  { periodInMinutes: 1 }); });
     chrome.alarms.get('imi_cleanup',    a => { if (!a) chrome.alarms.create('imi_cleanup',    { periodInMinutes: 60 * 24 }); });
-    chrome.alarms.get('imi_tid_watch',  a => { if (!a) chrome.alarms.create('imi_tid_watch',  { periodInMinutes: 1 }); });
+    // 기존에 20분 알람이 남아있을 수 있으므로 항상 지우고 1분으로 재생성
+    chrome.alarms.clear('imi_tid_watch', () => { chrome.alarms.create('imi_tid_watch', { periodInMinutes: 1 }); });
 }
 chrome.runtime.onInstalled.addListener(ensureAlarms);
 chrome.runtime.onStartup.addListener(ensureAlarms);
