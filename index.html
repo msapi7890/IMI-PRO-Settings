@@ -8033,7 +8033,11 @@
 
     function _showWatchAlert(data, alertKey){
         var existing = document.getElementById('_imiWatchAlert');
-        if(existing) existing.remove();
+        if(existing){
+            // 기존 Firebase 리스너 정리
+            if(existing._procRef && existing._procListener) existing._procRef.off('value', existing._procListener);
+            existing.remove();
+        }
 
         var tids    = data.tids || (data.tid ? [data.tid] : []);
         var label   = data.label   || data.keyword || '감시 항목';
@@ -8060,14 +8064,16 @@
             document.head.appendChild(sty);
         }
 
-        // 헤더
         var hdr = document.createElement('div');
         hdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
         hdr.innerHTML = '<span style="background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;">🔔 비거래 감지</span>';
         var closeX = document.createElement('span');
         closeX.textContent = '✕';
         closeX.style.cssText = 'margin-left:auto;cursor:pointer;opacity:0.4;font-size:18px;line-height:1;';
-        closeX.onclick = function(){ el.remove(); };
+        closeX.onclick = function(){
+            if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
+            el.remove();
+        };
         hdr.appendChild(closeX);
         el.appendChild(hdr);
 
@@ -8096,14 +8102,16 @@
 
         function _checkAllDone(){
             if(!tidContainer.children.length){
-                el.remove();
+                if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
+                el.remove();
             }
         }
 
         if(tids.length > 0){
             tids.forEach(function(tid){
                 var row = document.createElement('div');
+                row.dataset.tid = tid;
                 row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(34,197,94,0.08);border:1px solid #22c55e33;border-radius:7px;';
 
                 var tidLink = document.createElement('a');
@@ -8116,17 +8124,34 @@
                 var doneBtn = document.createElement('button');
                 doneBtn.textContent = '처리완료';
                 doneBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
-                doneBtn.onclick = function(){ row.remove(); _checkAllDone(); };
+                doneBtn.onclick = function(){
+                    if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
+                    else { row.remove(); _checkAllDone(); }
+                };
                 row.appendChild(doneBtn);
                 tidContainer.appendChild(row);
             });
+
+            // Firebase 실시간 동기화 — 다른 사용자가 처리완료 누르면 즉시 반영
+            if(alertKey){
+                var procRef = db.ref('imi_watch_alerts/'+alertKey+'/processedTids');
+                var procListener = procRef.on('value', function(snap){
+                    var processed = snap.val() || {};
+                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
+                        if(processed[r.dataset.tid]) r.remove();
+                    });
+                    _checkAllDone();
+                });
+                el._procRef = procRef;
+                el._procListener = procListener;
+            }
         } else {
             var doneBtn2 = document.createElement('button');
             doneBtn2.textContent = '처리완료';
             doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
             doneBtn2.onclick = function(){
-                el.remove();
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
+                el.remove();
             };
             tidContainer.appendChild(doneBtn2);
         }
