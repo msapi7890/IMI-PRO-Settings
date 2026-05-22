@@ -200,6 +200,8 @@
             let text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
             if (text.length < 15) return;
             if (text.includes('물품제목') && text.includes('등록일시')) return;
+            // 비거래 스캔: 거래종료·거래중 물품 제외 → 일반 등록 물품만 감지
+            if (rule.type === 'watch' && (text.includes('거래종료') || text.includes('거래중'))) return;
 
             // 제목 요소 먼저 추출 → 키워드는 제목에서만 매칭 (가격·날짜 칼럼 오탐 방지)
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
@@ -212,9 +214,11 @@
                 })()
                 : text.substring(0, 40) + '...';
             const kwText = titleEl ? (titleEl.innerText || titleEl.textContent || '').replace(/\s+/g, ' ').trim() : text;
+            // 비거래(watch)는 카테고리 직접 접속 → 전체 행 텍스트로 매칭 (사기글은 제목 열만)
+            const matchText = (rule.type === 'watch') ? text : kwText;
 
-            if (kws.length && !kws.some(k => kwText.includes(k))) return;
-            if (exKws.length && exKws.some(k => kwText.includes(k))) return;
+            if (kws.length && !kws.some(k => matchText.includes(k))) return;
+            if (exKws.length && exKws.some(k => matchText.includes(k))) return;
 
             const price = extractMaxPrice(text);
             if (minPrice > 0 && price < minPrice) return;
@@ -288,7 +292,8 @@
 
             // 글로벌 오늘만 설정: TID 앞 8자리(YYYYMMDD)로 오늘 등록 여부 판별
             // listTime 기반은 재등록 물품이 시간만 표시돼서 오탐 발생 → TID가 정확함
-            if (_globalTodayOnly) {
+            // 비거래(watch)는 숨김→재노출 케이스가 있으므로 오늘만 필터 미적용
+            if (_globalTodayOnly && rule.type !== 'watch') {
                 const now = new Date();
                 const todayPrefix = String(now.getFullYear())
                     + String(now.getMonth() + 1).padStart(2, '0')
@@ -305,6 +310,11 @@
     // --- 검색 폼 제출 ---
     function submitSearch() {
         if (!isRunning || !rule) return;
+        // 비거래 규칙: 카테고리 URL로 직접 이동 (키워드 검색 폼 제출 없음)
+        if (rule.type === 'watch') {
+            setTimeout(() => { location.href = rule.url; }, 1000);
+            return;
+        }
         const kw = (rule.keyword || '').split(',')[0].trim();
         if (!kw) { setTimeout(() => location.reload(), 1000); return; }
 
@@ -417,13 +427,23 @@
             // newItems가 없으면 null → background.js가 history 기록 스킵
             sendAlert(items, newItems.length > 0 ? newItems : null);
             sessionStorage.removeItem('_imi_page2_scan');
-            setTimeout(() => {
-                if (!isRunning) return;
-                document.getElementById('_imi_box').style.borderColor = '#3abff8';
+            if (rule.type === 'watch') {
+                // 비거래: 한 번 감지 후 키 초기화 → 전체 인터벌 대기 (30초 재감지 없음)
+                _clearLoggedKeys();
                 document.getElementById('_imi_items').innerHTML = '';
-                setStatus('30초 대기 후 재검색...', '#94a3b8');
-                submitSearch();
-            }, 30000);
+                const t = new Date().toLocaleTimeString('ko-KR');
+                setStatus(`감지 완료 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#22c55e');
+                document.getElementById('_imi_box').style.borderColor = '#3abff8';
+                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+            } else {
+                setTimeout(() => {
+                    if (!isRunning) return;
+                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
+                    document.getElementById('_imi_items').innerHTML = '';
+                    setStatus('1분 대기 후 재검색...', '#94a3b8');
+                    submitSearch();
+                }, 60000);
+            }
         } else if (!onPage2) {
             // 1페이지 완료 → 2페이지 링크 있을 때만 이동
             if (!findPage2Link()) {

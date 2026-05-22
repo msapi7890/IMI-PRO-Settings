@@ -27,6 +27,17 @@ async function fireSet(path, data) {
         clearTimeout(t);
     }
 }
+async function fireUpdate(path, data) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    try {
+        await fetch(DB_URL + path + '.json', {
+            method: 'PATCH', body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+            signal: ctrl.signal
+        });
+    } catch(e) {} finally { clearTimeout(t); }
+}
 async function firePush(path, data) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
@@ -66,6 +77,7 @@ const store = {
 };
 const getRules  = () => store.get('imi_rules').then(v => v || []);
 const saveRules = (r) => store.set('imi_rules', r);
+let _cachedGlobalTodayOnly = null;
 const getTabMap  = () => store.get('imi_tab_map').then(v => v || {});
 const saveTabMap = (m) => store.set('imi_tab_map', m);
 const isActive   = () => store.get('imi_active').then(v => !!v);
@@ -248,7 +260,7 @@ chrome.runtime.onInstalled.addListener(ensureAlarms);
 chrome.runtime.onStartup.addListener(ensureAlarms);
 ensureAlarms(); // 서비스워커 재시작 시에도 보장
 // 재시작 시 즉시 비거래 배너 상태 동기화 (알람 대기 없이 바로 반영)
-setTimeout(() => { checkWatchedTids(); checkWatchScanRules(); }, 3000);
+setTimeout(() => { checkWatchedTids(); }, 3000);
 chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_watchdog') {
         if (await isActive()) await startAll();
@@ -256,6 +268,16 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     if (alarm.name === 'imi_rule_sync') {
         await checkBotCmd(); // 웹 제어 채널 확인 (최대 1분 지연)
         await syncRulesFromFirebase();
+        // 글로벌 오늘만 설정 변경 시 실행 중인 봇 탭에 실시간 전달
+        const gto = await fireGet('/global_today_only');
+        const newGtoVal = !!gto;
+        if (_cachedGlobalTodayOnly !== null && _cachedGlobalTodayOnly !== newGtoVal) {
+            const curTabMap = await getTabMap();
+            for (const tabId of Object.values(curTabMap)) {
+                try { chrome.tabs.sendMessage(tabId, { type: 'UPDATE_GLOBAL_TODAY_ONLY', val: newGtoVal }); } catch(e) {}
+            }
+        }
+        _cachedGlobalTodayOnly = newGtoVal;
         // 차단 목록도 Firebase 기준으로 덮어씀 (차단 해제 반영)
         const remoteBlocked = await fireGetBlocked();
         if (remoteBlocked !== null) {
@@ -264,13 +286,20 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         await syncStatus();
     }
     if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
-    if (alarm.name === 'imi_tid_watch') { await checkWatchedTids(); await checkWatchScanRules(); }
+    if (alarm.name === 'imi_tid_watch') { await checkWatchedTids(); }
     if (alarm.name === 'imi_rule_sync') await syncTidWatchInterval();
 });
 
 // 서비스워커 시작 시 밀린 명령 처리 + 현재 상태 즉시 Firebase 반영
 checkBotCmd().catch(() => {});
 syncStatus().catch(() => {});
+// imi_watch_banner에서 wsr_ 접두사 항목 삭제 (배너는 거래번호 감시 전용)
+fireGet('/imi_watch_banner').then(data => {
+    if (!data || typeof data !== 'object') return;
+    for (const k of Object.keys(data)) {
+        if (k.startsWith('wsr_')) fireSet('/imi_watch_banner/' + k, null).catch(() => {});
+    }
+}).catch(() => {});
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -293,6 +322,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     await firePush('/monitor_history', {
                         ruleName: msg.data.ruleName || '',
                         ruleKeyword: msg.data.ruleKeyword || '',
+                        ruleType: msg.data.ruleType || 'fraud',
                         itemCount: logRows.length,
                         itemRows: logRows,
                         at: msg.data.at || Date.now()
@@ -538,11 +568,12 @@ async function showWatchPopup(data) {
 
     // IMI PRO 인페이지 알림 (Firebase 경유 — 확장프로그램 없는 사용자도 수신)
     try {
+        const tids = (data.itemRows || []).map(r => r.tid || '').filter(Boolean);
         await firePush('/imi_watch_alerts', {
-            tid:     data.tid     || '',
+            tids:    tids,
             label:   data.label   || data.ruleName || '',
-            keyword: data.keyword || '',
-            count:   data.count   || 0,
+            keyword: data.keyword || data.ruleKeyword || '',
+            count:   data.itemCount || data.count || 0,
             at:      now,
             seen:    false
         });
@@ -566,6 +597,17 @@ async function syncTidWatchInterval() {
 // 거래번호 감시 — 숨김→노출 전환 감지, 노출 유지 여부 지속 추적
 async function checkWatchedTids() {
     const tids = await fireGet('/watched_tids');
+
+    // watched_tids에 없는 고아 배너 항목 정리
+    const banners = await fireGet('/imi_watch_banner');
+    if (banners && typeof banners === 'object') {
+        for (const bKey of Object.keys(banners)) {
+            if (!tids || !tids[bKey]) {
+                await fireSet('/imi_watch_banner/' + bKey, null);
+            }
+        }
+    }
+
     if (!tids || typeof tids !== 'object') return;
 
     for (const [key, item] of Object.entries(tids)) {
@@ -586,11 +628,9 @@ async function checkWatchedTids() {
             const stillHidden = !resp.url.includes('application.html') || !text.includes(tid);
 
             if (stillHidden) {
-                // 숨김 확인 → 배너 비활성화, alertSent 초기화 (다음 노출 시 재알림)
-                await fireSet('/imi_watch_banner/' + key + '/active', false);
-                if (item.alertSent) {
-                    await fireSet('/watched_tids/' + key + '/alertSent', false);
-                }
+                // 숨김 확인 → 배너 비활성화, alertSent 초기화 (다음 노출 시 재알림) — PATCH 1회로 묶음
+                await fireUpdate('/imi_watch_banner/' + key, { active: false });
+                if (item.alertSent) await fireUpdate('/watched_tids/' + key, { alertSent: false });
                 continue;
             }
 
@@ -606,201 +646,11 @@ async function checkWatchedTids() {
                 active: true, tid, label: item.label || '', title: itemTitle, url, at: now
             });
 
-            // 최초 감지 시에만 팝업 알림 + 로그 기록
+            // 최초 감지 시 alertSent 처리 (배너로만 표시, 로그 기록 없음)
             if (!item.alertSent) {
-                await fireSet('/watched_tids/' + key + '/alertSent', true);
-                await fireSet('/watched_tids/' + key + '/detectedAt', now);
-
-                showWatchPopup({
-                    ruleName: item.label || tid,
-                    ruleId: key, ruleType: 'watch',
-                    itemCount: 1,
-                    itemRows: [{ t: itemTitle, tid, u: url, p: '' }]
-                });
-
-                // 로그 기록 (사기글 감지와 동일한 경로)
-                await firePush('/monitor_history', {
-                    ruleName: (item.label || '') + ' (비거래 감시)',
-                    ruleKeyword: tid,
-                    itemCount: 1,
-                    itemRows: [{ t: itemTitle, tid, u: url, p: '', listTime: '' }],
-                    at: now
-                });
+                await fireUpdate('/watched_tids/' + key, { alertSent: true, detectedAt: now });
             }
         } catch(e) {}
     }
 }
 
-// ─── 비거래 스캔 감지 (watch_scan_rules) ───────────────────────────────────
-// 탭/콘텐츠스크립트 불필요 — background.js가 직접 URL을 fetch해서 1페이지 스캔
-const _wsr_lastChecked = {}; // 규칙별 마지막 체크 시각
-let _cachedGlobalTodayOnly = null; // 변경 감지용 캐시
-
-async function checkWatchScanRules() {
-    const [rules, globalTodayOnly] = await Promise.all([
-        fireGet('/watch_scan_rules'),
-        fireGet('/global_today_only')
-    ]);
-    if (!rules || typeof rules !== 'object') return;
-
-    // 글로벌 오늘만 설정 변경 시 실행 중인 봇 탭에 실시간 전달
-    const newVal = !!globalTodayOnly;
-    if (_cachedGlobalTodayOnly !== null && _cachedGlobalTodayOnly !== newVal) {
-        const tabMap = await getTabMap();
-        for (const tabId of Object.values(tabMap)) {
-            try { chrome.tabs.sendMessage(tabId, { type: 'UPDATE_GLOBAL_TODAY_ONLY', val: newVal }); } catch(e) {}
-        }
-    }
-    _cachedGlobalTodayOnly = newVal;
-
-    for (const [key, rule] of Object.entries(rules)) {
-        if (!rule || !rule.enabled || !rule.url) continue;
-
-        const interval = (rule.scanInterval || 300) * 1000; // ms
-        if (_wsr_lastChecked[key] && Date.now() - _wsr_lastChecked[key] < interval) continue;
-        _wsr_lastChecked[key] = Date.now();
-
-        const kws = (rule.keyword || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-        if (!kws.length) continue;
-        const exKws = (rule.excludeKeyword || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-
-        // 글로벌 오늘만 설정으로만 제어
-        let todayDateStr = null;
-        if (newVal) {
-            const now = new Date();
-            const y = now.getFullYear();
-            const m = String(now.getMonth() + 1).padStart(2, '0');
-            const d = String(now.getDate()).padStart(2, '0');
-            todayDateStr = y + '.' + m + '.' + d; // "2026.05.21"
-        }
-
-        let matched = [];
-        let scanOk = false;
-        let scanErr = '';
-        try {
-            matched = await _wsrScanViaTab(rule, kws, exKws, todayDateStr);
-            scanOk = true;
-        } catch(e) { scanErr = e.message || String(e); }
-
-        // 마지막 체크 시각 + 결과 기록 (UI 카드에 표시)
-        await fireSet('/watch_scan_rules/' + key + '/lastCheck', Date.now());
-        await fireSet('/watch_scan_rules/' + key + '/lastCount', scanOk ? matched.length : -1);
-        if (!scanOk) await fireSet('/watch_scan_rules/' + key + '/lastError', scanErr);
-        else await fireSet('/watch_scan_rules/' + key + '/lastError', null); // 성공 시 이전 오류 초기화
-
-        if (!scanOk) continue;
-
-        if (matched.length > 0) {
-            const now = Date.now();
-            // 이전 활성 상태 먼저 조회 (set 이전에 해야 prev 값이 정확함)
-            const prevActive = await fireGet('/imi_watch_banner/wsr_' + key + '/active');
-            await fireSet('/imi_watch_banner/wsr_' + key, {
-                active: true, label: rule.name || rule.keyword || '',
-                keyword: rule.keyword || '', count: matched.length, url: rule.url, at: now
-            });
-            // 최초 감지 또는 이전에 inactive 였을 때만 알림 발송
-            if (!prevActive) {
-                await firePush('/imi_watch_alerts', {
-                    label: rule.name || rule.keyword || '',
-                    keyword: rule.keyword || '',
-                    count: matched.length,
-                    at: now, seen: false
-                });
-                await firePush('/monitor_history', {
-                    ruleName: (rule.name || rule.keyword || '') + ' (비거래 스캔)',
-                    ruleKeyword: rule.keyword || '',
-                    itemCount: matched.length,
-                    itemRows: matched.map(it => ({ t: it.t, p: 0, u: it.u, tid: it.tid, listTime: '' })),
-                    at: now
-                });
-            }
-        } else {
-            await fireSet('/imi_watch_banner/wsr_' + key + '/active', false);
-        }
-    }
-}
-
-// 비거래 스캔: 실제 탭을 열어서 DOM에서 직접 긁음 (fetch+파싱 방식 대체)
-async function _wsrScanViaTab(rule, kws, exKws, todayDateStr) {
-    const todayPrefix = todayDateStr ? todayDateStr.replace(/\./g, '') : null;
-    const allItems = [];
-
-    for (let page = 1; page <= 2; page++) {
-        const pageUrl = page === 1 ? rule.url
-            : rule.url + (rule.url.includes('?') ? '&' : '?') + 'page=' + page;
-
-        const tab = await new Promise((resolve, reject) => {
-            chrome.tabs.create({ url: pageUrl, active: false }, t => {
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-                else resolve(t);
-            });
-        });
-
-        try {
-            // 페이지 로딩 완료 대기 (최대 20초)
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    chrome.tabs.onUpdated.removeListener(listener);
-                    reject(new Error('페이지 로딩 타임아웃'));
-                }, 20000);
-                const listener = (tabId, changeInfo) => {
-                    if (tabId === tab.id && changeInfo.status === 'complete') {
-                        clearTimeout(timeout);
-                        chrome.tabs.onUpdated.removeListener(listener);
-                        resolve();
-                    }
-                };
-                chrome.tabs.onUpdated.addListener(listener);
-            });
-
-            // JS 렌더링 여유 시간
-            await new Promise(r => setTimeout(r, 1500));
-
-            const res = await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                func: (kws, exKws, todayPrefix) => {
-                    const items = [];
-                    const seen = new Set();
-                    document.querySelectorAll('li, tr, .item_row, .item_wrap').forEach(el => {
-                        if (el.querySelector('li, tr')) return;
-                        const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
-                        if (text.length < 10) return;
-                        const tl = text.toLowerCase();
-                        if (!kws.some(k => tl.includes(k))) return;
-                        if (exKws.length && exKws.some(k => tl.includes(k))) return;
-                        const a = el.querySelector('a[href*="application"]') || el.querySelector('a[href]');
-                        const href = a ? a.href : location.href;
-                        if (todayPrefix) {
-                            const m = href.match(/[?&]tid=(\d+)/);
-                            if (m && !m[1].startsWith(todayPrefix)) return;
-                        }
-                        const key = href || text.substring(0, 30);
-                        if (seen.has(key)) return;
-                        seen.add(key);
-                        const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, td:nth-child(2)');
-                        const title = titleEl ? (titleEl.innerText || '').trim().substring(0, 60) : text.substring(0, 60);
-                        const tidM = href.match(/[?&](?:tid|id)=(\d+)/);
-                        items.push({ t: title, u: href, tid: tidM ? tidM[1] : '' });
-                    });
-                    return items;
-                },
-                args: [kws, exKws, todayPrefix]
-            });
-
-            const pageItems = (res && res[0] && res[0].result) || [];
-            allItems.push(...pageItems);
-
-        } finally {
-            try { chrome.tabs.remove(tab.id); } catch(e) {}
-        }
-    }
-
-    // TID 기준 중복 제거
-    const seen = new Set();
-    return allItems.filter(item => {
-        const key = item.tid || item.u || item.t;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-}

@@ -119,7 +119,6 @@ function _renderBotStatus() {
         if (badge) { badge.textContent = '오프라인'; badge.style.background = '#374151'; badge.style.color = '#6b7280'; }
         if (ruleList) {
             ruleList.innerHTML = '<div style="text-align:center;padding:18px 0;opacity:0.35;font-size:12px;">봇 연결 없음</div>';
-            _appendWsrToStatus(ruleList);
         }
         return;
     }
@@ -176,7 +175,7 @@ function _renderBotStatus() {
         return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid '+(isWatch?'#22c55e':'#ef4444')+';border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canCtrl?'pointer':'default')+';flex:1;min-width:0;">'
-            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' ' + chkDisabled + ' style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
+            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' ' + chkDisabled + ' onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
             + typeTag
@@ -192,32 +191,6 @@ function _renderBotStatus() {
             + '</div>'
             + '</div>';
     }).join('');
-    _appendWsrToStatus(ruleList);
-}
-
-function _appendWsrToStatus(ruleList) {
-    var wsrKeys = Object.keys(_wsrRules || {});
-    if (!wsrKeys.length) return;
-    var header = '<div style="font-size:11px;font-weight:900;opacity:0.5;margin:10px 0 8px;text-transform:uppercase;letter-spacing:0.1em;">📦 비거래 감시 규칙</div>';
-    var cards = wsrKeys.map(function(key) {
-        var r = _wsrRules[key];
-        var runColor = r.enabled !== false ? '#22c55e' : '#94a3b8';
-        var runLabel = r.enabled !== false ? '● 활성' : '■ 비활성';
-        return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid #22c55e;border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
-            + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
-            + '<span style="flex:1;font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name || key) + '</span>'
-            + '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
-            + '<span style="font-size:10px;font-weight:900;color:' + runColor + ';flex-shrink:0;">' + runLabel + '</span>'
-            + '</div>'
-            + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
-            + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
-            + '<span class="mon-tag">⏱ ' + (r.scanInterval || 300) + '초</span>'
-            + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
-            + (r.lastError      ? '<span class="mon-tag" style="color:#f87171;">❌ ' + _esc(r.lastError.substring(0,30)) + '</span>' : '')
-            + '</div>'
-            + '</div>';
-    }).join('');
-    ruleList.innerHTML += header + cards;
 }
 
 
@@ -667,6 +640,7 @@ function _playAlertBeep(){
     }catch(e){}
 }
 function _showMonitorFlash(s) {
+    if (s.ruleType === 'watch') return; // 비거래는 왼쪽 팝업만 사용
     var _np=_getNotifPrefs();
     document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');
     document.getElementById('monitorAlertCount').textContent = (s.itemCount||0)+'개 물품 감지됨';
@@ -694,8 +668,8 @@ function _showMonitorFlash(s) {
     // 경고음
     if (_np.sound) _playAlertBeep();
 
-    // OS 브라우저 알림 (다른 창 열어도 뜨는 알림)
-    if ('Notification' in window) {
+    // OS 브라우저 알림 — 비거래(watch) 타입은 스킵
+    if (s.ruleType !== 'watch' && 'Notification' in window) {
         var _fireNotif = function() {
             new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
                 body: (s.itemCount||0) + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
@@ -777,11 +751,12 @@ db.ref('monitor_flash_state').on('value', function(snap) {
     // at이 90초 이내인 최신 감지만 표시 — 페이지 로드 시 오래된 active 상태 재표시 방지
     if (s.active && s.at && (Date.now() - s.at) < 90000) {
         _showMonitorFlash(s);
-        // 로그 패널이 열려있고 감지 로그 탭이 활성이면 자동 갱신
         var panel = document.getElementById('logPanel');
-        var tab1  = document.getElementById('logTab1');
-        if (panel && !panel.classList.contains('hidden') && tab1 && tab1.classList.contains('mon-tab-active')) {
-            setTimeout(loadMonitorLog, 1500);
+        if (panel && !panel.classList.contains('hidden')) {
+            var tab1 = document.getElementById('logTab1');
+            var tab2 = document.getElementById('logTab2');
+            if (tab1 && tab1.classList.contains('mon-tab-active')) setTimeout(loadMonitorLog, 1500);
+            else if (tab2 && tab2.classList.contains('mon-tab-active')) setTimeout(loadWatchLog, 1500);
         }
     } else if (!s.active) _hideMonitorFlashLocal();
 });
@@ -832,29 +807,35 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
 });
 
 // ===== 로그 패널 =====
-var _logFullMode = false;
+var _logFullMode  = false;
+var _logFullModeW = false;
 
 function openLogPanel() {
     document.getElementById('logPanel').classList.remove('hidden');
-    _logFullMode = false;
-    var btnWrap = document.getElementById('logFullDayBtnWrap');
-    if (btnWrap) {
-        btnWrap.style.display = _isBotPrivileged() ? '' : 'none';
-        var btn = document.getElementById('logFullDayBtn');
-        if (btn) { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.disabled = false; btn.onclick = loadFullDayLog; }
-    }
+    _logFullMode = false; _logFullModeW = false;
+    ['logFullDayBtnWrap','logFullDayBtnWrapW'].forEach(function(wid) {
+        var w = document.getElementById(wid);
+        if (w) w.style.display = _isBotPrivileged() ? '' : 'none';
+    });
+    var btn = document.getElementById('logFullDayBtn');
+    if (btn) { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLog; }
+    var btnW = document.getElementById('logFullDayBtnW');
+    if (btnW) { btnW.textContent = '📅 24시간 전체 기록 불러오기'; btnW.disabled = false; btnW.style.opacity = '1'; btnW.onclick = loadFullDayLogW; }
     switchLogTab(1);
 }
 function closeLogPanel() {
     document.getElementById('logPanel').classList.add('hidden');
 }
 function switchLogTab(n) {
-    document.getElementById('logTab1').classList.toggle('mon-tab-active', n === 1);
-    document.getElementById('logTab2').classList.toggle('mon-tab-active', n === 2);
-    document.getElementById('logTabContent1').style.display = n === 1 ? '' : 'none';
-    document.getElementById('logTabContent2').style.display = n === 2 ? '' : 'none';
+    [1,2,3].forEach(function(i) {
+        var t = document.getElementById('logTab'+i);
+        var c = document.getElementById('logTabContent'+i);
+        if (t) t.classList.toggle('mon-tab-active', i === n);
+        if (c) c.style.display = i === n ? '' : 'none';
+    });
     if (n === 1) loadMonitorLog(_logFullMode);
-    if (n === 2) loadBlockedItems();
+    if (n === 2) loadWatchLog(_logFullModeW);
+    if (n === 3) loadBlockedItems();
 }
 
 function loadFullDayLog() {
@@ -869,12 +850,36 @@ function loadRecentLog() {
     if (btn) { btn.textContent = '📅 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLog; }
     loadMonitorLog(false);
 }
+function loadFullDayLogW() {
+    _logFullModeW = true;
+    var btn = document.getElementById('logFullDayBtnW');
+    if (btn) { btn.textContent = '⏳ 불러오는 중...'; btn.disabled = true; btn.style.opacity = '0.55'; }
+    loadWatchLog(true);
+}
+function loadRecentLogW() {
+    _logFullModeW = false;
+    var btn = document.getElementById('logFullDayBtnW');
+    if (btn) { btn.textContent = '📅 전체 기록 불러오기'; btn.disabled = false; btn.style.opacity = '1'; btn.onclick = loadFullDayLogW; }
+    loadWatchLog(false);
+}
 
-function loadMonitorLog(fullDay) {
-    var cutoff = fullDay ? Date.now() - 86400000 : Date.now() - 7200000; // 전체: 24시간 / 기본: 2시간
+function loadMonitorLog(fullDay) { _loadLogByType(fullDay, false); }
+function loadWatchLog(fullDay)   { _loadLogByType(fullDay, true);  }
+
+function _loadLogByType(fullDay, isWatch) {
+    var ids = isWatch ? {
+        list: 'monitorLogListW', empty: 'monitorLogEmptyW',
+        btn: 'logFullDayBtnW', loadFull: loadFullDayLogW, loadRecent: loadRecentLogW
+    } : {
+        list: 'monitorLogList', empty: 'monitorLogEmpty',
+        btn: 'logFullDayBtn', loadFull: loadFullDayLog, loadRecent: loadRecentLog
+    };
+
+    var cutoff24 = Date.now() - 86400000;
     var histRef = fullDay
         ? db.ref('/monitor_history').limitToLast(2000)
         : db.ref('/monitor_history').limitToLast(500);
+
     db.ref('/imi_blocked').once('value', function(blockedSnap) {
         var blockedList = blockedSnap.val() || [];
         if (!Array.isArray(blockedList)) blockedList = [];
@@ -890,42 +895,35 @@ function loadMonitorLog(fullDay) {
             Object.keys(val).forEach(function(k) {
                 var e = val[k];
                 if (!e) return;
-                if (e.at < cutoff) return; // 시간 필터 (기본: 2시간 / 전체: 24시간)
+                if (fullDay && e.at < cutoff24) return;
+                var entryIsWatch = e.ruleType === 'watch';
+                if (isWatch !== entryIsWatch) return;
                 entries.push({ key: k, data: e });
             });
             entries.sort(function(a, b) { return b.data.at - a.data.at; });
 
-            var empty = document.getElementById('monitorLogEmpty');
-            var list  = document.getElementById('monitorLogList');
+            var empty = document.getElementById(ids.empty);
+            var list  = document.getElementById(ids.list);
             if (!entries.length) {
                 if (empty) empty.style.display = '';
                 if (list)  list.innerHTML = '';
-                var emptyBtn = document.getElementById('logFullDayBtn');
+                var emptyBtn = document.getElementById(ids.btn);
                 if (emptyBtn && _isBotPrivileged()) {
                     emptyBtn.disabled = false; emptyBtn.style.opacity = '1';
                     emptyBtn.textContent = fullDay ? '↩ 최근 100건 보기' : '📅 24시간 전체 기록 불러오기';
-                    emptyBtn.onclick = fullDay ? loadRecentLog : loadFullDayLog;
+                    emptyBtn.onclick = fullDay ? ids.loadRecent : ids.loadFull;
                 }
                 return;
             }
             if (empty) empty.style.display = 'none';
 
-            // 시간대별 그룹화
-            var hourGroups = {};
-            var hourOrder = [];
-            entries.forEach(function(entry) {
-                var dt = new Date(entry.data.at);
-                var hKey = dt.getFullYear() + '-'
-                    + String(dt.getMonth() + 1).padStart(2, '0') + '-'
-                    + String(dt.getDate()).padStart(2, '0') + ' '
-                    + String(dt.getHours()).padStart(2, '0');
-                if (!hourGroups[hKey]) { hourGroups[hKey] = []; hourOrder.push(hKey); }
-                hourGroups[hKey].push(entry);
-            });
-
             function _renderEntry(entry) {
                 var d = entry.data;
                 var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
+                var entryIsWatch = d.ruleType === 'watch';
+                var rtTag = entryIsWatch
+                    ? '<span style="font-size:8px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">📦 비거래</span>'
+                    : '<span style="font-size:8px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">🚨 사기글</span>';
                 var rows = (d.itemRows || []).map(function(it) {
                     var rawKey = it.key || (it.t || '').substring(0, 30).trim();
                     var bk = _esc(rawKey);
@@ -949,9 +947,10 @@ function loadMonitorLog(fullDay) {
                         + '</div>'
                         + '</div>';
                 }).join('');
-                return '<div style="border:1.5px solid var(--border-ui);border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
-                    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+                return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid '+(entryIsWatch?'#22c55e':'#ef4444')+';border-radius:11px;padding:11px 14px;margin-bottom:8px;">'
+                    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
                     + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(d.ruleName || '') + '</div>'
+                    + rtTag
                     + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">' + timeStr + '</div>'
                     + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">' + (d.itemCount || 0) + '개 감지</div>'
                     + '</div>'
@@ -961,36 +960,50 @@ function loadMonitorLog(fullDay) {
             }
 
             var html = '';
-            hourOrder.forEach(function(hKey, idx) {
-                var groupEntries = hourGroups[hKey];
-                var parts = hKey.split(' ');
-                var label = parts[0] + ' ' + parseInt(parts[1]) + '시';
-                var totalItems = groupEntries.reduce(function(s, e){ return s + (e.data.itemCount || 0); }, 0);
-                html += '<details ' + (idx === 0 ? 'open' : '') + ' style="border:2px solid var(--border-ui);border-radius:12px;margin-bottom:8px;overflow:hidden;">'
-                    + '<summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-weight:900;font-size:12px;background:var(--bg-body);user-select:none;list-style:none;">'
-                    + '<span style="flex:1;">🕐 ' + label + '</span>'
-                    + '<span style="font-size:11px;font-weight:700;color:#ef4444;">' + groupEntries.length + '회 감지 · 총 ' + totalItems + '개</span>'
-                    + '</summary>'
-                    + '<div style="padding:10px 10px 2px;">'
-                    + groupEntries.map(_renderEntry).join('')
-                    + '</div>'
-                    + '</details>';
-            });
+            if (fullDay) {
+                var hourGroups = {};
+                var hourOrder = [];
+                entries.forEach(function(entry) {
+                    var dt = new Date(entry.data.at);
+                    var hKey = dt.getFullYear() + '-'
+                        + String(dt.getMonth() + 1).padStart(2, '0') + '-'
+                        + String(dt.getDate()).padStart(2, '0') + ' '
+                        + String(dt.getHours()).padStart(2, '0');
+                    if (!hourGroups[hKey]) { hourGroups[hKey] = []; hourOrder.push(hKey); }
+                    hourGroups[hKey].push(entry);
+                });
+                hourOrder.forEach(function(hKey, idx) {
+                    var groupEntries = hourGroups[hKey];
+                    var parts = hKey.split(' ');
+                    var label = parts[0] + ' ' + parseInt(parts[1]) + '시';
+                    var totalItems = groupEntries.reduce(function(s, e){ return s + (e.data.itemCount || 0); }, 0);
+                    html += '<details ' + (idx === 0 ? 'open' : '') + ' style="border:2px solid var(--border-ui);border-radius:12px;margin-bottom:8px;overflow:hidden;">'
+                        + '<summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;font-weight:900;font-size:12px;background:var(--bg-body);user-select:none;list-style:none;">'
+                        + '<span style="flex:1;">🕐 ' + label + '</span>'
+                        + '<span style="font-size:11px;font-weight:700;color:#ef4444;">' + groupEntries.length + '회 감지 · 총 ' + totalItems + '개</span>'
+                        + '</summary>'
+                        + '<div style="padding:10px 10px 2px;">'
+                        + groupEntries.map(_renderEntry).join('')
+                        + '</div>'
+                        + '</details>';
+                });
+            } else {
+                // 기본 모드: 최신 2건만 표시 (시간 그룹 없음)
+                var displayEntries = entries.slice(0, 2);
+                var hidden = entries.length - 2;
+                html = displayEntries.map(_renderEntry).join('');
+                if (hidden > 0) {
+                    html += '<div style="text-align:center;font-size:11px;opacity:0.45;padding:4px 0;">📅 이전 기록 ' + hidden + '건 — 24시간 전체 보기 버튼으로 확인</div>';
+                }
+            }
 
             if (list) list.innerHTML = html;
 
-            // 버튼 상태 복원
-            var btn = document.getElementById('logFullDayBtn');
+            var btn = document.getElementById(ids.btn);
             if (btn && _isBotPrivileged()) {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                if (fullDay) {
-                    btn.textContent = '↩ 최근 100건 보기';
-                    btn.onclick = loadRecentLog;
-                } else {
-                    btn.textContent = '📅 24시간 전체 기록 불러오기';
-                    btn.onclick = loadFullDayLog;
-                }
+                btn.disabled = false; btn.style.opacity = '1';
+                if (fullDay) { btn.textContent = '↩ 최근 100건 보기'; btn.onclick = ids.loadRecent; }
+                else { btn.textContent = '📅 24시간 전체 기록 불러오기'; btn.onclick = ids.loadFull; }
             }
         });
     });
@@ -1062,6 +1075,7 @@ db.ref('/imi_rules').on('value', function(snap) {
               : (val && typeof val === 'object') ? Object.values(val).filter(Boolean)
               : [];
     _renderBotRuleList();
+    _renderWatchRules();
 });
 
 function _renderBotRuleList() {
@@ -1082,10 +1096,9 @@ function _renderBotRuleList() {
             : '<span style="font-size:9px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:4px;padding:1px 5px;flex-shrink:0;">🚨 사기글</span>';
         return '<div style="border:1.5px solid var(--border-ui);border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
-            + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canEdit?'pointer':'default')+';flex:1;min-width:0;">'
-            + '<input type="checkbox" onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" '+(r.enabled?'checked':'')+' '+(canEdit?'':'disabled')+' style="width:15px;height:15px;accent-color:var(--active-focus-color);cursor:'+(canEdit?'pointer':'default')+';">'
-            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
-            + '</label>'
+            + '<div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+            + '<span style="font-size:12px;font-weight:900;">' + _esc(r.name) + '</span>'
+            + '</div>'
             + typeTag
             + '<span style="font-size:10px;font-weight:900;color:'+runColor+';flex-shrink:0;">'+runLabel+'</span>'
             + (canEdit ? '<button onclick="startEditBotRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>' : '')
@@ -1208,6 +1221,13 @@ var _watchEditingKey = null;
 db.ref('/watched_tids').on('value', function(snap) {
     _watchedTids = snap.val() || {};
     _renderWatchedTids();
+    // watched_tids에 없는 고아 배너 즉시 정리
+    db.ref('/imi_watch_banner').once('value', function(bSnap) {
+        var banners = bSnap.val() || {};
+        Object.keys(banners).forEach(function(bKey) {
+            if (!_watchedTids[bKey]) db.ref('/imi_watch_banner/' + bKey).set(null);
+        });
+    });
 });
 
 function addWatchedTid() {
@@ -1267,7 +1287,9 @@ function _cancelWatchEdit() {
 function deleteWatchedTid(key, tid) {
     if (!confirm('"' + tid + '" 감시를 삭제하시겠습니까?')) return;
     db.ref('/watched_tids/' + key).set(null, function(err) {
-        if (err) { alert('삭제 실패: ' + err.message); }
+        if (err) { alert('삭제 실패: ' + err.message); return; }
+        // 배너도 같이 제거
+        db.ref('/imi_watch_banner/' + key).set(null);
         if (_watchEditingKey === key) _cancelWatchEdit();
     });
 }
@@ -1327,57 +1349,51 @@ function _renderWatchedTids() {
     }).join('');
 }
 
-// ===== 비거래 스캔 규칙 (watch_scan_rules) =====
-var _wsrRules = {};
+// ===== 비거래 스캔 규칙 (type:'watch' in /imi_rules) =====
 var _wsrEditingKey = null;
 
-db.ref('/watch_scan_rules').on('value', function(snap) {
-    _wsrRules = snap.val() || {};
-    _renderWatchScanRules();
-    _renderBotStatus();
-});
-
-function _renderWatchScanRules() {
+function _renderWatchRules() {
     var list = document.getElementById('watchScanRuleList');
     if (!list) return;
-    var entries = Object.entries(_wsrRules || {});
-    if (!entries.length) {
+    var watchRules = _botRules.filter(function(r) { return r.type === 'watch'; });
+    if (!watchRules.length) {
         list.innerHTML = '<div style="text-align:center;padding:20px 0;opacity:0.35;font-size:12px;">등록된 비거래 규칙이 없습니다</div>';
         return;
     }
     var canEdit = _isBotPrivileged();
-    entries.sort(function(a,b){ return (b[1].createdAt||0)-(a[1].createdAt||0); });
-    list.innerHTML = entries.map(function(e) {
-        var k = e[0]; var v = e[1];
-        var enabled = v.enabled !== false;
-        var lastCheckStr = v.lastCheck ? new Date(v.lastCheck).toLocaleTimeString('ko-KR') : '';
-        var lastCountStr = v.lastCount === -1 ? '❌ 오류' + (v.lastError ? ': ' + v.lastError : '') : (v.lastCount > 0 ? '⚠️ '+v.lastCount+'개 감지' : (v.lastCount === 0 ? '✅ 이상없음' : ''));
+    list.innerHTML = watchRules.map(function(r) {
+        var enabled = r.enabled !== false;
+        var runStatus = (_botStatus && _botStatus.rules) ? _botStatus.rules.find(function(sr){ return sr.id === r.id; }) : null;
+        var tabOpen = !!(runStatus && runStatus.tabOpen);
+        var runColor = (enabled && tabOpen) ? '#22c55e' : (enabled ? '#f59e0b' : '#94a3b8');
+        var runLabel = (enabled && tabOpen) ? '● 감시중' : (enabled ? '○ 대기' : '■ 비활성');
         return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid #22c55e;border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<div style="flex:1;min-width:0;">'
-            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">'+_esc(v.name||'(이름없음)')+'</span>'
+            + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">'+_esc(r.name||'(이름없음)')+'</span>'
             + '</div>'
             + '<span style="font-size:9px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:4px;padding:1px 5px;flex-shrink:0;">📦 비거래</span>'
-            + '<span style="font-size:10px;font-weight:900;color:'+(enabled?'#22c55e':'#94a3b8')+';flex-shrink:0;">'+(enabled?'● 감시중':'■ 정지')+'</span>'
-            + (canEdit?'<button id="wsrtest_'+_esc(k)+'" onclick="_testWsrRule(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;flex-shrink:0;">🔍 테스트</button>':'')
-            + (canEdit?'<button onclick="_editWsr(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>':'')
-            + (canEdit?'<button onclick="_deleteWsr(\''+_esc(k)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>':'')
+            + '<span style="font-size:10px;font-weight:900;color:'+runColor+';flex-shrink:0;">'+runLabel+'</span>'
+            + (canEdit?'<button id="wsrtest_'+_esc(r.id)+'" onclick="_testWsrRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;flex-shrink:0;">🔍 테스트</button>':'')
+            + (canEdit?'<button onclick="_editWsrRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #f59e0b;color:#f59e0b;background:none;cursor:pointer;flex-shrink:0;">수정</button>':'')
+            + (canEdit?'<button onclick="_deleteWsrRule(\''+_esc(r.id)+'\')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;flex-shrink:0;">삭제</button>':'')
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
-            + (v.keyword?'<span class="mon-tag">🔑 '+_esc(v.keyword)+'</span>':'')
-            + (v.excludeKeyword?'<span class="mon-tag" style="color:#f87171;">🚫 '+_esc(v.excludeKeyword)+'</span>':'')
-            + '<span class="mon-tag">⏱ '+(v.scanInterval||300)+'초</span>'
-            + (enabled?'<button onclick="_toggleWsr(\''+_esc(k)+'\')" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #94a3b8;color:#94a3b8;background:none;cursor:pointer;">정지</button>':'<button onclick="_toggleWsr(\''+_esc(k)+'\')" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;">시작</button>')
+            + (r.keyword?'<span class="mon-tag">🔑 '+_esc(r.keyword)+'</span>':'')
+            + (r.excludeKeyword?'<span class="mon-tag" style="color:#f87171;">🚫 '+_esc(r.excludeKeyword)+'</span>':'')
+            + '<span class="mon-tag">⏱ '+(r.scanInterval||300)+'초</span>'
+            + (enabled
+                ? '<button onclick="toggleBotRuleEnabled(\''+_esc(r.id)+'\',false)" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #94a3b8;color:#94a3b8;background:none;cursor:pointer;">정지</button>'
+                : '<button onclick="toggleBotRuleEnabled(\''+_esc(r.id)+'\',true)" style="font-size:9px;padding:1px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;">시작</button>')
             + '</div>'
-            + (lastCheckStr?'<div style="font-size:9px;opacity:0.4;margin-top:4px;">🕐 마지막 체크: '+lastCheckStr+(lastCountStr?' · '+lastCountStr:'')+'</div>':'')
-            + '<div style="font-size:9.5px;opacity:0.25;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(v.url||'')+'</div>'
+            + '<div style="font-size:9.5px;opacity:0.25;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(r.url||'')+'</div>'
             + '</div>';
     }).join('');
 }
 
-async function _testWsrRule(key) {
-    var v = _wsrRules[key]; if (!v) return;
-    var btn = document.getElementById('wsrtest_' + key);
+async function _testWsrRule(id) {
+    var v = _botRules.find(function(r){ return r.id === id; }); if (!v) return;
+    var btn = document.getElementById('wsrtest_' + id);
     if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
     try {
         var html = await _fetchViaProxy(v.url);
@@ -1421,24 +1437,29 @@ function addWatchScanRule() {
     if (!name) { alert('규칙 이름을 입력하세요.'); return; }
     if (!url || !/^https?:\/\//.test(url)) { alert('올바른 URL을 입력하세요.'); return; }
     if (!keyword) { alert('감지 키워드를 입력하세요.'); return; }
-    if (interval < 10) interval = 10; // Chrome 알람 최솟값이 1분이므로 실제 최소 주기는 60초
+    if (interval < 10) interval = 10;
 
     if (_wsrEditingKey) {
-        db.ref('/watch_scan_rules/'+_wsrEditingKey).update({ name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword, scanInterval:interval }, function(err) {
-            if (err) { alert('수정 실패: '+err.message); return; }
-            _cancelWsrEdit();
-            alert('✅ 수정됐습니다.');
-        });
+        _saveBotRules(_botRules.map(function(r) {
+            return r.id === _wsrEditingKey
+                ? Object.assign({}, r, { name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword, scanInterval:interval })
+                : r;
+        }));
+        _cancelWsrEdit();
+        alert('✅ 수정됐습니다.');
         return;
     }
-    var key = 'wsr_'+Date.now();
     var addedBy = (typeof _currentUser !== 'undefined' && _currentUser) ? (_currentUser.name||'') : '';
-    db.ref('/watch_scan_rules/'+key).set({ name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword, scanInterval:interval, enabled:true, addedBy:addedBy, createdAt:Date.now() }, function(err) {
-        if (err) { alert('등록 실패: '+err.message); return; }
-        ['wsrName','wsrUrl','wsrKw','wsrExclude'].forEach(function(id){ document.getElementById(id).value=''; });
-        document.getElementById('wsrInterval').value='300';
-        alert('✅ 비거래 감지 규칙 등록됐습니다: '+name);
-    });
+    var newRule = {
+        id: 'r_' + Date.now(),
+        name:name, url:url, keyword:keyword, excludeKeyword:excludeKeyword,
+        scanInterval:interval, enabled:true, type:'watch',
+        addedBy:addedBy, createdAt:Date.now()
+    };
+    _saveBotRules(_botRules.concat([newRule]));
+    ['wsrName','wsrUrl','wsrKw','wsrExclude'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('wsrInterval').value='300';
+    alert('✅ 비거래 감지 규칙 등록됐습니다: '+name);
 }
 
 function _cancelWsrEdit() {
@@ -1447,33 +1468,28 @@ function _cancelWsrEdit() {
     document.getElementById('wsrInterval').value='300';
     document.getElementById('wsrAddBtn').textContent='✅ 규칙 등록';
     document.getElementById('wsrAddBtn').style.background='#22c55e';
-    document.getElementById('wsrFormTitle').textContent='➕ 감지 규칙 추가';
+    document.getElementById('wsrFormTitle').textContent='➕ 새 비거래 규칙 추가';
     document.getElementById('wsrCancelBtn').style.display='none';
 }
 
-function _editWsr(key) {
-    var v = _wsrRules[key]; if (!v) return;
-    _wsrEditingKey = key;
-    document.getElementById('wsrName').value     = v.name            || '';
-    document.getElementById('wsrUrl').value      = v.url             || '';
-    document.getElementById('wsrKw').value       = v.keyword         || '';
-    document.getElementById('wsrExclude').value  = v.excludeKeyword  || '';
-    document.getElementById('wsrInterval').value = v.scanInterval    || 300;
+function _editWsrRule(id) {
+    var r = _botRules.find(function(r) { return r.id === id; }); if (!r) return;
+    _wsrEditingKey = id;
+    document.getElementById('wsrName').value     = r.name            || '';
+    document.getElementById('wsrUrl').value      = r.url             || '';
+    document.getElementById('wsrKw').value       = r.keyword         || '';
+    document.getElementById('wsrExclude').value  = r.excludeKeyword  || '';
+    document.getElementById('wsrInterval').value = r.scanInterval    || 300;
     document.getElementById('wsrAddBtn').textContent = '✏️ 수정 완료';
     document.getElementById('wsrAddBtn').style.background = '#f59e0b';
     document.getElementById('wsrFormTitle').textContent = '✏️ 수정 중';
     document.getElementById('wsrCancelBtn').style.display = '';
+    document.getElementById('wsrFormWrap').style.display = '';
     document.getElementById('wsrName').focus();
 }
 
-function _toggleWsr(key) {
-    var v = _wsrRules[key]; if (!v) return;
-    db.ref('/watch_scan_rules/'+key+'/enabled').set(v.enabled === false ? true : false);
-}
-
-function _deleteWsr(key) {
-    var v = _wsrRules[key]; if (!v) return;
-    if (!confirm('"'+(v.name||key)+'" 규칙을 삭제하시겠습니까?')) return;
-    db.ref('/watch_scan_rules/'+key).set(null);
-    db.ref('/imi_watch_banner/wsr_'+key).set(null);
+function _deleteWsrRule(id) {
+    var r = _botRules.find(function(r) { return r.id === id; }); if (!r) return;
+    if (!confirm('"'+(r.name||id)+'" 규칙을 삭제하시겠습니까?')) return;
+    _saveBotRules(_botRules.filter(function(r) { return r.id !== id; }));
 }

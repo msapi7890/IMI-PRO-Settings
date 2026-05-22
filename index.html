@@ -237,7 +237,7 @@
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
         @keyframes mfBadgePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
-        .log-box { background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); width:min(96vw,960px); height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.45); overflow:hidden; }
+        .log-box { background:var(--bg-card); border-radius:18px; border:2px solid var(--border-ui); width:min(96vw,960px); height:94vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.45); overflow:hidden; }
         .log-hdr { padding:16px 22px 14px; border-bottom:2px solid var(--border-ui); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
         .log-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
         #lockScreen { display:none; }
@@ -915,7 +915,7 @@
                 </div>
             </div>
             <div id="watchScanRuleList"></div>
-            <div style="font-size:11px;opacity:0.5;text-align:center;padding:6px 0;">📡 설정 주기마다 URL 1페이지를 직접 스캔 · 사기글 봇과 완전히 별개</div>
+            <div style="font-size:11px;opacity:0.5;text-align:center;padding:6px 0;">📡 설정 주기마다 URL을 직접 스캔 · 사기글 봇과 동일한 탭 방식으로 동작</div>
         </div>
     </div>
 </div>
@@ -931,19 +931,28 @@
             <button onclick="closeLogPanel()" style="font-size:22px;opacity:0.3;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
         <div class="mon-tabs" style="flex-shrink:0;">
-            <button id="logTab1" class="mon-tab mon-tab-active" onclick="switchLogTab(1)">📡 감지 로그</button>
-            <button id="logTab2" class="mon-tab" onclick="switchLogTab(2)">🚫 제외물품목록</button>
+            <button id="logTab1" class="mon-tab mon-tab-active" onclick="switchLogTab(1)">🚨 사기글 로그</button>
+            <button id="logTab2" class="mon-tab" onclick="switchLogTab(2)">📦 비거래 로그</button>
+            <button id="logTab3" class="mon-tab" onclick="switchLogTab(3)">🚫 제외물품목록</button>
         </div>
-        <!-- 탭1: 감지 로그 -->
+        <!-- 탭1: 사기글 로그 -->
         <div id="logTabContent1" class="log-body">
             <div id="logFullDayBtnWrap" style="display:none;flex-shrink:0;padding-bottom:8px;">
                 <button id="logFullDayBtn" onclick="loadFullDayLog()" style="font-size:11px;padding:6px 0;border-radius:8px;border:1.5px solid #38bdf8;color:#38bdf8;background:none;cursor:pointer;font-weight:700;width:100%;letter-spacing:0.02em;transition:opacity .15s;">📅 24시간 전체 기록 불러오기</button>
             </div>
-            <div id="monitorLogEmpty" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">감지된 물품이 없습니다.<br><span style="font-size:11px;">봇이 물품을 감지하면 여기에 기록됩니다.</span></div>
+            <div id="monitorLogEmpty" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">감지된 사기글이 없습니다.<br><span style="font-size:11px;">봇이 물품을 감지하면 여기에 기록됩니다.</span></div>
             <div id="monitorLogList"></div>
         </div>
-        <!-- 탭2: 제외물품목록 -->
+        <!-- 탭2: 비거래 로그 -->
         <div id="logTabContent2" class="log-body" style="display:none;">
+            <div id="logFullDayBtnWrapW" style="display:none;flex-shrink:0;padding-bottom:8px;">
+                <button id="logFullDayBtnW" onclick="loadFullDayLogW()" style="font-size:11px;padding:6px 0;border-radius:8px;border:1.5px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;width:100%;letter-spacing:0.02em;transition:opacity .15s;">📅 24시간 전체 기록 불러오기</button>
+            </div>
+            <div id="monitorLogEmptyW" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">감지된 비거래가 없습니다.<br><span style="font-size:11px;">봇이 물품을 감지하면 여기에 기록됩니다.</span></div>
+            <div id="monitorLogListW"></div>
+        </div>
+        <!-- 탭3: 제외물품목록 -->
+        <div id="logTabContent3" class="log-body" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-shrink:0;">
                 <div style="font-size:11px;font-weight:900;opacity:0.5;text-transform:uppercase;letter-spacing:0.1em;">🚫 제외물품목록</div>
                 <button onclick="clearAllBlocked()" style="font-size:10px;padding:4px 12px;border-radius:6px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;font-weight:700;">전체 해제</button>
@@ -3818,7 +3827,7 @@
         }
         if(n===4) { _renderWatchedTids(); _loadWatchInterval(); }
         if(n===5) {
-            _renderWatchScanRules();
+            _renderWatchRules();
             var wsrFW = document.getElementById('wsrFormWrap');
             if(wsrFW) wsrFW.style.display = _isBotPrivileged() ? '' : 'none';
         }
@@ -7984,18 +7993,27 @@
             db.ref('imi_watch_alerts').on('child_added', function(snap){
                 var d = snap.val();
                 if(!d || _shownAlerts[snap.key]) return;
-                if(d.seen) return; // 이미 확인한 알림 스킵 (새로고침 시 재표시 방지)
+                if(d.seen || d.done) return;
                 if((d.at||0) < _startAt - 300000) return; // 5분 이전 알림 무시
                 _shownAlerts[snap.key] = true;
                 db.ref('imi_watch_alerts/'+snap.key+'/seen').set(true);
-                _showWatchAlert(d);
+                _showWatchAlert(d, snap.key);
+            });
+            db.ref('imi_watch_alerts').on('child_changed', function(snap){
+                var d = snap.val();
+                if(d && d.done){
+                    var el = document.getElementById('_imiWatchAlert');
+                    if(el && el.dataset.alertKey === snap.key) el.remove();
+                }
             });
         })();
 
-        // 비거래 배너 — Firebase imi_watch_banner 리스너 (활성 항목이 있으면 배너 표시)
+        // 거래번호 감시 배너 — wsr_ 접두사(비거래 스캔) 제외, 거래번호 감시 항목만 표시
         db.ref('imi_watch_banner').on('value', function(snap){
             var data = snap.val() || {};
-            var active = Object.values(data).filter(function(v){ return v && v.active; });
+            var active = Object.entries(data)
+                .filter(function(e){ return e[1] && e[1].active && !e[0].startsWith('wsr_'); })
+                .map(function(e){ return e[1]; });
             var banner = document.getElementById('watchBanner');
             if(!banner) return;
             if(!active.length){ banner.style.display='none'; banner.innerHTML=''; return; }
@@ -8013,24 +8031,28 @@
         });
     };
 
-    function _showWatchAlert(data){
-        // 기존 알림 제거 후 새 알림 표시 (스택 쌓지 않음)
+    function _showWatchAlert(data, alertKey){
         var existing = document.getElementById('_imiWatchAlert');
         if(existing) existing.remove();
 
+        var tids    = data.tids || (data.tid ? [data.tid] : []);
+        var label   = data.label   || data.keyword || '감시 항목';
+        var keyword = data.keyword || '';
+        var count   = data.count   || tids.length || 0;
+
         var el = document.createElement('div');
         el.id = '_imiWatchAlert';
+        if(alertKey) el.dataset.alertKey = alertKey;
         el.style.cssText = [
             'position:fixed','bottom:20px','left:20px','z-index:99999',
             'background:#0a1f10','border:2px solid #22c55e','border-radius:14px',
-            'padding:14px 16px','width:300px','max-width:calc(100vw - 40px)',
+            'padding:14px 16px','width:320px','max-width:calc(100vw - 40px)',
             'font-family:Segoe UI,sans-serif',
             'box-shadow:0 4px 28px rgba(34,197,94,0.3)',
             'animation:_watchSlideIn 0.3s ease'
         ].join(';');
         document.body.appendChild(el);
 
-        // 슬라이드인 애니메이션 (최초 1회만 주입)
         if(!document.getElementById('_watchAlertStyle')){
             var sty = document.createElement('style');
             sty.id = '_watchAlertStyle';
@@ -8038,29 +8060,77 @@
             document.head.appendChild(sty);
         }
 
-        var tid     = data.tid     || '';
-        var label   = data.label   || data.keyword || '감시 항목';
-        var keyword = data.keyword || '';
-        var count   = data.count   || '';
-        var tidLink = tid
-            ? '<a href="https://www.itemmania.com/sell/application.html?id='+tid
-              +'" target="_blank" style="color:#4ade80;text-decoration:none;font-weight:900;">거래 #'+tid+'</a>'
-            : '';
+        // 헤더
+        var hdr = document.createElement('div');
+        hdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+        hdr.innerHTML = '<span style="background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;">🔔 비거래 감지</span>';
+        var closeX = document.createElement('span');
+        closeX.textContent = '✕';
+        closeX.style.cssText = 'margin-left:auto;cursor:pointer;opacity:0.4;font-size:18px;line-height:1;';
+        closeX.onclick = function(){ el.remove(); };
+        hdr.appendChild(closeX);
+        el.appendChild(hdr);
 
-        el.innerHTML =
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
-            +'<span style="background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;">🔔 비거래 감지</span>'
-            +'<span onclick="document.getElementById(\'_imiWatchAlert\').remove()" style="margin-left:auto;cursor:pointer;opacity:0.4;font-size:18px;line-height:1;">✕</span>'
-            +'</div>'
-            +'<div style="font-size:13px;font-weight:800;color:#f0fdf4;margin-bottom:4px;">'+escHtml(label)+'</div>'
-            +(keyword&&keyword!==label?'<div style="font-size:11px;color:#86efac;margin-bottom:3px;">키워드: '+escHtml(keyword)+'</div>':'')
-            +(count?'<div style="font-size:11px;color:#86efac;margin-bottom:4px;">감지: <strong>'+count+'</strong>건</div>':'')
-            +(tidLink?'<div style="font-size:11px;margin-bottom:10px;">'+tidLink+'</div>':'<div style="margin-bottom:10px;"></div>')
-            +'<button onclick="document.getElementById(\'_imiWatchAlert\').remove()" '
-            +'style="width:100%;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;">확인</button>';
+        var labelEl = document.createElement('div');
+        labelEl.style.cssText = 'font-size:13px;font-weight:800;color:#f0fdf4;margin-bottom:4px;';
+        labelEl.textContent = label;
+        el.appendChild(labelEl);
 
-        clearTimeout(el._t);
-        el._t = setTimeout(function(){ if(el.parentNode) el.remove(); }, 30000);
+        if(keyword && keyword !== label){
+            var kwEl = document.createElement('div');
+            kwEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:3px;';
+            kwEl.textContent = '키워드: ' + keyword;
+            el.appendChild(kwEl);
+        }
+
+        if(count){
+            var cntEl = document.createElement('div');
+            cntEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;';
+            cntEl.textContent = count + '개 감지';
+            el.appendChild(cntEl);
+        }
+
+        var tidContainer = document.createElement('div');
+        tidContainer.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+        el.appendChild(tidContainer);
+
+        function _checkAllDone(){
+            if(!tidContainer.children.length){
+                el.remove();
+                if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
+            }
+        }
+
+        if(tids.length > 0){
+            tids.forEach(function(tid){
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(34,197,94,0.08);border:1px solid #22c55e33;border-radius:7px;';
+
+                var tidLink = document.createElement('a');
+                tidLink.href = 'https://www.itemmania.com/sell/application.html?id=' + tid;
+                tidLink.target = '_blank';
+                tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:17px;letter-spacing:0.04em;';
+                tidLink.textContent = '#' + (typeof _fmtTid === 'function' ? _fmtTid(tid) : tid);
+                row.appendChild(tidLink);
+
+                var doneBtn = document.createElement('button');
+                doneBtn.textContent = '처리완료';
+                doneBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
+                doneBtn.onclick = function(){ row.remove(); _checkAllDone(); };
+                row.appendChild(doneBtn);
+                tidContainer.appendChild(row);
+            });
+        } else {
+            var doneBtn2 = document.createElement('button');
+            doneBtn2.textContent = '처리완료';
+            doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
+            doneBtn2.onclick = function(){
+                el.remove();
+                if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
+            };
+            tidContainer.appendChild(doneBtn2);
+        }
+        // 자동 닫힘 없음 — 처리완료 버튼으로만 닫힘
     }
 
     db.ref('notices_mania').on('value',function(s){
