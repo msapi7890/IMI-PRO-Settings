@@ -8039,10 +8039,11 @@
             existing.remove();
         }
 
-        var tids    = data.tids || (data.tid ? [data.tid] : []);
-        var label   = data.label   || data.keyword || '감시 항목';
-        var keyword = data.keyword || '';
-        var count   = data.count   || tids.length || 0;
+        var tids     = data.tids || (data.tid ? [data.tid] : []);
+        var itemRows = data.itemRows || [];
+        var label    = data.label   || data.keyword || '감시 항목';
+        var keyword  = data.keyword || '';
+        var count    = data.count   || tids.length || 0;
 
         var el = document.createElement('div');
         el.id = '_imiWatchAlert';
@@ -8110,16 +8111,23 @@
 
         if(tids.length > 0){
             tids.forEach(function(tid){
+                var rowData = itemRows.find(function(r){ return r.tid === tid; }) || {};
+                var itemKey = rowData.key || (rowData.t || '').substring(0,30).trim();
+                var itemTitle = rowData.t || '';
+
                 var row = document.createElement('div');
                 row.dataset.tid = tid;
-                row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(34,197,94,0.08);border:1px solid #22c55e33;border-radius:7px;';
+                row.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:6px 8px;background:rgba(34,197,94,0.08);border:1px solid #22c55e33;border-radius:7px;';
+
+                var topRow = document.createElement('div');
+                topRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
 
                 var tidLink = document.createElement('a');
                 tidLink.href = 'https://www.itemmania.com/sell/application.html?id=' + tid;
                 tidLink.target = '_blank';
                 tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:17px;letter-spacing:0.04em;';
                 tidLink.textContent = '#' + (typeof _fmtTid === 'function' ? _fmtTid(tid) : tid);
-                row.appendChild(tidLink);
+                topRow.appendChild(tidLink);
 
                 var doneBtn = document.createElement('button');
                 doneBtn.textContent = '처리완료';
@@ -8128,7 +8136,35 @@
                     if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
                     else { row.remove(); _checkAllDone(); }
                 };
-                row.appendChild(doneBtn);
+                topRow.appendChild(doneBtn);
+
+                if(itemKey){
+                    var filterBtn = document.createElement('button');
+                    filterBtn.textContent = '필터제외';
+                    filterBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:none;border:1px solid #f87171;color:#f87171;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
+                    filterBtn.onclick = function(){
+                        db.ref('/imi_blocked').once('value', function(snap){
+                            var list = snap.val() || [];
+                            if(!Array.isArray(list)) list = [];
+                            var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
+                            list.push({ key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now() });
+                            db.ref('/imi_blocked').set(list, function(){
+                                filterBtn.textContent = '제외됨';
+                                filterBtn.disabled = true;
+                                filterBtn.style.opacity = '0.45';
+                            });
+                        });
+                    };
+                    topRow.appendChild(filterBtn);
+                }
+
+                row.appendChild(topRow);
+                if(itemTitle){
+                    var titleEl2 = document.createElement('div');
+                    titleEl2.style.cssText = 'font-size:11px;color:#86efac;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    titleEl2.textContent = itemTitle;
+                    row.appendChild(titleEl2);
+                }
                 tidContainer.appendChild(row);
             });
 

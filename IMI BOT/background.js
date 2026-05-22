@@ -568,14 +568,16 @@ async function showWatchPopup(data) {
 
     // IMI PRO 인페이지 알림 (Firebase 경유 — 확장프로그램 없는 사용자도 수신)
     try {
-        const tids = (data.itemRows || []).map(r => r.tid || '').filter(Boolean);
+        const itemRows = (data.itemRows || []);
+        const tids = itemRows.map(r => r.tid || '').filter(Boolean);
         await firePush('/imi_watch_alerts', {
-            tids:    tids,
-            label:   data.label   || data.ruleName || '',
-            keyword: data.keyword || data.ruleKeyword || '',
-            count:   data.itemCount || data.count || 0,
-            at:      now,
-            seen:    false
+            tids:     tids,
+            itemRows: itemRows.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
+            label:    data.label   || data.ruleName || '',
+            keyword:  data.keyword || data.ruleKeyword || '',
+            count:    data.itemCount || data.count || 0,
+            at:       now,
+            seen:     false
         });
     } catch(e) {}
 }
