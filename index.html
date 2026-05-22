@@ -898,6 +898,26 @@
         </div>
         <!-- 탭5: 비거래 규칙 -->
         <div id="monTabContent5" class="mon-body" style="display:none;">
+            <!-- 비거래 활성 시간 설정 -->
+            <div style="padding:12px 14px;background:var(--bg-body);border-radius:10px;border:1.5px solid var(--border-ui);margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <div style="flex:1;">
+                        <div style="font-size:13px;font-weight:900;">⏰ 비거래 활성 시간</div>
+                        <div style="font-size:11px;opacity:0.5;margin-top:2px;">비활성 시간엔 비거래 봇이 자동 대기합니다</div>
+                    </div>
+                    <button id="tog-watch-hours" onclick="toggleWatchHours()" style="width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;flex-shrink:0;background:#475569;transition:background 0.2s;">
+                        <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
+                    </button>
+                </div>
+                <div id="watchHoursRange" style="opacity:0.4;pointer-events:none;">
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px;">
+                        <input id="watchHoursFrom" type="text" placeholder="09:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);outline:none;text-align:center;width:100%;">
+                        <span style="font-size:12px;opacity:0.6;text-align:center;">~</span>
+                        <input id="watchHoursTo" type="text" placeholder="00:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);outline:none;text-align:center;width:100%;">
+                    </div>
+                    <button onclick="saveWatchHours()" style="width:100%;padding:7px;border-radius:7px;background:#22c55e;color:#0f172a;border:none;font-size:12px;font-weight:900;cursor:pointer;">저장</button>
+                </div>
+            </div>
             <div id="wsrFormWrap" style="display:none;background:var(--bg-body);border:2px dashed #22c55e55;border-radius:10px;padding:12px;margin-bottom:10px;">
                 <div id="wsrFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:8px;">➕ 새 비거래 규칙 추가</div>
                 <input id="wsrName" placeholder="규칙 이름 (예: 게임물위 비거래)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
@@ -931,9 +951,10 @@
             <button onclick="closeLogPanel()" style="font-size:22px;opacity:0.3;cursor:pointer;background:none;border:none;color:var(--text-main);line-height:1;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
         <div class="mon-tabs" style="flex-shrink:0;">
-            <button id="logTab1" class="mon-tab mon-tab-active" onclick="switchLogTab(1)">🚨 사기글 로그</button>
-            <button id="logTab2" class="mon-tab" onclick="switchLogTab(2)">📦 비거래 로그</button>
-            <button id="logTab3" class="mon-tab" onclick="switchLogTab(3)">🚫 제외물품목록</button>
+            <button id="logTab1" class="mon-tab mon-tab-active" onclick="switchLogTab(1)" style="font-size:11px;">🚨 사기글 로그</button>
+            <button id="logTab2" class="mon-tab" onclick="switchLogTab(2)" style="font-size:11px;">📦 비거래 로그</button>
+            <button id="logTab3" class="mon-tab" onclick="switchLogTab(3)" style="font-size:11px;">🚫 사기글 제외</button>
+            <button id="logTab4" class="mon-tab" onclick="switchLogTab(4)" style="font-size:11px;">📦 비거래 제외</button>
         </div>
         <!-- 탭1: 사기글 로그 -->
         <div id="logTabContent1" class="log-body">
@@ -951,14 +972,23 @@
             <div id="monitorLogEmptyW" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">감지된 비거래가 없습니다.<br><span style="font-size:11px;">봇이 물품을 감지하면 여기에 기록됩니다.</span></div>
             <div id="monitorLogListW"></div>
         </div>
-        <!-- 탭3: 제외물품목록 -->
+        <!-- 탭3: 사기글 필터제외 -->
         <div id="logTabContent3" class="log-body" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-shrink:0;">
-                <div style="font-size:11px;font-weight:900;opacity:0.5;text-transform:uppercase;letter-spacing:0.1em;">🚫 제외물품목록</div>
-                <button onclick="clearAllBlocked()" style="font-size:10px;padding:4px 12px;border-radius:6px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;font-weight:700;">전체 해제</button>
+                <div style="font-size:11px;font-weight:900;opacity:0.5;text-transform:uppercase;letter-spacing:0.1em;">🚫 사기글 필터제외</div>
+                <button onclick="clearAllBlockedFraud()" style="font-size:10px;padding:4px 12px;border-radius:6px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;font-weight:700;">전체 해제</button>
             </div>
             <div id="blockedItemList"></div>
-            <div id="blockedEmpty" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">제외된 물품이 없습니다.</div>
+            <div id="blockedEmpty" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">제외된 사기글 물품이 없습니다.</div>
+        </div>
+        <!-- 탭4: 비거래 필터제외 -->
+        <div id="logTabContent4" class="log-body" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-shrink:0;">
+                <div style="font-size:11px;font-weight:900;opacity:0.5;text-transform:uppercase;letter-spacing:0.1em;">📦 비거래 필터제외</div>
+                <button onclick="clearAllBlockedWatch()" style="font-size:10px;padding:4px 12px;border-radius:6px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;font-weight:700;">전체 해제</button>
+            </div>
+            <div id="blockedItemListW"></div>
+            <div id="blockedEmptyW" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">제외된 비거래 물품이 없습니다.</div>
         </div>
     </div>
 </div>
@@ -3828,9 +3858,58 @@
         if(n===4) { _renderWatchedTids(); _loadWatchInterval(); }
         if(n===5) {
             _renderWatchRules();
+            _loadWatchHours();
             var wsrFW = document.getElementById('wsrFormWrap');
             if(wsrFW) wsrFW.style.display = _isBotPrivileged() ? '' : 'none';
         }
+    }
+    function _fmtTimeInput(el){
+        var pos = el.selectionStart;
+        var v = el.value.replace(/[^0-9]/g,'');
+        if(v.length > 2) v = v.slice(0,2) + ':' + v.slice(2);
+        if(v.length > 5) v = v.slice(0,5) + ':' + v.slice(5);
+        if(v.length > 8) v = v.slice(0,8);
+        el.value = v;
+    }
+    function _loadWatchHours(){
+        db.ref('/imi_watch_hours').once('value', function(snap){
+            var wh = snap.val() || { enabled:false, from:'09:00:00', to:'00:00:00' };
+            var tog = document.getElementById('tog-watch-hours');
+            var range = document.getElementById('watchHoursRange');
+            var fromEl = document.getElementById('watchHoursFrom');
+            var toEl   = document.getElementById('watchHoursTo');
+            if(fromEl) fromEl.value = wh.from || '09:00:00';
+            if(toEl)   toEl.value   = wh.to   || '00:00:00';
+            if(tog){
+                tog.style.background = wh.enabled ? '#22c55e' : '#475569';
+                var dot = tog.querySelector('.sw-dot');
+                if(dot) dot.style.transform = wh.enabled ? 'translateX(20px)' : 'translateX(0)';
+            }
+            if(range){
+                range.style.opacity = wh.enabled ? '1' : '0.4';
+                range.style.pointerEvents = wh.enabled ? '' : 'none';
+            }
+        });
+    }
+    function toggleWatchHours(){
+        db.ref('/imi_watch_hours').once('value', function(snap){
+            var wh = snap.val() || { enabled:false, from:'09:00', to:'00:00' };
+            wh.enabled = !wh.enabled;
+            db.ref('/imi_watch_hours').set(wh, _loadWatchHours);
+        });
+    }
+    function saveWatchHours(){
+        var from = (document.getElementById('watchHoursFrom')||{}).value || '09:00';
+        var to   = (document.getElementById('watchHoursTo')||{}).value   || '00:00';
+        db.ref('/imi_watch_hours').once('value', function(snap){
+            var wh = snap.val() || { enabled:false };
+            wh.from = from; wh.to = to;
+            db.ref('/imi_watch_hours').set(wh, function(){
+                _loadWatchHours();
+                var btn = document.querySelector('[onclick="saveWatchHours()"]');
+                if(btn){ var orig=btn.textContent; btn.textContent='✓'; setTimeout(function(){ btn.textContent=orig; }, 1200); }
+            });
+        });
     }
     function toggleNotif(key){
         _notifPrefs[key]=!_notifPrefs[key];
@@ -8125,7 +8204,7 @@
                 var tidLink = document.createElement('a');
                 tidLink.href = 'https://www.itemmania.com/sell/application.html?id=' + tid;
                 tidLink.target = '_blank';
-                tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:17px;letter-spacing:0.04em;';
+                tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
                 tidLink.textContent = '#' + (typeof _fmtTid === 'function' ? _fmtTid(tid) : tid);
                 topRow.appendChild(tidLink);
 
@@ -8137,7 +8216,20 @@
                     else { row.remove(); _checkAllDone(); }
                 };
                 topRow.appendChild(doneBtn);
+                row.appendChild(topRow);
 
+                var bottomRow = document.createElement('div');
+                bottomRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                if(itemTitle){
+                    var titleEl2 = document.createElement('div');
+                    titleEl2.style.cssText = 'flex:1;font-size:11px;color:#86efac;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    titleEl2.textContent = itemTitle;
+                    bottomRow.appendChild(titleEl2);
+                } else {
+                    var spacer = document.createElement('div');
+                    spacer.style.cssText = 'flex:1;';
+                    bottomRow.appendChild(spacer);
+                }
                 if(itemKey){
                     var filterBtn = document.createElement('button');
                     filterBtn.textContent = '필터제외';
@@ -8147,7 +8239,7 @@
                             var list = snap.val() || [];
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
-                            list.push({ key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now() });
+                            list.push({ key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch' });
                             db.ref('/imi_blocked').set(list, function(){
                                 filterBtn.textContent = '제외됨';
                                 filterBtn.disabled = true;
@@ -8155,16 +8247,9 @@
                             });
                         });
                     };
-                    topRow.appendChild(filterBtn);
+                    bottomRow.appendChild(filterBtn);
                 }
-
-                row.appendChild(topRow);
-                if(itemTitle){
-                    var titleEl2 = document.createElement('div');
-                    titleEl2.style.cssText = 'font-size:11px;color:#86efac;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                    titleEl2.textContent = itemTitle;
-                    row.appendChild(titleEl2);
-                }
+                row.appendChild(bottomRow);
                 tidContainer.appendChild(row);
             });
 

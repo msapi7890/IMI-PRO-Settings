@@ -673,7 +673,8 @@ function _showMonitorFlash(s) {
         var _fireNotif = function() {
             new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
                 body: (s.itemCount||0) + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
-                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico'
+                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+                tag: 'imi-pro-alert'
             });
         };
         if (Notification.permission === 'granted') {
@@ -774,7 +775,7 @@ document.addEventListener('click', function(e) {
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now() });
+            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now(), type: 'fraud' });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -796,7 +797,7 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now() });
+            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now(), type: 'fraud' });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -827,7 +828,7 @@ function closeLogPanel() {
     document.getElementById('logPanel').classList.add('hidden');
 }
 function switchLogTab(n) {
-    [1,2,3].forEach(function(i) {
+    [1,2,3,4].forEach(function(i) {
         var t = document.getElementById('logTab'+i);
         var c = document.getElementById('logTabContent'+i);
         if (t) t.classList.toggle('mon-tab-active', i === n);
@@ -835,7 +836,8 @@ function switchLogTab(n) {
     });
     if (n === 1) loadMonitorLog(_logFullMode);
     if (n === 2) loadWatchLog(_logFullModeW);
-    if (n === 3) loadBlockedItems();
+    if (n === 3) loadBlockedFraud();
+    if (n === 4) loadBlockedWatch();
 }
 
 function loadFullDayLog() {
@@ -1009,22 +1011,24 @@ function _loadLogByType(fullDay, isWatch) {
     });
 }
 
-// ===== 차단 목록 로드 =====
-function loadBlockedItems() {
+// ===== 차단 목록 렌더 (type: 'fraud'=사기글, 'watch'=비거래, 없으면 fraud로 간주) =====
+function _renderBlockedByType(type, containerId, emptyId) {
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
-        var container = document.getElementById('blockedItemList');
-        var empty     = document.getElementById('blockedEmpty');
-        if (!list.length) {
+        var filtered = list.filter(function(item) {
+            var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
+            return t === type;
+        });
+        var container = document.getElementById(containerId);
+        var empty     = document.getElementById(emptyId);
+        if (!filtered.length) {
             container.innerHTML = '';
-            empty.style.display = '';
+            if (empty) empty.style.display = '';
             return;
         }
-        empty.style.display = 'none';
-        var reversed = list.slice().reverse();
-        container.innerHTML = reversed.map(function(item, displayIdx) {
-            var originalIdx = list.length - 1 - displayIdx; // 해제 시 원본 인덱스 사용
+        if (empty) empty.style.display = 'none';
+        container.innerHTML = filtered.slice().reverse().map(function(item) {
             var key     = typeof item === 'object' ? (item.key   || '') : item;
             var title   = typeof item === 'object' ? (item.title || '') : '';
             var tid     = typeof item === 'object' ? (item.tid   || '') : '';
@@ -1037,33 +1041,58 @@ function loadBlockedItems() {
                 + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(subText) + '</div>'
                 + (addedBy ? '<div style="font-size:10px;opacity:0.45;margin-top:2px;">✍️ ' + _esc(addedBy) + (addedAt ? ' · ' + addedAt : '') + '</div>' : '')
                 + '</div>'
-                + '<button onclick="unblockItem(' + originalIdx + ')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
+                + '<button onclick="unblockItem(\'' + _esc(key.replace(/'/g,'\\\'')) + '\')" style="font-size:10px;padding:3px 10px;border-radius:5px;border:1px solid #22c55e;color:#22c55e;background:none;cursor:pointer;font-weight:700;flex-shrink:0;">제외 해제</button>'
                 + '</div>';
         }).join('');
     });
 }
+function loadBlockedFraud() { _renderBlockedByType('fraud', 'blockedItemList',  'blockedEmpty'); }
+function loadBlockedWatch() { _renderBlockedByType('watch', 'blockedItemListW', 'blockedEmptyW'); }
+function loadBlockedItems() { loadBlockedFraud(); }
 
-// ===== 개별 차단 해제 =====
-function unblockItem(idx) {
+// ===== 개별 차단 해제 (key 기반) =====
+function unblockItem(key) {
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
-        list.splice(idx, 1);
-        db.ref('/imi_blocked').set(list, function() {
-            loadBlockedItems();
+        var newList = list.filter(function(item) {
+            var k = typeof item === 'object' ? item.key : item;
+            return k !== key;
+        });
+        db.ref('/imi_blocked').set(newList, function() {
+            loadBlockedFraud();
+            loadBlockedWatch();
             loadMonitorLog();
         });
     });
 }
 
-// ===== 전체 차단 해제 =====
-function clearAllBlocked() {
-    if (!confirm('차단 목록을 전체 삭제하시겠습니까?')) return;
-    db.ref('/imi_blocked').set([], function() {
-        loadBlockedItems();
-        loadMonitorLog();
+// ===== 전체 차단 해제 (타입별) =====
+function clearAllBlockedFraud() {
+    if (!confirm('사기글 필터제외 목록을 전체 삭제하시겠습니까?')) return;
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        var newList = list.filter(function(item) {
+            var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
+            return t !== 'fraud';
+        });
+        db.ref('/imi_blocked').set(newList, function() { loadBlockedFraud(); loadMonitorLog(); });
     });
 }
+function clearAllBlockedWatch() {
+    if (!confirm('비거래 필터제외 목록을 전체 삭제하시겠습니까?')) return;
+    db.ref('/imi_blocked').once('value', function(snap) {
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        var newList = list.filter(function(item) {
+            var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
+            return t !== 'watch';
+        });
+        db.ref('/imi_blocked').set(newList, function() { loadBlockedWatch(); });
+    });
+}
+function clearAllBlocked() { clearAllBlockedFraud(); }
 
 // ===== 봇 규칙 관리 (Firebase /imi_rules 배열) =====
 var _botRules = [];

@@ -303,6 +303,15 @@ fireGet('/imi_watch_banner').then(data => {
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'DEBUG_LOG') {
+        console.log('[BOT]', msg.text);
+        sendResponse({ ok: true });
+        return true;
+    }
+    if (msg.type === 'GET_WATCH_HOURS') {
+        fireGet('/imi_watch_hours').then(wh => sendResponse(wh || null));
+        return true;
+    }
     if (msg.type === 'FIREBASE_SET') {
         // 봇 탭 ID 자동 갱신 → OPEN_ITEM_IN_TAB에서 올바른 탭 사용
         if (sender.tab && sender.tab.id && msg.data && msg.data.ruleId) {

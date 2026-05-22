@@ -228,15 +228,7 @@
             if (maxPrice > 0 && price > maxPrice) return;
 
             if (rule.photoOnly) {
-                // 제목 열(td) 안에 있는 사진 아이콘 img만 감지
-                // 다른 열의 구글·카카오 로그인 아이콘 등은 제외됨
-                const titleTd = titleEl ? (titleEl.closest('td') || titleEl.parentElement) : null;
-                const searchEl = titleTd || el;
-                const hasPhoto = Array.from(searchEl.querySelectorAll('img')).some(img => {
-                    const src = (img.getAttribute('src') || '').trim();
-                    return src.length > 5 && !/noimg|no_img|blank|grade|rank/i.test(src);
-                });
-                if (!hasPhoto) return;
+                if (!el.querySelector('.hasScreenshot')) return;
             }
 
             const candidates = el.tagName === 'A'
@@ -385,17 +377,24 @@
     // --- 시간대 체크 ---
     function _inTimeRange(from, to) {
         if (!from || !to) return true;
-        const now  = new Date();
-        const cur  = now.getHours() * 60 + now.getMinutes();
-        const [fh, fm] = from.split(':').map(Number);
-        const [th, tm] = to.split(':').map(Number);
-        const f = fh * 60 + fm, t = th * 60 + tm;
-        return f <= t ? (cur >= f && cur < t) : (cur >= f || cur < t); // 자정 넘김 지원
+        const now = new Date();
+        const cur = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const [fh=0, fm=0, fs=0] = from.split(':').map(Number);
+        const [th=0, tm=0, ts=0] = to.split(':').map(Number);
+        const f = fh * 3600 + fm * 60 + fs;
+        const t = th * 3600 + tm * 60 + ts;
+        return f <= t ? (cur >= f && cur < t) : (cur >= f || cur < t);
     }
     async function _isInActiveHours() {
+        // 비거래 규칙은 전용 활성 시간 설정 우선 (사기글 글로벌 시간과 독립)
+        if (rule && rule.type === 'watch') {
+            const wh = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_WATCH_HOURS' }, r));
+            if (wh && wh.enabled && wh.from && wh.to) return _inTimeRange(wh.from, wh.to);
+            return true;
+        }
         const gh = await new Promise(r => chrome.storage.local.get('imi_global_hours', d => r(d.imi_global_hours || null)));
         if (gh && gh.enabled && gh.from && gh.to) return _inTimeRange(gh.from, gh.to);
-        if (rule && rule.activeFrom && rule.activeTo)  return _inTimeRange(rule.activeFrom, rule.activeTo);
+        if (rule && rule.activeFrom && rule.activeTo) return _inTimeRange(rule.activeFrom, rule.activeTo);
         return true;
     }
 
