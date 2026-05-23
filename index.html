@@ -8262,6 +8262,7 @@
                 doneBtn.textContent = '처리완료';
                 doneBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
                 doneBtn.onclick = function(){
+                    db.ref('imi_watch_done/'+tid).set({at:Date.now()});
                     if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
                     else { row.remove(); _checkAllDone(); }
                 };
@@ -8334,6 +8335,7 @@
             doneBtn2.textContent = '처리완료';
             doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
             doneBtn2.onclick = function(){
+                (tids.length ? tids : []).forEach(function(t){ db.ref('imi_watch_done/'+t).set({at:Date.now()}); });
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
                 el.remove();
             };
