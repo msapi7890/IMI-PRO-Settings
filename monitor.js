@@ -642,6 +642,7 @@ function _showMonitorFlash(s) {
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab && fraudPanel){
         fraudTab.style.display = 'flex';
+        if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
         fraudTab.classList.add('hdr-tab-blink');
 
         // 전체 스크롤 컨테이너 (없으면 생성)
@@ -814,7 +815,7 @@ function _hideMonitorFlashLocal() {
     // 사기글 헤더 탭 & 드롭패널 숨기기
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
-    if(fraudTab){ fraudTab.style.display = 'none'; fraudTab.innerHTML = ''; fraudTab.classList.remove('hdr-tab-blink'); }
+    if(fraudTab){ fraudTab.style.display = 'none'; fraudTab.innerHTML = ''; fraudTab.classList.remove('hdr-tab-blink'); if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow(); }
     if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
 }
 

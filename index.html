@@ -236,13 +236,23 @@
         @keyframes monPulse { 0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.3)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0.1)} }
         #monitorAlertFlash { display:none!important; } /* 헤더 드롭패널로 대체 */
         /* ── 헤더 탭 & 드롭패널 ── */
-        .hdr-tab-pill { padding:0 18px; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:6px; height:32px; letter-spacing:0.03em; width:420px; max-width:100%; justify-content:center; box-sizing:border-box; }
+        .hdr-tab-pill { padding:0 18px; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:6px; height:32px; letter-spacing:0.03em; }
         .hdr-tab-watch { background:rgba(34,197,94,0.15); border:2px solid #22c55e; color:#22c55e; }
         .hdr-tab-fraud { background:rgba(239,68,68,0.15); border:2px solid #ef4444; color:#ef4444; }
         @keyframes _hdrWatchBlink { 0%,100%{background:rgba(34,197,94,0.15);box-shadow:none;border-color:#22c55e} 50%{background:rgba(34,197,94,0.55);box-shadow:0 0 14px rgba(34,197,94,0.9),0 0 28px rgba(34,197,94,0.4);border-color:#86efac} }
         @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);box-shadow:none;border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);box-shadow:0 0 14px rgba(239,68,68,0.9),0 0 28px rgba(239,68,68,0.4);border-color:#fca5a5} }
         .hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
         .hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
+        @keyframes _watchPanelBlink { 0%,100%{border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,0.7)} 50%{border-color:rgba(34,197,94,0.15);box-shadow:none} }
+        @keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444;box-shadow:0 4px 16px rgba(239,68,68,0.7)} 50%{border-color:rgba(239,68,68,0.15);box-shadow:none} }
+        .watch-panel-blink { animation:_watchPanelBlink 0.85s ease-in-out infinite !important; }
+        .fraud-panel-blink  { animation:_fraudPanelBlink 0.75s ease-in-out infinite !important; }
+        #hdrWatchLine { display:none;position:fixed;top:var(--header-h);left:0;width:50%;height:3px;background:#22c55e;z-index:9999;transition:opacity 0.15s; }
+        #hdrFraudLine { display:none;position:fixed;top:var(--header-h);right:0;width:50%;height:3px;background:#ef4444;z-index:9999;transition:opacity 0.15s; }
+        @keyframes _watchLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #22c55e,0 0 16px rgba(34,197,94,0.6)} 50%{opacity:0.15;box-shadow:none} }
+        @keyframes _fraudLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #ef4444,0 0 16px rgba(239,68,68,0.6)} 50%{opacity:0.15;box-shadow:none} }
+        #hdrWatchLine.blink { animation:_watchLineBlink 0.85s ease-in-out infinite; }
+        #hdrFraudLine.blink { animation:_fraudLineBlink 0.75s ease-in-out infinite; }
         .hdr-drop-panel { position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:12px; }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
@@ -1158,9 +1168,8 @@
                 <button id="mfNavBtn" onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼<span id="mfNavBadge" style="display:none;font-size:10px;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:3px;"></span></button><button id="mfNavCancelBtn" onclick="_mfNavCancel()" title="취소" style="display:none;font-size:11px;font-weight:900;border:1.5px solid #7f1d1d;border-radius:8px;padding:0 8px;height:32px;background:none;color:#f87171;cursor:pointer;white-space:nowrap;transition:0.15s;margin-left:-4px;">✕</button>
             </div>
             <!-- 비거래 탭 존 -->
-            <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;position:relative;min-width:0;padding-left:10px;">
+            <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;min-width:0;padding-left:10px;">
                 <div id="watchHeaderTab" class="hdr-tab-pill hdr-tab-watch" onclick="_watchPanelToggle()"></div>
-                <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;left:10px;transform:none;"></div>
             </div>
         </div>
         <!-- 가운데 열: 시계 -->
@@ -1168,9 +1177,8 @@
         <!-- 오른쪽 열: 사기글 탭 존 + 우측 버튼 -->
         <div style="display:flex;align-items:center;gap:8px;min-width:0;justify-content:flex-end;">
             <!-- 사기글 탭 존 -->
-            <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;position:relative;min-width:0;padding-right:10px;">
+            <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;min-width:0;padding-right:10px;">
                 <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
-                <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;left:auto;right:10px;transform:none;"></div>
             </div>
             <div id="hdrRightBtns" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                 <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;min-width:96px;justify-content:center;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
@@ -1185,6 +1193,14 @@
         <button onclick="cycleTheme()" class="text-2xl p-1 hover:scale-110 transition" id="themeBtn">🌞</button>
     </div>
 </header>
+
+<!-- 헤더 상단 알림 라인 (버튼과 동기화 깜빡임) -->
+<div id="hdrWatchLine"></div>
+<div id="hdrFraudLine"></div>
+
+<!-- 비거래/사기글 드롭패널 — 헤더 아래 fixed, 원래 팝업 크기(500px) -->
+<div id="watchDropPanel" style="position:fixed;top:var(--header-h);left:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:#0a1f10;border:2px solid #22c55e;margin-top:2px;"></div>
+<div id="fraudDropPanel" style="position:fixed;top:var(--header-h);right:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid #ef4444;margin-top:2px;"></div>
 
 <main class="flex flex-1 overflow-hidden">
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
@@ -8355,16 +8371,60 @@
 
     var _watchAlertMinimized = false;
 
+    function _updateWatchFraudRow(){
+        var w = document.getElementById('watchHeaderTab');
+        var f = document.getElementById('fraudHeaderTab');
+        var row = document.getElementById('watchFraudBtnRow');
+        if(!row) return;
+        var wVis = !!(w && w.style.display && w.style.display !== 'none');
+        var fVis = !!(f && f.style.display && f.style.display !== 'none');
+        row.style.display = (wVis || fVis) ? '' : 'none';
+    }
+
+    // 헤더 탭 상태(style/class) 변화 → 상단 라인 자동 동기화
+    (function(){
+        function _syncLine(tab, lineId){
+            var line = document.getElementById(lineId);
+            if(!line || !tab) return;
+            var visible = tab.style.display === 'flex';
+            line.style.display = visible ? 'block' : 'none';
+            if(visible && tab.classList.contains('hdr-tab-blink')){
+                line.classList.add('blink');
+            } else {
+                line.classList.remove('blink');
+            }
+        }
+        function _initLineObservers(){
+            var wTab = document.getElementById('watchHeaderTab');
+            var fTab = document.getElementById('fraudHeaderTab');
+            if(wTab) new MutationObserver(function(){ _syncLine(wTab,'hdrWatchLine'); })
+                .observe(wTab, {attributes:true, attributeFilter:['style','class']});
+            if(fTab) new MutationObserver(function(){ _syncLine(fTab,'hdrFraudLine'); })
+                .observe(fTab, {attributes:true, attributeFilter:['style','class']});
+        }
+        if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _initLineObservers);
+        else _initLineObservers();
+    })();
+
     function _watchPanelToggle(){
         var panel = document.getElementById('watchDropPanel');
         var tab   = document.getElementById('watchHeaderTab');
         if(!panel) return;
-        if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
-            panel.style.maxHeight = '0px';
-            _watchAlertMinimized = true;
-            if(tab) tab.classList.add('hdr-tab-blink');
+        var open = panel.style.maxHeight && panel.style.maxHeight !== '0px' && panel.style.maxHeight !== '4px';
+        if(open){
+            var hasItems = panel.querySelectorAll('[data-tid]').length > 0;
+            if(hasItems){
+                panel.style.maxHeight = '4px';
+                panel.classList.add('watch-panel-blink');
+                _watchAlertMinimized = true;
+                if(tab) tab.classList.add('hdr-tab-blink');
+            } else {
+                panel.style.maxHeight = '0px';
+                panel.classList.remove('watch-panel-blink');
+            }
         } else {
             panel.style.maxHeight = '75vh';
+            panel.classList.remove('watch-panel-blink');
             _watchAlertMinimized = false;
             if(tab) tab.classList.remove('hdr-tab-blink');
         }
@@ -8396,7 +8456,7 @@
         var count    = data.count   || tids.length || 0;
 
         // 탭 표시 (패널 열린 상태면 깜빡임 없음)
-        tab.style.display = 'flex';
+        tab.style.display = 'flex'; _updateWatchFraudRow();
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
         if(_watchAlertMinimized) tab.classList.add('hdr-tab-blink');
         else tab.classList.remove('hdr-tab-blink');
@@ -8429,7 +8489,7 @@
                 if(panel._procRef && panel._procListener){ panel._procRef.off('value', panel._procListener); panel._procRef = null; }
                 if(panel._doneRef && panel._doneListener){ panel._doneRef.off('value', panel._doneListener); panel._doneRef = null; }
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
-                tab.style.display = 'none';
+                tab.style.display = 'none'; _updateWatchFraudRow();
                 tab.innerHTML = '';
                 panel.style.maxHeight = '0px';
                 panel.innerHTML = '';

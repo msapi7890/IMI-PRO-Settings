@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>IMI PRO — UI 시연 페이지</title>
+<style>
+:root { --base-font:16px; --active-focus-color:#3abff8; --sidebar-w:240px; --notice-w:280px; --header-h:50px; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',sans-serif; background:#0f172a; color:#cbd5e1; height:calc(100vh / 0.9); width:calc(100vw / 0.9); overflow:hidden; display:flex; flex-direction:column; font-size:var(--base-font); zoom:0.9; }
+
+/* ── Header ── */
+header { height:var(--header-h); background:#1e293b; border-bottom:2px solid #334155; display:flex; align-items:center; z-index:1100; flex-shrink:0; }
+.h-left  { width:var(--sidebar-w); padding:0 1rem; border-right:2px solid #334155; height:100%; display:flex; align-items:center; justify-content:center; }
+.h-center{ flex:1; padding:0 1.2rem; }
+.h-right { width:var(--notice-w); padding:0 1rem; border-left:2px solid #334155; height:100%; display:flex; align-items:center; justify-content:space-between; }
+
+/* ── Tab Pills ── */
+.hdr-tab-pill { padding:0 18px; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:6px; height:32px; letter-spacing:0.03em; }
+.hdr-tab-watch { background:rgba(34,197,94,0.15); border:2px solid #22c55e; color:#22c55e; }
+.hdr-tab-fraud { background:rgba(239,68,68,0.15); border:2px solid #ef4444; color:#ef4444; }
+@keyframes _hdrWatchBlink { 0%,100%{background:rgba(34,197,94,0.15);box-shadow:none;border-color:#22c55e} 50%{background:rgba(34,197,94,0.55);box-shadow:0 0 14px rgba(34,197,94,0.9),0 0 28px rgba(34,197,94,0.4);border-color:#86efac} }
+@keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);box-shadow:none;border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);box-shadow:0 0 14px rgba(239,68,68,0.9),0 0 28px rgba(239,68,68,0.4);border-color:#fca5a5} }
+.hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
+.hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
+
+/* ── Panel Border Blink (최소화 시 패널 테두리선 깜빡임) ── */
+@keyframes _watchPanelBlink { 0%,100%{border-color:#22c55e;box-shadow:0 6px 20px rgba(34,197,94,0.7)} 50%{border-color:rgba(34,197,94,0.15);box-shadow:none} }
+@keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444;box-shadow:0 6px 20px rgba(239,68,68,0.7)} 50%{border-color:rgba(239,68,68,0.15);box-shadow:none} }
+.watch-panel-blink { animation:_watchPanelBlink 0.85s ease-in-out infinite !important; }
+.fraud-panel-blink  { animation:_fraudPanelBlink 0.75s ease-in-out infinite !important; }
+
+/* ── Drop Panels ── */
+#watchDropPanel { position:fixed; top:var(--header-h); left:0;  width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; background:#0a1f10; border:2px solid #22c55e; margin-top:2px; }
+#fraudDropPanel { position:fixed; top:var(--header-h); right:0; width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; background:#1e293b; border:2px solid #ef4444; margin-top:2px; }
+
+/* ── hdrMonDot ── */
+#hdrMonDot { width:7px; height:7px; border-radius:50%; background:#22c55e; flex-shrink:0; box-shadow:0 0 4px #22c55e; }
+
+/* ── Header Buttons ── */
+.hdr-btn { font-size:11px; font-weight:900; border:1.5px solid #334155; border-radius:8px; padding:0 12px; height:32px; background:none; color:#cbd5e1; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px; transition:0.15s; }
+.hdr-btn:hover { border-color:#3abff8; }
+
+/* ── Main Layout ── */
+main { flex:1; display:flex; overflow:hidden; }
+aside.left-bar  { width:var(--sidebar-w); flex-shrink:0; background:#1e293b; border-right:2px solid #334155; display:flex; flex-direction:column; padding:10px; gap:8px; overflow:hidden; }
+aside.right-bar { width:var(--notice-w);  flex-shrink:0; background:#1e293b; border-left:2px solid #334155; display:flex; flex-direction:column; overflow:hidden; }
+section#chatSection { flex:1; display:flex; flex-direction:column; background:#0f172a; min-width:0; position:relative; }
+
+/* ── Chat Section top area ── */
+.chat-top { padding:8px; border-bottom:2px solid #334155; display:flex; flex-direction:column; gap:6px; }
+.link-banner { flex:1; text-align:center; padding:6px; border-radius:8px; border:1.5px solid #334155; background:rgba(58,191,248,0.08); color:#3abff8; font-size:11px; font-weight:800; cursor:pointer; }
+.mode-btn { flex:1; padding:5px; border-radius:8px; border:2px solid #334155; background:transparent; color:#cbd5e1; font-size:12px; font-weight:800; cursor:pointer; opacity:0.5; }
+.mode-btn.active-mania { opacity:1; border:3px solid #3abff8; color:#3abff8; background:#0f172a; }
+
+/* ── Urgent Ticker ── */
+#urgentTicker { display:flex; align-items:center; gap:8px; background:#1e293b; border-bottom:2px solid #334155; padding:5px 10px; flex-shrink:0; }
+.ticker-label { font-size:10px; font-weight:900; color:#ef4444; background:rgba(239,68,68,0.12); padding:2px 6px; border-radius:5px; flex-shrink:0; }
+
+/* ── Sidebar blocks ── */
+.side-block { background:#0f172a; border:1.5px solid #334155; border-radius:9px; padding:8px 10px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; opacity:0.35; }
+
+/* ── Notice Panel ── */
+.notice-item { background:#0f172a; border:1.5px solid #334155; border-radius:8px; padding:8px 10px; font-size:10px; line-height:1.6; color:#94a3b8; cursor:pointer; }
+.notice-item:hover { border-color:#334155; opacity:0.8; }
+
+/* ── Panel Inner Content ── */
+.panel-inner { padding:10px 12px; max-height:calc(75vh - 60px); overflow-y:auto; scrollbar-width:thin; scrollbar-color:#334155 transparent; }
+.panel-item { display:flex; flex-direction:column; background:#1e293b; border:1px solid #334155; border-radius:8px; overflow:hidden; margin-bottom:6px; }
+.panel-item-top { display:flex; flex-direction:column; gap:2px; padding:7px 10px 6px; }
+.panel-tid  { color:#38bdf8; font-weight:900; font-size:20px; letter-spacing:0.04em; }
+.panel-name { font-size:11px; color:#94a3b8; }
+.panel-acts { display:flex; border-top:1px solid #334155; }
+.pact-btn   { flex:1; padding:6px; font-size:10px; font-weight:900; background:none; border:none; cursor:pointer; }
+.pact-btn.f { color:#f87171; border-right:1px solid #334155; }
+.pact-btn.d { color:#4ade80; }
+.fraud-card { border:1.5px solid rgba(239,68,68,0.45); border-radius:8px; background:rgba(239,68,68,0.07); padding:10px 12px; margin-bottom:8px; }
+.fraud-card-ttl { font-size:13px; font-weight:900; color:#f87171; margin-bottom:3px; }
+.fraud-card-kw  { font-size:11px; color:#fca5a5; margin-bottom:5px; }
+.fraud-card-tid { color:#38bdf8; font-size:19px; font-weight:900; margin-bottom:6px; }
+.fraud-done-btn { width:100%; padding:5px; border-radius:6px; background:rgba(239,68,68,0.15); color:#f87171; border:1px solid #ef444455; font-size:10px; font-weight:900; cursor:pointer; }
+
+/* ── Demo Controls ── */
+#demoToggleBtn { position:fixed; bottom:20px; right:20px; z-index:8000; background:#3abff8; color:#0f172a; border:none; border-radius:10px; padding:8px 14px; font-size:11px; font-weight:900; cursor:pointer; box-shadow:0 4px 16px rgba(58,191,248,0.4); }
+#demoPanel { position:fixed; bottom:58px; right:20px; z-index:7999; width:256px; background:#1e293b; border:2px solid #334155; border-radius:14px; padding:14px; display:none; flex-direction:column; gap:10px; box-shadow:0 8px 32px rgba(0,0,0,0.6); max-height:80vh; overflow-y:auto; scrollbar-width:thin; }
+#demoPanel.open { display:flex; }
+.dc-sec { display:flex; flex-direction:column; gap:5px; }
+.dc-lbl { font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:0.1em; opacity:0.4; padding-bottom:2px; }
+.dc-btn { width:100%; padding:6px 10px; border-radius:7px; border:1.5px solid #334155; background:none; color:#cbd5e1; font-size:11px; font-weight:800; cursor:pointer; text-align:left; transition:0.15s; }
+.dc-btn:hover { border-color:#3abff8; color:#3abff8; }
+.dc-btn.g { border-color:#22c55e44; color:#22c55e; }
+.dc-btn.g:hover { border-color:#22c55e; background:rgba(34,197,94,0.1); }
+.dc-btn.r { border-color:#ef444444; color:#ef4444; }
+.dc-btn.r:hover { border-color:#ef4444; background:rgba(239,68,68,0.1); }
+.dc-btn.dim { opacity:0.4; }
+hr.dc-hr { border:none; border-top:1px solid #334155; }
+
+/* ── Toast ── */
+.demo-toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:#334155; color:#cbd5e1; padding:7px 16px; border-radius:8px; font-size:11px; font-weight:700; z-index:9999; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<!-- Drop Panels (fixed, below header) -->
+<div id="watchDropPanel"></div>
+<div id="fraudDropPanel"></div>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header>
+  <div class="h-left">
+    <h1 onclick="showToast('Claude 연결 확인')" title="Claude 연결 상태 확인" style="font-size:18px;font-weight:900;font-style:italic;letter-spacing:0.06em;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;user-select:none;">✦ IMI PRO ✦</h1>
+  </div>
+
+  <div class="h-center" style="position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
+    <!-- ── 왼쪽: 버튼 + 비거래 탭 ── -->
+    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <!-- 유저 배지 (시연 고정 표시) -->
+        <div style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid #334155;cursor:pointer;height:32px;">
+          <span style="color:#22c55e;font-size:8px;line-height:1;">●</span>
+          <span style="font-size:11px;color:#cbd5e1;font-weight:700;">백휘섭 👑</span>
+        </div>
+        <button class="hdr-btn" onclick="showToast('모니터링 모달')">
+          <span id="hdrMonDot"></span>👁 모니터링
+        </button>
+        <button class="hdr-btn" onclick="showToast('파일매뉴얼')">📂 파일매뉴얼</button>
+      </div>
+      <!-- 비거래 탭 존 -->
+      <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;min-width:0;padding-left:10px;">
+        <div id="watchHeaderTab" class="hdr-tab-pill hdr-tab-watch" onclick="_watchPanelToggle()"></div>
+      </div>
+    </div>
+
+    <!-- ── 가운데: 시계 ── -->
+    <div id="liveClock" onclick="showToast('스케줄 확인')" style="flex-shrink:0;font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;padding:0 12px;"></div>
+
+    <!-- ── 오른쪽: 사기글 탭 + 버튼 ── -->
+    <div style="display:flex;align-items:center;gap:8px;min-width:0;justify-content:flex-end;">
+      <!-- 사기글 탭 존 -->
+      <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;min-width:0;padding-right:10px;">
+        <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button class="hdr-btn" onclick="showToast('로그 패널')" style="min-width:80px;justify-content:center;">📋 로그</button>
+        <button class="hdr-btn" onclick="showToast('알림 모달')" style="min-width:60px;justify-content:center;position:relative;">
+          🔔
+          <span style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">2</span>
+        </button>
+        <button class="hdr-btn" onclick="showToast('채팅 비우기')" onmouseover="this.style.background='#ef4444';this.style.color='#fff';this.style.borderColor='#ef4444'" onmouseout="this.style.background='none';this.style.color='#cbd5e1';this.style.borderColor='#334155'">🧹 채팅비우기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="h-right">
+    <div style="display:flex;align-items:center;gap:5px;font-size:9px;font-weight:800;opacity:0.5;">
+      FONT <span>16</span>
+      <input type="range" min="12" max="20" value="16" style="width:58px;">
+    </div>
+    <button style="font-size:22px;background:none;border:none;cursor:pointer;padding:2px;">🌙</button>
+  </div>
+</header>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main>
+  <!-- 왼쪽 사이드바 -->
+  <aside class="left-bar">
+    <div class="side-block" style="height:50px;">🏠 홈페이지 바로가기</div>
+    <div class="side-block" style="height:38px;">📜 이용약관</div>
+    <div class="side-block" style="height:38px;">🎮 게임정보 바로가기</div>
+    <div class="side-block" style="flex:1;align-items:flex-start;padding:10px;">
+      <span style="font-size:10px;font-weight:800;opacity:1;">📝 내 메모</span>
+    </div>
+    <button style="padding:10px;border-radius:10px;border:2px solid #334155;background:none;color:#cbd5e1;font-size:11px;font-weight:900;cursor:pointer;width:100%;">📂 전체 메모</button>
+  </aside>
+
+  <!-- 채팅 섹션 -->
+  <section id="chatSection">
+    <!-- 상단 탭/버튼 영역 -->
+    <div class="chat-top">
+      <div style="display:flex;gap:6px;">
+        <button class="link-banner">📚 매뉴얼</button>
+        <button class="link-banner" style="background:none;color:#94a3b8;border-color:#334155;">❓ 고객 예상 QNA</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="mode-btn active-mania">아이템매니아 (MANIA)</button>
+        <button class="mode-btn">아이템베이 (BAY)</button>
+      </div>
+    </div>
+    <!-- 긴급공지 티커 -->
+    <div id="urgentTicker">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;overflow:hidden;">
+        <span class="ticker-label">🚨 긴급공지</span>
+        <span style="font-size:11px;opacity:0.45;">[센터 전달사항] · 테스트 공지입니다</span>
+      </div>
+      <button style="flex-shrink:0;font-size:10px;font-weight:900;padding:2px 8px;border-radius:6px;border:1.5px solid #ef4444;color:#ef4444;background:none;cursor:pointer;">+ 등록</button>
+      <button style="flex-shrink:0;font-size:12px;padding:1px 7px;border-radius:6px;border:1.5px solid #334155;background:none;cursor:pointer;color:#cbd5e1;margin-left:4px;">▲</button>
+    </div>
+    <!-- 채팅 영역 -->
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;opacity:0.08;font-size:14px;font-weight:700;">
+      채팅 영역 (시연 모드)
+    </div>
+    <!-- 입력창 -->
+    <div style="padding:10px 14px;border-top:2px solid #334155;display:flex;gap:8px;background:#0f172a;flex-shrink:0;">
+      <input type="text" placeholder="질문을 입력하세요..." style="flex:1;padding:10px 14px;border-radius:10px;border:2px solid #334155;background:#1e293b;color:#cbd5e1;font-size:14px;outline:none;">
+      <button style="padding:10px 36px;border-radius:10px;background:#3abff8;color:#0f172a;border:none;font-size:14px;font-weight:900;cursor:pointer;">전송</button>
+    </div>
+  </section>
+
+  <!-- 오른쪽 공지 패널 -->
+  <aside class="right-bar">
+    <div style="padding:10px 12px;border-bottom:2px solid #334155;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <span style="font-size:13px;font-weight:900;color:#ef4444;">📌 NOTICE</span>
+      <button style="padding:4px 10px;border-radius:7px;background:#ef4444;color:#fff;border:none;font-size:10px;font-weight:900;cursor:pointer;">글쓰기</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;">
+      <div class="notice-item">[매니아] 05/26 기래링 동장으로 인해 매니아 참에 게시한 등록건들은 수요일 이후에 처리 가능하다 합니다...</div>
+      <div class="notice-item">[매니아_상품권 반급 취소 관련] 이제 고객센터에서 직접 상품권 취수 가능한 대요. 티케시 간편 충전권의 경우 1건 취소 시 자동으로...</div>
+      <div class="notice-item">[매니아] 상품 등록(재등록) 시 알림 26.02.11 추가된 시세 이상 체크기능 관련하여 상세 내용 공유드립니다...</div>
+      <div class="notice-item">[매니아] 200% 구매보상 서비스 구매신청 시 [200% 구매보상 서비스 신청] 클릭 후 발생하는 기대금액변경 알맞 노을 건은 해결되었습니다.</div>
+    </div>
+    <button style="margin:8px;padding:9px;border-radius:10px;border:2px solid #334155;background:none;color:#cbd5e1;font-size:11px;font-weight:900;cursor:pointer;flex-shrink:0;">전체공지확인</button>
+  </aside>
+</main>
+
+<!-- ══ 시연 컨트롤 버튼 ══ -->
+<button id="demoToggleBtn" onclick="toggleDemo()">🎛 시연 컨트롤</button>
+
+<!-- ══ 시연 컨트롤 패널 ══ -->
+<div id="demoPanel">
+  <div style="font-size:12px;font-weight:900;color:#3abff8;">🎛 UI 시연 컨트롤</div>
+  <div style="font-size:10px;opacity:0.35;">실제 index.html과 동일한 구조 · 기능만 모킹</div>
+
+  <hr class="dc-hr">
+
+  <div class="dc-sec">
+    <div class="dc-lbl">🟢 비거래 감지 (Watch)</div>
+    <button class="dc-btn g" onclick="demo_showWatch(1)">알림 발생 — 1건</button>
+    <button class="dc-btn g" onclick="demo_showWatch(3)">알림 발생 — 3건</button>
+    <button class="dc-btn"   onclick="demo_minimizeWatch()">⏸ 최소화 → 패널선 깜빡임</button>
+    <button class="dc-btn"   onclick="demo_openWatchPanel()">▶ 패널 열기 (깜빡임 중지)</button>
+    <button class="dc-btn dim" onclick="demo_hideWatch()">🗑 알림 해제</button>
+  </div>
+
+  <hr class="dc-hr">
+
+  <div class="dc-sec">
+    <div class="dc-lbl">🔴 사기글 감지 (Fraud)</div>
+    <button class="dc-btn r" onclick="demo_showFraud(1)">알림 발생 — 1건</button>
+    <button class="dc-btn r" onclick="demo_showFraud(2)">알림 발생 — 2건</button>
+    <button class="dc-btn"   onclick="demo_openFraudPanel()">▶ 패널 열기</button>
+    <button class="dc-btn"   onclick="demo_closeFraudPanel()">✕ 패널 닫기</button>
+    <button class="dc-btn dim" onclick="demo_hideFraud()">🗑 알림 해제</button>
+  </div>
+
+  <hr class="dc-hr">
+
+  <div class="dc-sec">
+    <div class="dc-lbl">⚡ 시나리오</div>
+    <button class="dc-btn" onclick="demo_both()">비거래 + 사기글 동시 깜빡임</button>
+    <button class="dc-btn dim" onclick="demo_resetAll()">🔄 전체 초기화</button>
+  </div>
+</div>
+
+<script>
+// ── 시계 ──
+(function tick(){
+    var d=new Date(), w=['일','월','화','수','목','금','토'];
+    document.getElementById('liveClock').textContent=
+        d.getFullYear()+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+('0'+d.getDate()).slice(-2)+
+        ' ('+w[d.getDay()]+') '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2);
+    setTimeout(tick,1000);
+})();
+
+// ── Toast ──
+function showToast(msg){
+    var t=document.createElement('div'); t.className='demo-toast'; t.textContent=msg;
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(function(){ t.remove(); },300); },1400);
+}
+
+// ── 데모 패널 토글 ──
+function toggleDemo(){ document.getElementById('demoPanel').classList.toggle('open'); }
+
+// ── 상태 ──
+var _watchMinimized=false;
+
+// ── 헤더 버튼 클릭 (패널 열기/닫기) ──
+function _watchPanelToggle(){
+    var p=document.getElementById('watchDropPanel');
+    var tab=document.getElementById('watchHeaderTab');
+    var open=p.style.maxHeight&&p.style.maxHeight!=='0px'&&p.style.maxHeight!=='4px';
+    if(open){
+        var hasItems=p.querySelectorAll('.panel-item').length>0;
+        if(hasItems){ p.style.maxHeight='4px'; p.classList.add('watch-panel-blink'); tab.classList.add('hdr-tab-blink'); _watchMinimized=true; }
+        else demo_hideWatch();
+    } else if(tab.style.display==='flex'){
+        p.style.maxHeight='75vh'; p.classList.remove('watch-panel-blink'); tab.classList.remove('hdr-tab-blink'); _watchMinimized=false;
+    }
+}
+function _fraudPanelToggle(){
+    var p=document.getElementById('fraudDropPanel');
+    if(p.style.maxHeight&&p.style.maxHeight!=='0px') demo_closeFraudPanel(); else demo_openFraudPanel();
+}
+
+// ════ 비거래 ════
+function demo_showWatch(count){
+    var tab=document.getElementById('watchHeaderTab');
+    var panel=document.getElementById('watchDropPanel');
+    _watchMinimized=false;
+    tab.style.display='flex';
+    tab.classList.remove('hdr-tab-blink');
+    tab.innerHTML='⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
+    panel.classList.remove('watch-panel-blink');
+    panel.innerHTML='';
+    var inner=document.createElement('div'); inner.className='panel-inner';
+    var lbl=document.createElement('div');
+    lbl.style.cssText='font-size:11px;color:#86efac;margin-bottom:8px;font-weight:800;';
+    lbl.textContent='📌 비거래 감지 · 테스트 규칙';
+    inner.appendChild(lbl);
+    ['2026050012345','2026050067890','2026050011111'].slice(0,count).forEach(function(tid,i){
+        var item=document.createElement('div'); item.className='panel-item';
+        item.innerHTML='<div class="panel-item-top"><div class="panel-tid">#'+tid+'</div>'
+            +'<div class="panel-name">테스트 아이템 '+(i+1)+'번 — 디아블로4 시즌14</div></div>'
+            +'<div class="panel-acts"><button class="pact-btn f" onclick="this.closest(\'.panel-item\').remove();_chkWatchEmpty()">필터제외</button>'
+            +'<button class="pact-btn d" onclick="this.closest(\'.panel-item\').remove();_chkWatchEmpty()">처리완료</button></div>';
+        inner.appendChild(item);
+    });
+    panel.appendChild(inner);
+    panel.style.maxHeight='75vh';
+}
+function _chkWatchEmpty(){
+    if(!document.getElementById('watchDropPanel').querySelectorAll('.panel-item').length) setTimeout(demo_hideWatch,300);
+}
+function demo_minimizeWatch(){
+    var tab=document.getElementById('watchHeaderTab'); var panel=document.getElementById('watchDropPanel');
+    if(tab.style.display!=='flex'){ showToast('먼저 알림을 발생시키세요.'); return; }
+    panel.style.maxHeight='4px'; panel.classList.add('watch-panel-blink');
+    tab.classList.add('hdr-tab-blink'); _watchMinimized=true;
+}
+function demo_openWatchPanel(){
+    var tab=document.getElementById('watchHeaderTab'); var panel=document.getElementById('watchDropPanel');
+    if(tab.style.display!=='flex'){ showToast('먼저 알림을 발생시키세요.'); return; }
+    panel.style.maxHeight='75vh'; panel.classList.remove('watch-panel-blink');
+    tab.classList.remove('hdr-tab-blink'); _watchMinimized=false;
+}
+function demo_closeWatchPanel(){
+    var tab=document.getElementById('watchHeaderTab'); var panel=document.getElementById('watchDropPanel');
+    if(_watchMinimized){ panel.style.maxHeight='4px'; panel.classList.add('watch-panel-blink'); tab.classList.add('hdr-tab-blink'); }
+    else { panel.style.maxHeight='0px'; panel.classList.remove('watch-panel-blink'); }
+}
+function demo_hideWatch(){
+    var tab=document.getElementById('watchHeaderTab'); var panel=document.getElementById('watchDropPanel');
+    tab.style.display='none'; tab.innerHTML=''; tab.classList.remove('hdr-tab-blink');
+    panel.style.maxHeight='0px'; panel.innerHTML=''; panel.classList.remove('watch-panel-blink'); _watchMinimized=false;
+}
+
+// ════ 사기글 ════
+function demo_showFraud(count){
+    var tab=document.getElementById('fraudHeaderTab'); var panel=document.getElementById('fraudDropPanel');
+    tab.style.display='flex'; tab.classList.add('hdr-tab-blink');
+    tab.innerHTML='🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
+    panel.innerHTML=''; panel._totalCount=count;
+    var scrollBox=document.createElement('div');
+    scrollBox.style.cssText='padding:6px 8px;max-height:calc(75vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:5px;';
+    var rules=['사기꾼 블랙리스트','먹튀 계정 주의'];
+    rules.slice(0,count).forEach(function(r,i){
+        var card=document.createElement('div'); card.className='fraud-card';
+        card.style.cssText='border:1.5px solid #ef444477;border-radius:8px;background:rgba(239,68,68,0.07);flex-shrink:0;';
+        // 카드 헤더 (규칙명 + × 닫기)
+        var hdr=document.createElement('div');
+        hdr.style.cssText='display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid #ef444433;';
+        hdr.innerHTML='<span style="font-size:12px;font-weight:900;color:#ef4444;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🚨 '+r
+            +'&nbsp;<span style="color:#f87171;font-size:10px;">· "테스트'+i+'"</span></span>'
+            +'<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;">1개</span>';
+        var closeBtn=document.createElement('span');
+        closeBtn.textContent='×'; closeBtn.style.cssText='cursor:pointer;opacity:0.45;font-size:16px;line-height:1;flex-shrink:0;padding:0 2px;color:#cbd5e1;';
+        closeBtn.onmouseover=function(){this.style.opacity=1;}; closeBtn.onmouseout=function(){this.style.opacity=0.45;};
+        closeBtn.onclick=function(){
+            card.remove(); panel._totalCount=Math.max(0,(panel._totalCount||0)-1);
+            var rem=scrollBox.querySelectorAll('.fraud-card').length;
+            if(rem===0) setTimeout(demo_hideFraud,300);
+            else tab.innerHTML='🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(panel._totalCount||0)+'</span>';
+        };
+        hdr.appendChild(closeBtn); card.appendChild(hdr);
+        // 아이템 행
+        var tid='2026050099'+('0'+i).slice(-2)+'01';
+        var row=document.createElement('div');
+        row.style.cssText='padding:6px 10px;';
+        row.innerHTML='<div style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+tid+'</div>'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-top:2px;">'
+            +'<div style="font-size:11px;font-weight:800;flex:1;">테스트 사기 아이템 '+(i+1)+'번 — 디아블로4</div>'
+            +'<div style="color:#ef4444;font-weight:900;font-size:11px;">50,000원</div></div>'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">'
+            +'<button style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">필터제외</button>'
+            +'<span style="font-size:9px;color:#94a3b8;">정상 물품일 경우</span></div>';
+        card.appendChild(row);
+        scrollBox.insertBefore(card,scrollBox.firstChild);
+    });
+    panel.appendChild(scrollBox);
+    panel.style.maxHeight='75vh';
+    panel.classList.add('fraud-panel-blink');
+}
+function demo_openFraudPanel(){
+    var tab=document.getElementById('fraudHeaderTab'); var panel=document.getElementById('fraudDropPanel');
+    if(tab.style.display!=='flex'){ showToast('먼저 알림을 발생시키세요.'); return; }
+    panel.style.maxHeight='75vh';
+}
+function demo_closeFraudPanel(){
+    document.getElementById('fraudDropPanel').style.maxHeight='0px';
+}
+function demo_hideFraud(){
+    var tab=document.getElementById('fraudHeaderTab'); var panel=document.getElementById('fraudDropPanel');
+    tab.style.display='none'; tab.innerHTML=''; tab.classList.remove('hdr-tab-blink');
+    panel.style.maxHeight='0px'; panel.innerHTML=''; panel.classList.remove('fraud-panel-blink');
+}
+
+// ════ 시나리오 ════
+function demo_both(){ demo_showWatch(2); demo_minimizeWatch(); demo_showFraud(1); }
+function demo_resetAll(){ demo_hideWatch(); demo_hideFraud(); }
+</script>
+</body>
+</html>
