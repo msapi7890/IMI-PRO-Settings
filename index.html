@@ -8311,6 +8311,9 @@
                 if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
                 if(el._doneRef && el._doneListener) el._doneRef.off('value', el._doneListener);
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
+                var _fr = el.getBoundingClientRect();
+                var _fz = _fr.width / (el.offsetWidth || 1);
+                _watchAlertPos = {left: _fr.left / _fz, top: _fr.top / _fz};
                 el.remove();
             } else {
                 _updateBlink();
