@@ -950,8 +950,8 @@ function switchLogTab(n) {
         if (t) t.classList.toggle('mon-tab-active', i === n);
         if (c) c.style.display = i === n ? '' : 'none';
     });
-    if (n === 1) loadMonitorLog(_logFullMode);
-    if (n === 2) loadWatchLog(_logFullModeW);
+    if (n === 1) { _logFullMode  = false; loadMonitorLog(false); }
+    if (n === 2) { _logFullModeW = false; loadWatchLog(false); }
     if (n === 3) loadBlockedFraud();
     if (n === 4) loadBlockedWatch();
 }
