@@ -178,8 +178,9 @@
         .copy-btn { display: block; width: 100%; padding: 6px; border-radius: 7px; border: 2px solid var(--border-ui); font-size: 11px; font-weight: 800; cursor: pointer; background: transparent; color: var(--text-sub); transition: 0.15s; margin-top: 6px; }
         mark.terms-hi { background:#fbbf24; color:#1e293b; border-radius:2px; padding:0 1px; }
         mark.terms-hi.cur { background:#f97316; outline:2px solid #f97316; color:#1e293b; }
-        #termsContent h2 { font-size:13px; font-weight:900; color:var(--active-focus-color); margin:20px 0 6px; padding:5px 10px; background:rgba(0,0,0,0.18); border-left:3px solid var(--active-focus-color); border-radius:0 4px 4px 0; }
-        #termsContent h3 { font-size:12.5px; font-weight:800; margin:12px 0 3px; color:var(--active-focus-color); opacity:0.85; }
+        #termsContent h2 { font-size:13.5px; font-weight:900; color:#3abff8; margin:22px 0 8px; padding:8px 14px; background:rgba(58,191,248,0.1); border-left:4px solid #3abff8; border-radius:0 8px 8px 0; letter-spacing:0.03em; }
+        #termsContent h3 { font-size:11.5px; font-weight:900; margin:0 0 3px; color:#94a3b8; padding:4px 10px; border-left:2px solid rgba(148,163,184,0.3); border-radius:0 4px 4px 0; background:rgba(148,163,184,0.06); }
+        #termsContent .terms-article { padding:4px 0 8px 12px; border-left:1px solid rgba(255,255,255,0.07); margin:0 0 4px; }
         #termsContent p { margin:3px 0; line-height:1.75; font-size:12px; }
         #termsContent hr { border:none; border-top:1.5px solid var(--border-ui); margin:14px 0; }
         .copy-btn:hover { border-color: var(--active-focus-color); color: var(--active-focus-color); }
@@ -1167,10 +1168,6 @@
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
         <!-- 상단 섹션 (게임정보 + 홈페이지, 내용만큼만 차지) -->
         <div style="flex:0 0 auto;overflow-y:auto;overflow-x:hidden;max-height:38%;">
-            <div style="padding:10px 12px 8px; border-bottom:2px solid var(--border-ui); flex-shrink:0; display:flex; justify-content:space-between; align-items:center;">
-                <h3 class="text-[10px] font-black uppercase tracking-[0.25em] opacity-40 italic">💡 AI 도우미</h3>
-                <button onclick="openTmplMgr()" style="font-size:10px;font-weight:900;padding:3px 8px;border-radius:6px;border:1.5px solid var(--border-ui);opacity:0.6;transition:0.15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">📋 템플릿 관리</button>
-            </div>
             <div class="assist-inner">
                 <!-- 홈페이지 바로가기 -->
                 <div class="assist-section">
@@ -7899,27 +7896,68 @@
         _termsRender();
     }
     function _termsMdToHtml(md){
+        var lines = md.split('\n');
         var out = '';
-        md.split('\n').forEach(function(line){
-            var t = line.trim();
-            if(!t){ out += '<div style="height:0.35em;"></div>'; return; }
-            if(/^제\s+\d+\s+장/.test(t)){
-                out += '<h2>'+escHtml(t)+'</h2>'; return;
+        var inArticle = false;
+        function closeArticle(){ if(inArticle){ out += '</div>'; inArticle = false; } }
+        function openArticle(){ closeArticle(); out += '<div class="terms-article">'; inArticle = true; }
+
+        var i = 0;
+        while(i < lines.length){
+            var t = lines[i].trim();
+            // markdown table: collect consecutive | lines
+            if(t.startsWith('|')){
+                var tableLines = [];
+                while(i < lines.length && lines[i].trim().startsWith('|')){
+                    tableLines.push(lines[i].trim()); i++;
+                }
+                out += '<table style="border-collapse:collapse;width:100%;margin:6px 0;font-size:12px;">';
+                var headerDone = false;
+                tableLines.forEach(function(row){
+                    // separator row: every cell contains only -, :, spaces
+                    if(row.split('|').slice(1,-1).every(function(c){ return /^[\s\-:]*$/.test(c); })) return;
+                    var cells = row.split('|').slice(1,-1);
+                    var tag = headerDone ? 'td' : 'th';
+                    headerDone = true;
+                    out += '<tr>';
+                    cells.forEach(function(c){
+                        var cv = c.trim();
+                        out += '<'+tag+' style="border:1px solid var(--border-ui);padding:4px 8px;text-align:center;">'+escHtml(cv).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')+'</'+tag+'>';
+                    });
+                    out += '</tr>';
+                });
+                out += '</table>';
+                continue;
             }
-            if(/^제\s+\d+\s+조/.test(t)){
-                out += '<h3>'+escHtml(t)+'</h3>'; return;
-            }
-            if(/^\[?\(?부칙\)?\]?$/.test(t) || /^\*\*\[?\(?부칙\)?\]?\*\*$/.test(t)){
-                out += '<h2>부칙</h2>'; return;
+            i++;
+            if(!t){ out += '<div style="height:0.35em;"></div>'; continue; }
+
+            // strip ** wrapper (베이 약관: **제 N 조 (...)**)
+            var bare = t.replace(/^\*\*\s*/, '').replace(/\s*\*\*$/, '');
+
+            // 장 (Chapter) → h2
+            if(/^제\s*\d+\s*장/.test(bare) || /^\[?\(?부칙\)?\]?$/.test(bare)){
+                closeArticle();
+                out += '<h2>'+escHtml(bare)+'</h2>'; continue;
             }
             if(t.startsWith('## ')){
-                out += '<h2>'+escHtml(t.slice(3))+'</h2>'; return;
+                closeArticle();
+                out += '<h2>'+escHtml(t.slice(3))+'</h2>'; continue;
+            }
+
+            // 조 (Article) → h3, wrapped in .terms-article
+            if(/^제\s*\d+\s*조/.test(bare)){
+                openArticle();
+                out += '<h3>'+escHtml(bare)+'</h3>'; continue;
             }
             if(t.startsWith('### ')){
-                out += '<h3>'+escHtml(t.slice(4))+'</h3>'; return;
+                openArticle();
+                out += '<h3>'+escHtml(t.slice(4))+'</h3>'; continue;
             }
+
             if(t === '---'){
-                out += '<hr>'; return;
+                closeArticle();
+                out += '<hr>'; continue;
             }
             var pad = 0;
             if(/^[가-힣]\.\s/.test(t)) pad = 22;
@@ -7927,7 +7965,8 @@
             var padS = pad ? 'padding-left:'+pad+'px;' : '';
             var proc = escHtml(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
             out += '<p style="margin:3px 0;'+padS+'">'+proc+'</p>';
-        });
+        }
+        closeArticle();
         return out;
     }
     function _termsRender(){
@@ -7939,7 +7978,11 @@
     }
     function _termsHighlight(term){
         var content = document.getElementById('termsContent');
-        var re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+        var re = new RegExp(
+            term.trim().replace(/\s+/g,' ')
+                .replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
+                .replace(/ /g,'\\s*'),
+            'gi');
         var tw = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, null, false);
         var nodes = [];
         var node;

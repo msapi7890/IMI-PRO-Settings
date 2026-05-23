@@ -612,13 +612,7 @@ function _triggerMonitorAlert(id, rule, items) {
         itemRows: items.map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
         at: _at
     });
-    db.ref('/monitor_history').push({
-        ruleName: rule.name,
-        ruleKeyword: rule.keyword || '',
-        itemCount: items.length,
-        itemRows: items.map(function(it){ return {t:it.title, p:it.price||0, u:it.url||''}; }),
-        at: _at
-    });
+    // 구 모니터 엔진(거래번호 감시)은 history 기록 안 함
 }
 
 function closeMonitorFlash() { db.ref('monitor_flash_state/active').set(false); }
@@ -1013,6 +1007,7 @@ function _loadLogByType(fullDay, isWatch) {
             Object.keys(val).forEach(function(k) {
                 var e = val[k];
                 if (!e) return;
+                if (!e.ruleType) return; // ruleType 없는 구 모니터 엔진 로그 제외
                 if (fullDay && e.at < cutoff24) return;
                 var entryIsWatch = e.ruleType === 'watch';
                 if (isWatch !== entryIsWatch) return;
@@ -1113,14 +1108,56 @@ function _loadLogByType(fullDay, isWatch) {
                         + '</div>'
                         + '</details>';
                 });
-            } else {
-                // 기본 모드: 사기글 2건, 비거래 30건 표시
-                var _recentLimit = isWatch ? 30 : 2;
-                var displayEntries = entries.slice(0, _recentLimit);
-                var hidden = entries.length - _recentLimit;
+            } else if (isWatch) {
+                // 비거래 기본 모드: 최근 3회 감지
+                var displayEntries = entries.slice(0, 3);
+                var hiddenW = entries.length - 3;
                 html = displayEntries.map(_renderEntry).join('');
-                if (hidden > 0) {
-                    html += '<div style="text-align:center;font-size:11px;opacity:0.45;padding:4px 0;">📅 이전 기록 ' + hidden + '건 — 24시간 전체 보기 버튼으로 확인</div>';
+                if (hiddenW > 0) {
+                    html += '<div style="text-align:center;font-size:11px;opacity:0.45;padding:4px 0;">📅 이전 감지 ' + hiddenW + '회 — 24시간 전체 보기 버튼으로 확인</div>';
+                }
+            } else {
+                // 사기글 기본 모드: 최신순 5회, 감지별 접힘 카드
+                var displayEntries = entries.slice(0, 5);
+                var hiddenF = entries.length - 5;
+                html = displayEntries.map(function(entry, idx) {
+                    var d = entry.data;
+                    var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
+                    var rows = (d.itemRows || []).map(function(it) {
+                        var rawKey = it.key || (it.t || '').substring(0, 30).trim();
+                        var bk = _esc(rawKey);
+                        var isBlocked = blockedSet[rawKey];
+                        var titleAttr = _esc(it.t || '');
+                        var tidAttr   = _esc(it.tid || '');
+                        var listTime  = it.listTime || '';
+                        var btnHtml = bk
+                            ? (isBlocked
+                                ? '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                                : '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                            : '';
+                        return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
+                            + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:20px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+_fmtTid(it.tid)
+                                + (listTime ? '<span style="font-size:10px;font-weight:500;color:#64748b;">· '+listTime+'</span>' : '')
+                                + '</div>' : '')
+                            + '<div style="display:flex;align-items:center;gap:6px;">'
+                            + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
+                            + (it.p ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>' : '')
+                            + btnHtml
+                            + '</div></div>';
+                    }).join('');
+                    return '<details '+(idx===0?'open':'')+' style="border:1.5px solid var(--border-ui);border-left:3px solid #ef4444;border-radius:11px;margin-bottom:8px;overflow:hidden;">'
+                        + '<summary style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;list-style:none;background:var(--bg-body);">'
+                        + '<span style="font-size:11px;color:#ef4444;flex-shrink:0;">▶</span>'
+                        + '<div style="font-size:12px;font-weight:900;color:var(--active-focus-color);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(d.ruleName||'')+'</div>'
+                        + (d.ruleKeyword ? '<div style="font-size:10px;color:#64748b;flex-shrink:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🔑 '+_esc(d.ruleKeyword)+'</div>' : '')
+                        + '<div style="font-size:10px;font-weight:700;opacity:0.45;flex-shrink:0;">'+timeStr+'</div>'
+                        + '<div style="font-size:10px;font-weight:900;color:#ef4444;flex-shrink:0;">'+(d.itemCount||0)+'개</div>'
+                        + '</summary>'
+                        + '<div style="padding:8px 12px 10px;display:flex;flex-direction:column;gap:5px;">'+rows+'</div>'
+                        + '</details>';
+                }).join('');
+                if (hiddenF > 0) {
+                    html += '<div style="text-align:center;font-size:11px;opacity:0.45;padding:4px 0;">📅 이전 감지 '+hiddenF+'회 — 24시간 전체 보기 버튼으로 확인</div>';
                 }
             }
 
