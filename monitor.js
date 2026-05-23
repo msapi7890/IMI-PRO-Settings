@@ -643,54 +643,78 @@ function _showMonitorFlash(s) {
     if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
     var _np=_getNotifPrefs();
 
-    // 사기글 헤더 탭 + 드롭패널 업데이트 (누적 추가)
+    // 사기글 헤더 탭 + 드롭패널 — 키워드별 카드 위로 쌓기
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab && fraudPanel){
         fraudTab.style.display = 'flex';
         fraudTab.classList.add('hdr-tab-blink');
 
-        // 스크롤 컨테이너 없으면 새로 만들기, 있으면 재사용
+        // 전체 스크롤 컨테이너 (없으면 생성)
         var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
         if(!scrollBox){
             fraudPanel.innerHTML = '';
             scrollBox = document.createElement('div');
             scrollBox.setAttribute('data-fraud-scroll','1');
-            scrollBox.style.cssText = 'padding:8px 12px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:6px;';
+            scrollBox.style.cssText = 'padding:6px 8px;max-height:400px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:5px;';
             fraudPanel.appendChild(scrollBox);
         }
 
-        // 새 감지 블록 추가
-        var block = document.createElement('div');
-        block.style.cssText = 'border:1px solid #ef444466;border-radius:8px;padding:8px 10px;background:rgba(239,68,68,0.06);';
-        var itemsHtml = (s.itemRows||[]).map(function(it){
-            var k = _esc(it.key || (it.t||'').substring(0,30).trim());
-            return '<div style="padding:5px 0;border-bottom:1px solid #334155;">'
-                +(it.tid?'<div style="font-size:18px;font-weight:900;color:#38bdf8;margin-bottom:2px;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>':'')
-                +'<div style="display:flex;align-items:center;gap:6px;">'
-                +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
-                +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
-                +'</div>'
-                +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">'
-                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
-                +'<span style="font-size:9px;color:#94a3b8;font-weight:600;">정상 물품일 경우 눌러주세요</span>'
-                +'</div>'
-                +'</div>';
-        }).join('');
-        block.innerHTML = '<div style="font-size:12px;font-weight:900;color:#ef4444;margin-bottom:5px;">🚨 '
-            +_esc(s.ruleName||'모니터링 경고')
-            +'&nbsp;<span style="font-size:10px;font-weight:700;color:#94a3b8;">'+(s.itemCount||0)+'개 감지</span>'
-            +(s.ruleKeyword?'&nbsp;<span style="font-size:10px;color:#f87171;">· "'+_esc(s.ruleKeyword)+'"</span>':'')
-            +'</div>' + itemsHtml;
-        scrollBox.appendChild(block);
-        scrollBox.scrollTop = scrollBox.scrollHeight;
+        // 키워드별 카드 — prepend(위에 추가)해서 최신이 맨 위
+        var card = document.createElement('div');
+        card.style.cssText = 'border:1.5px solid #ef444477;border-radius:8px;background:rgba(239,68,68,0.07);flex-shrink:0;';
 
-        // 탭 배지: 누적 감지 수 갱재
+        // 카드 헤더 (규칙명 + 닫기)
+        var cardHdr = document.createElement('div');
+        cardHdr.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid #ef444433;';
+        cardHdr.innerHTML = '<span style="font-size:12px;font-weight:900;color:#ef4444;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🚨 '+_esc(s.ruleName||'감지')
+            +(s.ruleKeyword?'&nbsp;<span style="color:#f87171;font-size:10px;">· "'+_esc(s.ruleKeyword)+'"</span>':'')
+            +'</span>'
+            +'<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;">'+(s.itemCount||0)+'개</span>';
+        var closeCardBtn = document.createElement('span');
+        closeCardBtn.textContent = '×';
+        closeCardBtn.style.cssText = 'cursor:pointer;opacity:0.45;font-size:16px;line-height:1;flex-shrink:0;padding:0 2px;color:var(--text-main,#cbd5e1);';
+        closeCardBtn.onmouseover = function(){ this.style.opacity=1; };
+        closeCardBtn.onmouseout  = function(){ this.style.opacity=0.45; };
+        closeCardBtn.onclick = function(){
+            card.remove();
+            fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
+            var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
+            if(remaining === 0) _hideMonitorFlashLocal();
+            else fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||'')+'</span>';
+        };
+        cardHdr.appendChild(closeCardBtn);
+        card.appendChild(cardHdr);
+        card.setAttribute('data-fraud-card','1');
+
+        // 카드 아이템 목록 (최대 4개 보이고 나머지 스크롤)
+        var itemList = document.createElement('div');
+        itemList.style.cssText = 'max-height:150px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;padding:0 10px;';
+        (s.itemRows||[]).forEach(function(it){
+            var k = _esc(it.key || (it.t||'').substring(0,30).trim());
+            var row = document.createElement('div');
+            row.style.cssText = 'padding:5px 0;border-bottom:1px solid #33415540;';
+            row.innerHTML = (it.tid?'<div style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>':'')
+                +'<div style="display:flex;align-items:center;gap:6px;">'
+                +'<div style="font-size:11px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
+                +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:11px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
+                +'</div>'
+                +'<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">'
+                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
+                +'<span style="font-size:9px;color:#94a3b8;">정상 물품일 경우</span>'
+                +'</div>';
+            itemList.appendChild(row);
+        });
+        card.appendChild(itemList);
+        // 맨 위에 추가 (최신이 위)
+        scrollBox.insertBefore(card, scrollBox.firstChild);
+
+        // 탭 배지 누적
         var totalCount = (fraudPanel._totalCount || 0) + (s.itemCount || 0);
         fraudPanel._totalCount = totalCount;
         fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
 
-        fraudPanel.style.maxHeight = '400px';
+        fraudPanel.style.maxHeight = '420px';
     }
 
     if (_np.flash) {
