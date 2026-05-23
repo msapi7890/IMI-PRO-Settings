@@ -6603,6 +6603,23 @@
             }
         });
         relatedArr.sort(function(a,b){return(b._ts||0)-(a._ts||0);});
+        // 날짜가 지난 이벤트성 공지 제외 (점검/이벤트/종료 등 일회성 공지)
+        var _nowMs=Date.now();
+        relatedArr=relatedArr.filter(function(n){
+            var full=noticesObj[n.id]; if(!full)return true;
+            var text=((full.title||'')+' '+(full.content||''));
+            var isEvent=/점검|이용\s*불가|서비스\s*중단|이벤트|한정|오픈행사|종료|일시\s*중지/.test(text);
+            if(!isEvent)return true;
+            var dateRe=/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/g;
+            var m2; var hasFuture=false; var hasDate=false;
+            while((m2=dateRe.exec(text))!==null){
+                hasDate=true;
+                var d=new Date(parseInt(m2[1]),parseInt(m2[2])-1,parseInt(m2[3])+1); // +1: 당일까지 허용
+                if(d.getTime()>=_nowMs){hasFuture=true;break;}
+            }
+            if(!hasDate)return true; // 날짜 없는 공지는 유지
+            return hasFuture; // 미래 날짜가 하나라도 있으면 유지
+        });
         var topNotices=relatedArr.slice(0,6);
         var noticeCtx='';
         if(topNotices.length){
