@@ -1228,7 +1228,7 @@
             <button id="tickerToggleBtn" onclick="toggleTicker()" title="공지바 접기/펼치기" style="flex-shrink:0;font-size:12px;padding:1px 7px;border-radius:6px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;color:var(--text-main);margin-left:4px;line-height:1.6;transition:0.15s;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">▲</button>
         </div>
         <!-- 비거래 감지 배너 (urgentTicker 아래) -->
-        <div id="watchBanner" style="display:none;background:#0a1f10;border-bottom:2px solid #22c55e;padding:5px 12px;font-size:14px;font-weight:800;color:#f0fdf4;"></div>
+        <div id="watchBanner" style="display:none;background:#0a1f10;border-bottom:2px solid #22c55e;padding:7px 16px;font-size:16px;font-weight:800;color:#f0fdf4;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px 12px;"></div>
 
         <!-- 채팅방 1: 매뉴얼 채팅 -->
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
@@ -8206,17 +8206,19 @@
             var banner = document.getElementById('watchBanner');
             if(!banner) return;
             if(!active.length){ banner.style.display='none'; banner.innerHTML=''; return; }
-            banner.style.display = '';
-            var html = '📦 비거래 노출 감지 — ';
-            html += active.map(function(v){
+            banner.style.display = 'flex';
+            var parts = ['<span style="white-space:nowrap;flex-shrink:0;">📦 비거래 노출 감지 —</span>'];
+            active.forEach(function(v, i){
                 var label = escHtml(v.label || '');
                 var tid = escHtml(v.tid || '');
-                var link = v.url
+                var inner = v.url
                     ? '<a href="'+escHtml(v.url)+'" target="_blank" style="color:#4ade80;text-decoration:underline;font-weight:900;">'+(label||'#'+tid)+'</a>'
                     : '<strong>'+(label||'#'+tid)+'</strong>';
-                return link + (tid&&label?' (#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid)+')':'');
-            }).join(' &nbsp;|&nbsp; ');
-            banner.innerHTML = html;
+                if(tid && label) inner += ' <span style="opacity:0.75;">(#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid)+')</span>';
+                if(i > 0) parts.push('<span style="white-space:nowrap;opacity:0.4;">|</span>');
+                parts.push('<span style="white-space:nowrap;">'+inner+'</span>');
+            });
+            banner.innerHTML = parts.join('');
         });
     };
 
