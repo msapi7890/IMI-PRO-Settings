@@ -643,16 +643,29 @@ function _showMonitorFlash(s) {
     if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
     var _np=_getNotifPrefs();
 
-    // 사기글 헤더 탭 + 드롭패널 업데이트
+    // 사기글 헤더 탭 + 드롭패널 업데이트 (누적 추가)
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab && fraudPanel){
         fraudTab.style.display = 'flex';
-        fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(s.itemCount||0)+'</span>';
         fraudTab.classList.add('hdr-tab-blink');
+
+        // 스크롤 컨테이너 없으면 새로 만들기, 있으면 재사용
+        var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
+        if(!scrollBox){
+            fraudPanel.innerHTML = '';
+            scrollBox = document.createElement('div');
+            scrollBox.setAttribute('data-fraud-scroll','1');
+            scrollBox.style.cssText = 'padding:8px 12px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:6px;';
+            fraudPanel.appendChild(scrollBox);
+        }
+
+        // 새 감지 블록 추가
+        var block = document.createElement('div');
+        block.style.cssText = 'border:1px solid #ef444466;border-radius:8px;padding:8px 10px;background:rgba(239,68,68,0.06);';
         var itemsHtml = (s.itemRows||[]).map(function(it){
             var k = _esc(it.key || (it.t||'').substring(0,30).trim());
-            return '<div style="padding:6px 0;border-bottom:1px solid #334155;">'
+            return '<div style="padding:5px 0;border-bottom:1px solid #334155;">'
                 +(it.tid?'<div style="font-size:18px;font-weight:900;color:#38bdf8;margin-bottom:2px;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>':'')
                 +'<div style="display:flex;align-items:center;gap:6px;">'
                 +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
@@ -664,10 +677,19 @@ function _showMonitorFlash(s) {
                 +'</div>'
                 +'</div>';
         }).join('');
-        fraudPanel.innerHTML = '<div style="padding:10px 12px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;">'
-            +'<div style="font-size:12px;font-weight:900;color:#ef4444;margin-bottom:6px;">🚨 '+(s.ruleName||'모니터링 경고')+'&nbsp;<span style="font-size:10px;font-weight:700;color:#94a3b8;">'+(s.itemCount||0)+'개 감지</span></div>'
-            + itemsHtml
-            +'</div>';
+        block.innerHTML = '<div style="font-size:12px;font-weight:900;color:#ef4444;margin-bottom:5px;">🚨 '
+            +_esc(s.ruleName||'모니터링 경고')
+            +'&nbsp;<span style="font-size:10px;font-weight:700;color:#94a3b8;">'+(s.itemCount||0)+'개 감지</span>'
+            +(s.ruleKeyword?'&nbsp;<span style="font-size:10px;color:#f87171;">· "'+_esc(s.ruleKeyword)+'"</span>':'')
+            +'</div>' + itemsHtml;
+        scrollBox.appendChild(block);
+        scrollBox.scrollTop = scrollBox.scrollHeight;
+
+        // 탭 배지: 누적 감지 수 갱재
+        var totalCount = (fraudPanel._totalCount || 0) + (s.itemCount || 0);
+        fraudPanel._totalCount = totalCount;
+        fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
+
         fraudPanel.style.maxHeight = '400px';
     }
 
@@ -761,7 +783,7 @@ function _hideMonitorFlashLocal() {
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab){ fraudTab.style.display = 'none'; fraudTab.innerHTML = ''; fraudTab.classList.remove('hdr-tab-blink'); }
-    if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; }
+    if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
 }
 
 db.ref('monitor_flash_state').on('value', function(snap) {
