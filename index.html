@@ -1228,7 +1228,7 @@
             <button id="tickerToggleBtn" onclick="toggleTicker()" title="공지바 접기/펼치기" style="flex-shrink:0;font-size:12px;padding:1px 7px;border-radius:6px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;color:var(--text-main);margin-left:4px;line-height:1.6;transition:0.15s;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">▲</button>
         </div>
         <!-- 비거래 감지 배너 (urgentTicker 아래) -->
-        <div id="watchBanner" style="display:none;background:#0a1f10;border-bottom:2px solid #22c55e;padding:5px 12px;font-size:11px;font-weight:800;color:#f0fdf4;"></div>
+        <div id="watchBanner" style="display:none;background:#0a1f10;border-bottom:2px solid #22c55e;padding:5px 12px;font-size:14px;font-weight:800;color:#f0fdf4;"></div>
 
         <!-- 채팅방 1: 매뉴얼 채팅 -->
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
@@ -8214,7 +8214,7 @@
                 var link = v.url
                     ? '<a href="'+escHtml(v.url)+'" target="_blank" style="color:#4ade80;text-decoration:underline;font-weight:900;">'+(label||'#'+tid)+'</a>'
                     : '<strong>'+(label||'#'+tid)+'</strong>';
-                return link + (tid&&label?' (#'+tid+')':'');
+                return link + (tid&&label?' (#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid)+')':'');
             }).join(' &nbsp;|&nbsp; ');
             banner.innerHTML = html;
         });
@@ -8313,44 +8313,35 @@
 
                 var row = document.createElement('div');
                 row.dataset.tid = tid;
-                row.style.cssText = 'display:flex;flex-direction:column;gap:4px;padding:6px 8px;background:rgba(34,197,94,0.08);border:1px solid #22c55e33;border-radius:7px;';
+                row.style.cssText = 'display:flex;flex-direction:column;gap:0;background:var(--bg-card);border:1px solid var(--border-ui);border-radius:8px;overflow:hidden;';
 
-                var topRow = document.createElement('div');
-                topRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                // 상단: 거래번호 + 물품명
+                var infoArea = document.createElement('div');
+                infoArea.style.cssText = 'display:flex;flex-direction:column;gap:2px;padding:7px 10px 6px;';
 
                 var tidLink = document.createElement('a');
                 tidLink.href = 'https://www.itemmania.com/sell/application.html?id='+tid;
                 tidLink.target = '_blank';
-                tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+                tidLink.style.cssText = 'color:#38bdf8;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;';
                 tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
-                topRow.appendChild(tidLink);
+                infoArea.appendChild(tidLink);
 
-                var doneBtn = document.createElement('button');
-                doneBtn.textContent = '처리완료';
-                doneBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
-                doneBtn.onclick = function(){
-                    db.ref('imi_watch_done/'+tid).set({at:Date.now()});
-                    if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
-                    else { row.remove(); _checkAllDone(); }
-                };
-                topRow.appendChild(doneBtn);
-                row.appendChild(topRow);
-
-                var bottomRow = document.createElement('div');
-                bottomRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
                 if(itemTitle){
                     var titleEl2 = document.createElement('div');
-                    titleEl2.style.cssText = 'flex:1;font-size:11px;color:#86efac;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                    titleEl2.style.cssText = 'font-size:11px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                     titleEl2.textContent = itemTitle;
-                    bottomRow.appendChild(titleEl2);
-                } else {
-                    var sp = document.createElement('div'); sp.style.flex='1';
-                    bottomRow.appendChild(sp);
+                    infoArea.appendChild(titleEl2);
                 }
+                row.appendChild(infoArea);
+
+                // 하단 액션 바: 필터제외(좌) — 처리완료(우)
+                var actionBar = document.createElement('div');
+                actionBar.style.cssText = 'display:flex;align-items:stretch;border-top:1px solid var(--border-ui);';
+
                 if(itemKey){
                     var filterBtn = document.createElement('button');
                     filterBtn.textContent = '필터제외';
-                    filterBtn.style.cssText = 'font-size:10px;padding:3px 8px;border-radius:5px;background:none;border:1px solid #f87171;color:#f87171;cursor:pointer;font-weight:900;flex-shrink:0;white-space:nowrap;';
+                    filterBtn.style.cssText = 'flex:1;padding:6px 0;font-size:10px;font-weight:900;background:none;border:none;border-right:1px solid var(--border-ui);color:#f87171;cursor:pointer;';
                     filterBtn.onclick = function(){
                         db.ref('/imi_blocked').once('value', function(snap){
                             var list = snap.val() || [];
@@ -8360,9 +8351,19 @@
                             db.ref('/imi_blocked').set(list, function(){ filterBtn.textContent='제외됨'; filterBtn.disabled=true; filterBtn.style.opacity='0.45'; });
                         });
                     };
-                    bottomRow.appendChild(filterBtn);
+                    actionBar.appendChild(filterBtn);
                 }
-                row.appendChild(bottomRow);
+
+                var doneBtn = document.createElement('button');
+                doneBtn.textContent = '✅ 처리완료';
+                doneBtn.style.cssText = 'flex:1;padding:6px 0;font-size:10px;font-weight:900;background:none;border:none;color:#22c55e;cursor:pointer;';
+                doneBtn.onclick = function(){
+                    db.ref('imi_watch_done/'+tid).set({at:Date.now()});
+                    if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
+                    else { row.remove(); _checkAllDone(); }
+                };
+                actionBar.appendChild(doneBtn);
+                row.appendChild(actionBar);
                 tidContainer.appendChild(row);
             });
 
