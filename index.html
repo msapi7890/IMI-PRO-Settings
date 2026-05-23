@@ -6504,7 +6504,7 @@
     }
     async function pickCSTemplate(key, btn){
         var idx=currentMode==='bay'?BAY_MANUAL_INDEX:MANUAL_INDEX;
-        var val=idx[key]; if(!val)return;
+        var val=idx[key]; if(val===undefined)return;
         /* 선택한 버튼 강조 */
         if(btn){var p=btn.parentElement;if(p)p.querySelectorAll('button').forEach(function(b){b.disabled=true;b.style.opacity='0.4';});btn.style.opacity='1';btn.style.borderColor='var(--active-focus-color)';btn.style.color='var(--active-focus-color)';}
         addCSMsg(key,'user');
