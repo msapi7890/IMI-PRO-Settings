@@ -1129,7 +1129,7 @@
     <div class="h-center" style="position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
         <!-- 왼쪽 열: 좌측 버튼 + 비거래 탭 존 -->
         <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <div id="hdrLeftBtns" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                 <!-- 유저 배지 -->
                 <div id="authUserBadge" style="display:none;position:relative;">
                     <div onclick="_toggleUserMenu(event)" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border-ui);cursor:pointer;user-select:none;height:32px;">
@@ -1157,7 +1157,7 @@
                 <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
                 <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;border-top:none;left:auto;right:10px;transform:none;"></div>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <div id="hdrRightBtns" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                 <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;min-width:96px;justify-content:center;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
                 <button id="bellBtn" onclick="openBellModal()" style="position:relative;background:none;border:1.5px solid var(--border-ui);border-radius:8px;cursor:pointer;font-size:16px;padding:5px 10px;height:32px;min-width:78px;justify-content:center;transition:0.15s;color:var(--text-main);display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">🔔<span id="bellBadge" class="hidden" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">0</span></button>
                 <button onclick="clearCurrentChat()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;" onmouseover="this.style.background='#ef4444';this.style.color='#fff';this.style.borderColor='#ef4444'" onmouseout="this.style.background='none';this.style.color='var(--text-main)';this.style.borderColor='var(--border-ui)'">🧹 채팅비우기</button>
@@ -1499,6 +1499,7 @@
         if(badge) badge.style.display='';
         var nameDisp = document.getElementById('authUserNameDisp');
         if(nameDisp) nameDisp.textContent = user.name + (user.role==='admin' ? ' 👑' : user.role==='subadmin' ? ' ★' : '');
+        setTimeout(_syncHdrBtnWidths, 50);
         var adminItem = document.getElementById('authAdminMenuItem');
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
         // 승인 대기 감시
@@ -7858,6 +7859,17 @@
             });
         });
     }
+
+    function _syncHdrBtnWidths(){
+        var L=document.getElementById('hdrLeftBtns');
+        var R=document.getElementById('hdrRightBtns');
+        if(!L||!R) return;
+        L.style.minWidth=''; R.style.minWidth='';
+        var lw=L.offsetWidth, rw=R.offsetWidth;
+        if(lw>rw) R.style.minWidth=lw+'px';
+        else if(rw>lw) L.style.minWidth=rw+'px';
+    }
+    setTimeout(_syncHdrBtnWidths, 200);
 
     function updateClock(){
         var now=new Date();
