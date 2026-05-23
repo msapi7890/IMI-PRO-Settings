@@ -235,7 +235,7 @@
         @keyframes monPulse { 0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.3)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0.1)} }
         #monitorAlertFlash { display:none!important; } /* 헤더 드롭패널로 대체 */
         /* ── 헤더 탭 & 드롭패널 ── */
-        .hdr-tab-pill { padding:6px 18px; border-radius:8px; font-size:13px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:6px; height:32px; letter-spacing:0.03em; width:380px; max-width:100%; justify-content:center; box-sizing:border-box; }
+        .hdr-tab-pill { padding:0 18px; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:6px; height:32px; letter-spacing:0.03em; width:380px; max-width:100%; justify-content:center; box-sizing:border-box; }
         .hdr-tab-watch { background:rgba(34,197,94,0.15); border:2px solid #22c55e; color:#22c55e; }
         .hdr-tab-fraud { background:rgba(239,68,68,0.15); border:2px solid #ef4444; color:#ef4444; }
         @keyframes _hdrWatchBlink { 0%,100%{background:rgba(34,197,94,0.15);box-shadow:none;border-color:#22c55e} 50%{background:rgba(34,197,94,0.55);box-shadow:0 0 14px rgba(34,197,94,0.9),0 0 28px rgba(34,197,94,0.4);border-color:#86efac} }
@@ -8186,20 +8186,24 @@
         if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
             panel.style.maxHeight = '0px';
             _watchAlertMinimized = true;
+            if(tab) tab.classList.add('hdr-tab-blink');
         } else {
             panel.style.maxHeight = '520px';
             _watchAlertMinimized = false;
-            if(tab) tab.classList.add('hdr-tab-blink');
+            if(tab) tab.classList.remove('hdr-tab-blink');
         }
     }
 
     function _fraudPanelToggle(){
         var panel = document.getElementById('fraudDropPanel');
+        var tab   = document.getElementById('fraudHeaderTab');
         if(!panel) return;
         if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
             panel.style.maxHeight = '0px';
+            if(tab) tab.classList.add('hdr-tab-blink');
         } else {
-            panel.style.maxHeight = '400px';
+            panel.style.maxHeight = '420px';
+            if(tab) tab.classList.remove('hdr-tab-blink');
         }
     }
 
@@ -8218,10 +8222,11 @@
         var keyword  = data.keyword || '';
         var count    = data.count   || tids.length || 0;
 
-        // 탭 표시
+        // 탭 표시 (패널 열린 상태면 깜빡임 없음)
         tab.style.display = 'flex';
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
-        tab.classList.add('hdr-tab-blink');
+        if(_watchAlertMinimized) tab.classList.add('hdr-tab-blink');
+        else tab.classList.remove('hdr-tab-blink');
 
         // 패널 내용 초기화
         panel.innerHTML = '';
@@ -8239,7 +8244,7 @@
         panel.appendChild(inner);
 
         function _updateTabBlink(){
-            if(tidContainer.children.length > 0){
+            if(_watchAlertMinimized && tidContainer.children.length > 0){
                 tab.classList.add('hdr-tab-blink');
             } else {
                 tab.classList.remove('hdr-tab-blink');
