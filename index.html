@@ -8159,14 +8159,15 @@
     };
 
     var _watchAlertMinimized = false;
-    var _watchAlertPos = null;
+    var _watchAlertPos = (function(){ try{ var s=localStorage.getItem('_imiAlertPos'); return s?JSON.parse(s):null; }catch(e){return null;} })();
+    function _saveAlertPos(p){ _watchAlertPos=p; try{ localStorage.setItem('_imiAlertPos',JSON.stringify(p)); }catch(e){} }
 
     function _showWatchAlert(data, alertKey){
         var existing = document.getElementById('_imiWatchAlert');
         if(existing){
             var er = existing.getBoundingClientRect();
             var _ez = er.width / (existing.offsetWidth || 1); // zoom 보정
-            _watchAlertPos = {left: er.left / _ez, top: er.top / _ez}; // CSS px
+            _saveAlertPos({left: er.left / _ez, top: er.top / _ez}); // CSS px
             if(existing._procRef && existing._procListener) existing._procRef.off('value', existing._procListener);
             if(existing._doneRef && existing._doneListener) existing._doneRef.off('value', existing._doneListener);
             existing.remove();
@@ -8313,7 +8314,7 @@
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
                 var _fr = el.getBoundingClientRect();
                 var _fz = _fr.width / (el.offsetWidth || 1);
-                _watchAlertPos = {left: _fr.left / _fz, top: _fr.top / _fz};
+                _saveAlertPos({left: _fr.left / _fz, top: _fr.top / _fz});
                 el.remove();
             } else {
                 _updateBlink();
