@@ -514,9 +514,9 @@
 
 <!-- 긴급공지 상세보기 모달 -->
 <div id="urgentDetailModal" class="hidden fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm" onclick="if(event.target===this)closeUrgentDetail()">
-    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(94vw,720px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);">
+    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:700px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);">
         <!-- 드래그 핸들 + 헤더 -->
-        <div id="urgentDetailDragHandle" style="display:flex;flex-direction:column;border-bottom:2px solid var(--border-ui);flex-shrink:0;cursor:grab;user-select:none;">
+        <div id="urgentDetailDragHandle" style="display:flex;flex-direction:column;border-bottom:2px solid var(--border-ui);flex-shrink:0;user-select:none;">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;pointer-events:none;">
                 <div style="width:36px;height:4px;border-radius:2px;background:var(--border-ui);opacity:0.45;"></div>
             </div>
@@ -1063,9 +1063,9 @@
 </div>
 
 <div id="noticeModal" class="modal hidden fixed inset-0 z-[2500] bg-black/60 backdrop-blur-sm">
-    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,720px);max-height:88vh;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:700px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
         <!-- 드래그 핸들 -->
-        <div id="noticeModalDragHandle" style="display:flex;justify-content:center;padding:10px 0 5px;flex-shrink:0;cursor:grab;user-select:none;border-bottom:1px solid var(--border-ui);position:relative;">
+        <div id="noticeModalDragHandle" style="display:flex;justify-content:center;padding:10px 0 5px;flex-shrink:0;user-select:none;border-bottom:1px solid var(--border-ui);position:relative;">
             <div style="width:36px;height:4px;border-radius:2px;background:var(--border-ui);opacity:0.45;pointer-events:none;"></div>
             <button style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:26px;opacity:0.3;cursor:pointer;background:none;border:none;line-height:1;color:var(--text-main);" onclick="closeModal()" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
@@ -7886,38 +7886,95 @@
     }
     setTimeout(_syncHdrBtnWidths, 200);
 
-    /* ── 모달 드래그 ── */
+    /* ── 모달 드래그 & 리사이즈 ── */
     function _resetModalPos(contentId){
         var c=document.getElementById(contentId);
         if(!c) return;
         c.style.left='50%'; c.style.top='50%'; c.style.transform='translate(-50%,-50%)';
+        c.style.width=''; c.style.height=''; c.style.maxHeight='';
     }
     (function(){
         function _makeDraggable(contentId, handleId){
             var content=document.getElementById(contentId);
             var handle=document.getElementById(handleId);
             if(!content||!handle) return;
-            var dragging=false, sx,sy,sl,st;
+            var pressing=false, moved=false, sx,sy,sl,st;
             handle.addEventListener('mousedown',function(e){
                 if(e.button!==0) return;
+                if(e.target.closest('button,a,input,label,select,textarea,[data-resize]')) return;
                 var r=content.getBoundingClientRect();
                 content.style.transform='none';
                 content.style.left=r.left+'px';
                 content.style.top=r.top+'px';
                 sx=e.clientX; sy=e.clientY; sl=r.left; st=r.top;
-                dragging=true; handle.style.cursor='grabbing'; e.preventDefault();
+                pressing=true; moved=false;
             });
             document.addEventListener('mousemove',function(e){
-                if(!dragging) return;
-                content.style.left=(sl+e.clientX-sx)+'px';
-                content.style.top=(st+e.clientY-sy)+'px';
+                if(!pressing) return;
+                var dx=e.clientX-sx, dy=e.clientY-sy;
+                if(!moved && Math.hypot(dx,dy)<5) return;
+                moved=true;
+                content.style.left=(sl+dx)+'px';
+                content.style.top=(st+dy)+'px';
             });
             document.addEventListener('mouseup',function(){
-                if(dragging){dragging=false; handle.style.cursor='grab';}
+                pressing=false; moved=false;
+            });
+        }
+        function _makeResizable(contentId){
+            var content=document.getElementById(contentId);
+            if(!content) return;
+            var dirs=[
+                {d:'n',  cur:'n-resize',  t:0,  l:8,  r:8,  b:'auto', w:'auto', h:'8px'},
+                {d:'ne', cur:'ne-resize', t:0,  l:'auto', r:0, b:'auto', w:'16px', h:'16px'},
+                {d:'e',  cur:'e-resize',  t:8,  l:'auto', r:0, b:8, w:'8px', h:'auto'},
+                {d:'se', cur:'se-resize', t:'auto', l:'auto', r:0, b:0, w:'16px', h:'16px'},
+                {d:'s',  cur:'s-resize',  t:'auto', l:8, r:8, b:0, w:'auto', h:'8px'},
+                {d:'sw', cur:'sw-resize', t:'auto', l:0, r:'auto', b:0, w:'16px', h:'16px'},
+                {d:'w',  cur:'w-resize',  t:8,  l:0, r:'auto', b:8, w:'8px', h:'auto'},
+                {d:'nw', cur:'nw-resize', t:0,  l:0, r:'auto', b:'auto', w:'16px', h:'16px'}
+            ];
+            dirs.forEach(function(cfg){
+                var el=document.createElement('div');
+                el.setAttribute('data-resize', cfg.d);
+                el.style.cssText='position:absolute;z-index:20;cursor:'+cfg.cur+';'
+                    +'top:'+(cfg.t===0?'0':cfg.t==='auto'?'auto':cfg.t+'px')+';'
+                    +'left:'+(cfg.l===0?'0':cfg.l==='auto'?'auto':cfg.l+'px')+';'
+                    +'right:'+(cfg.r===0?'0':cfg.r==='auto'?'auto':cfg.r+'px')+';'
+                    +'bottom:'+(cfg.b===0?'0':cfg.b==='auto'?'auto':cfg.b+'px')+';'
+                    +'width:'+cfg.w+';height:'+cfg.h+';';
+                content.appendChild(el);
+                var resizing=false, sx,sy,sw,sh,sl,st;
+                el.addEventListener('mousedown',function(e){
+                    if(e.button!==0) return;
+                    e.preventDefault(); e.stopPropagation();
+                    var r=content.getBoundingClientRect();
+                    if(content.style.transform){
+                        content.style.transform='none';
+                        content.style.left=r.left+'px';
+                        content.style.top=r.top+'px';
+                    }
+                    sx=e.clientX; sy=e.clientY;
+                    sw=r.width; sh=r.height; sl=r.left; st=r.top;
+                    resizing=true;
+                });
+                document.addEventListener('mousemove',function(e){
+                    if(!resizing) return;
+                    var dx=e.clientX-sx, dy=e.clientY-sy;
+                    var d=cfg.d;
+                    var minW=300, minH=200;
+                    if(d.indexOf('e')>=0){ content.style.width=Math.max(minW,sw+dx)+'px'; }
+                    if(d.indexOf('w')>=0){ var nw=Math.max(minW,sw-dx); content.style.width=nw+'px'; content.style.left=(sl+sw-nw)+'px'; }
+                    if(d.indexOf('s')>=0){ content.style.height=Math.max(minH,sh+dy)+'px'; content.style.maxHeight='none'; }
+                    if(d.indexOf('n')>=0){ var nh=Math.max(minH,sh-dy); content.style.height=nh+'px'; content.style.maxHeight='none'; content.style.top=(st+sh-nh)+'px'; }
+                });
+                document.addEventListener('mouseup',function(){ resizing=false; });
             });
         }
         _makeDraggable('urgentDetailContent','urgentDetailDragHandle');
         _makeDraggable('noticeModalContent','noticeModalDragHandle');
+        _makeResizable('urgentDetailContent');
+        _makeResizable('noticeModalContent');
     })();
 
     function updateClock(){
