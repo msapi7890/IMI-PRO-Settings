@@ -8188,7 +8188,7 @@
             _watchAlertMinimized = true;
             if(tab) tab.classList.add('hdr-tab-blink');
         } else {
-            panel.style.maxHeight = '520px';
+            panel.style.maxHeight = '60vh';
             _watchAlertMinimized = false;
             if(tab) tab.classList.remove('hdr-tab-blink');
         }
@@ -8200,7 +8200,7 @@
         if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
             panel.style.maxHeight = '0px';
         } else {
-            panel.style.maxHeight = '420px';
+            panel.style.maxHeight = '60vh';
         }
     }
 
@@ -8228,7 +8228,7 @@
         // 패널 내용 초기화
         panel.innerHTML = '';
         var inner = document.createElement('div');
-        inner.style.cssText = 'padding:10px 12px;max-height:480px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
+        inner.style.cssText = 'padding:10px 12px;max-height:calc(60vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
 
         var lblEl = document.createElement('div');
         lblEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;font-weight:800;';
@@ -8354,7 +8354,7 @@
 
         // 패널 열기 (최소화 상태면 탭만 표시)
         if(!_watchAlertMinimized){
-            panel.style.maxHeight = '520px';
+            panel.style.maxHeight = '60vh';
         }
     }
 
