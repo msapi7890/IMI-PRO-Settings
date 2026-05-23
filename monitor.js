@@ -677,11 +677,12 @@ function _showMonitorFlash(s) {
         closeCardBtn.onmouseover = function(){ this.style.opacity=1; };
         closeCardBtn.onmouseout  = function(){ this.style.opacity=0.45; };
         closeCardBtn.onclick = function(){
+            if(card._autoTimer) clearTimeout(card._autoTimer);
             card.remove();
             fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
             var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
             if(remaining === 0) _hideMonitorFlashLocal();
-            else fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||'')+'</span>';
+            else fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
         };
         cardHdr.appendChild(closeCardBtn);
         card.appendChild(cardHdr);
@@ -715,6 +716,19 @@ function _showMonitorFlash(s) {
         fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
 
         fraudPanel.style.maxHeight = '420px';
+
+        // 카드별 30초 자동 제거
+        var _cardTimer = setTimeout(function(){
+            if(!card.parentNode) return;
+            card.remove();
+            fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
+            if(!scrollBox.querySelector('[data-fraud-card]')){
+                _hideMonitorFlashLocal();
+            } else {
+                fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
+            }
+        }, 30000);
+        card._autoTimer = _cardTimer;
     }
 
     if (_np.flash) {
@@ -746,8 +760,8 @@ function _showMonitorFlash(s) {
         }
     }
 
-    if (window._monFlashTimer) clearTimeout(window._monFlashTimer);
-    window._monFlashTimer = setTimeout(closeMonitorFlash, 30000);
+    // 전역 타이머 제거 — 카드별 30초 타이머로 대체
+    if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
 }
 
 function _triggerFullscreenFlash() {
