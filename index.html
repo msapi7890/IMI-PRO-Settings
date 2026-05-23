@@ -7924,24 +7924,22 @@
         function _makeResizable(contentId){
             var content=document.getElementById(contentId);
             if(!content) return;
+            /* 핸들을 테두리 바깥 6px까지 확장 — 배경 클릭 오인 방지 */
             var dirs=[
-                {d:'n',  cur:'n-resize',  t:0,  l:8,  r:8,  b:'auto', w:'auto', h:'8px'},
-                {d:'ne', cur:'ne-resize', t:0,  l:'auto', r:0, b:'auto', w:'16px', h:'16px'},
-                {d:'e',  cur:'e-resize',  t:8,  l:'auto', r:0, b:8, w:'8px', h:'auto'},
-                {d:'se', cur:'se-resize', t:'auto', l:'auto', r:0, b:0, w:'16px', h:'16px'},
-                {d:'s',  cur:'s-resize',  t:'auto', l:8, r:8, b:0, w:'auto', h:'8px'},
-                {d:'sw', cur:'sw-resize', t:'auto', l:0, r:'auto', b:0, w:'16px', h:'16px'},
-                {d:'w',  cur:'w-resize',  t:8,  l:0, r:'auto', b:8, w:'8px', h:'auto'},
-                {d:'nw', cur:'nw-resize', t:0,  l:0, r:'auto', b:'auto', w:'16px', h:'16px'}
+                {d:'n',  cur:'n-resize',  t:'-6px', l:'-6px', r:'-6px', b:'auto', w:'auto', h:'12px'},
+                {d:'ne', cur:'ne-resize', t:'-6px', l:'auto',  r:'-6px', b:'auto', w:'20px', h:'20px'},
+                {d:'e',  cur:'e-resize',  t:'-6px', l:'auto',  r:'-6px', b:'-6px', w:'12px', h:'auto'},
+                {d:'se', cur:'se-resize', t:'auto', l:'auto',  r:'-6px', b:'-6px', w:'20px', h:'20px'},
+                {d:'s',  cur:'s-resize',  t:'auto', l:'-6px',  r:'-6px', b:'-6px', w:'auto', h:'12px'},
+                {d:'sw', cur:'sw-resize', t:'auto', l:'-6px',  r:'auto', b:'-6px', w:'20px', h:'20px'},
+                {d:'w',  cur:'w-resize',  t:'-6px', l:'-6px',  r:'auto', b:'-6px', w:'12px', h:'auto'},
+                {d:'nw', cur:'nw-resize', t:'-6px', l:'-6px',  r:'auto', b:'auto', w:'20px', h:'20px'}
             ];
             dirs.forEach(function(cfg){
                 var el=document.createElement('div');
                 el.setAttribute('data-resize', cfg.d);
                 el.style.cssText='position:absolute;z-index:20;cursor:'+cfg.cur+';'
-                    +'top:'+(cfg.t===0?'0':cfg.t==='auto'?'auto':cfg.t+'px')+';'
-                    +'left:'+(cfg.l===0?'0':cfg.l==='auto'?'auto':cfg.l+'px')+';'
-                    +'right:'+(cfg.r===0?'0':cfg.r==='auto'?'auto':cfg.r+'px')+';'
-                    +'bottom:'+(cfg.b===0?'0':cfg.b==='auto'?'auto':cfg.b+'px')+';'
+                    +'top:'+cfg.t+';left:'+cfg.l+';right:'+cfg.r+';bottom:'+cfg.b+';'
                     +'width:'+cfg.w+';height:'+cfg.h+';';
                 content.appendChild(el);
                 var resizing=false, sx,sy,sw,sh,sl,st;
@@ -7958,6 +7956,7 @@
                     sw=r.width; sh=r.height; sl=r.left; st=r.top;
                     resizing=true;
                 });
+                el.addEventListener('click',function(e){ e.stopPropagation(); });
                 document.addEventListener('mousemove',function(e){
                     if(!resizing) return;
                     var dx=e.clientX-sx, dy=e.clientY-sy;
