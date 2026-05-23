@@ -243,7 +243,7 @@
         @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);box-shadow:none;border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);box-shadow:0 0 14px rgba(239,68,68,0.9),0 0 28px rgba(239,68,68,0.4);border-color:#fca5a5} }
         .hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
         .hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
-        .hdr-drop-panel { position:absolute; top:calc(100% + 2px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; }
+        .hdr-drop-panel { position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:12px; }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
         @keyframes mfBadgePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
@@ -514,7 +514,7 @@
 
 <!-- 긴급공지 상세보기 모달 -->
 <div id="urgentDetailModal" class="hidden fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm" onclick="if(event.target===this)closeUrgentDetail()">
-    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(92vw,900px);height:660px;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);">
+    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(92vw,1100px);height:660px;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);">
         <!-- 드래그 핸들 + 헤더 -->
         <div id="urgentDetailDragHandle" style="display:flex;flex-direction:column;border-bottom:2px solid var(--border-ui);flex-shrink:0;user-select:none;position:relative;z-index:30;">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;pointer-events:none;">
@@ -1063,7 +1063,7 @@
 </div>
 
 <div id="noticeModal" class="modal hidden fixed inset-0 z-[2500] bg-black/60 backdrop-blur-sm">
-    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,900px);height:660px;max-height:86vh;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,1100px);height:660px;max-height:86vh;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
         <!-- 드래그 핸들 — 스티커메모 스타일 헤더 바 -->
         <div id="noticeModalDragHandle" style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;flex-shrink:0;user-select:none;border-bottom:2px solid var(--border-ui);border-radius:18px 18px 0 0;background:rgba(58,191,248,0.07);position:relative;z-index:30;">
             <div style="display:flex;align-items:center;gap:8px;pointer-events:none;">
@@ -1102,12 +1102,12 @@
             </div>
         </div>
         <!-- 하단 고정 버튼 (뷰 모드 전용) -->
-        <div id="noticeViewFooter" style="flex-shrink:0;border-top:2px solid var(--border-ui);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <button onclick="deleteNotice()" class="text-red-400 font-black text-sm hover:underline italic">삭제</button>
-                <button id="modalPinBtn" onclick="toggleCurrentNoticePin()" class="text-sm font-black px-3 py-1.5 rounded-lg border-2 border-[var(--border-ui)] transition hover:border-[var(--active-focus-color)]">📌 고정</button>
+        <div id="noticeViewFooter" style="flex-shrink:0;border-top:2px solid var(--border-ui);padding:14px 24px;display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:12px;">
+            <div style="display:flex;flex-direction:row;align-items:center;gap:12px;">
+                <button onclick="deleteNotice()" style="color:#f87171;font-weight:900;font-size:13px;cursor:pointer;background:none;border:none;font-style:italic;white-space:nowrap;padding:0;">삭제</button>
+                <button id="modalPinBtn" onclick="toggleCurrentNoticePin()" style="font-size:13px;font-weight:900;padding:7px 14px;border-radius:8px;border:2px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:border-color 0.15s;">📌 고정</button>
             </div>
-            <button id="modalEditBtn" onclick="switchToEditMode()" class="px-10 py-3 rounded-xl font-black text-white text-sm shadow-lg">수정하기</button>
+            <button id="modalEditBtn" onclick="switchToEditMode()" style="font-size:13px;font-weight:900;padding:10px 32px;border-radius:10px;background:#3abff8;color:#0f172a;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(58,191,248,0.35);">수정하기</button>
         </div>
     </div>
 </div>
@@ -1160,7 +1160,7 @@
             <!-- 비거래 탭 존 -->
             <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;position:relative;min-width:0;padding-left:10px;">
                 <div id="watchHeaderTab" class="hdr-tab-pill hdr-tab-watch" onclick="_watchPanelToggle()"></div>
-                <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;border-top:none;left:10px;transform:none;"></div>
+                <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;left:10px;transform:none;"></div>
             </div>
         </div>
         <!-- 가운데 열: 시계 -->
@@ -1170,7 +1170,7 @@
             <!-- 사기글 탭 존 -->
             <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;position:relative;min-width:0;padding-right:10px;">
                 <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
-                <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;border-top:none;left:auto;right:10px;transform:none;"></div>
+                <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;left:auto;right:10px;transform:none;"></div>
             </div>
             <div id="hdrRightBtns" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                 <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;min-width:96px;justify-content:center;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
