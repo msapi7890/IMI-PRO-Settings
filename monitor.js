@@ -787,6 +787,23 @@ document.addEventListener('click', function(e) {
     });
 });
 
+// 비거래 로그 처리완료 버튼 — 이벤트 위임
+document.getElementById('monitorLogListW').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-logdone]');
+    if (!btn || btn.disabled) return;
+    var tid = btn.getAttribute('data-logdone');
+    if (!tid) return;
+    var by = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
+    btn.disabled = true;
+    btn.textContent = '✅ 처리완료';
+    btn.style.background = 'none';
+    btn.style.border = '1px solid #22c55e';
+    btn.style.color = '#22c55e';
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'default';
+    db.ref('imi_watch_done/' + tid).set({ at: Date.now(), by: by });
+});
+
 // 필터제외 버튼 — 이벤트 위임 (log-box 안 #monitorLogList에 직접 위임, stopPropagation 우회)
 document.getElementById('monitorLogList').addEventListener('click', function(e) {
     var btn = e.target.closest('[data-logbk]');
@@ -813,6 +830,24 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
 // ===== 로그 패널 =====
 var _logFullMode  = false;
 var _logFullModeW = false;
+
+// 비거래 처리완료 상태 (Firebase imi_watch_done 동기화)
+var _watchDoneSet = {};
+db.ref('imi_watch_done').on('value', function(snap) {
+    _watchDoneSet = snap.val() || {};
+    document.querySelectorAll('[data-logdone]').forEach(function(btn) {
+        var tid = btn.getAttribute('data-logdone');
+        if (_watchDoneSet[tid] && !btn.disabled) {
+            btn.disabled = true;
+            btn.textContent = '✅ 처리완료';
+            btn.style.background = 'none';
+            btn.style.border = '1px solid #22c55e';
+            btn.style.color = '#22c55e';
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'default';
+        }
+    });
+});
 
 function openLogPanel() {
     document.getElementById('logPanel').classList.remove('hidden');
@@ -941,9 +976,17 @@ function _loadLogByType(fullDay, isWatch) {
                             ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
                             : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
+                    var doneHtml = '';
+                    if (entryIsWatch && it.tid) {
+                        var isDone = !!_watchDoneSet[it.tid];
+                        doneHtml = isDone
+                            ? '<button data-logdone="' + _esc(it.tid) + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;flex-shrink:0;opacity:0.4;cursor:default;">✅ 처리완료</button>'
+                            : '<button data-logdone="' + _esc(it.tid) + '" style="font-size:10px;padding:2px 7px;border-radius:4px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;">처리완료</button>';
+                    }
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
                         + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:20px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#' + _fmtTid(it.tid)
                             + (listTime ? '<span style="font-size:10px;font-weight:500;color:#64748b;">· ' + listTime + '</span>' : '')
+                            + doneHtml
                             + '</div>' : '')
                         + '<div style="display:flex;align-items:center;gap:6px;">'
                         + '<div style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(it.t || '') + '</div>'
@@ -993,9 +1036,10 @@ function _loadLogByType(fullDay, isWatch) {
                         + '</details>';
                 });
             } else {
-                // 기본 모드: 최신 2건만 표시 (시간 그룹 없음)
-                var displayEntries = entries.slice(0, 2);
-                var hidden = entries.length - 2;
+                // 기본 모드: 사기글 2건, 비거래 30건 표시
+                var _recentLimit = isWatch ? 30 : 2;
+                var displayEntries = entries.slice(0, _recentLimit);
+                var hidden = entries.length - _recentLimit;
                 html = displayEntries.map(_renderEntry).join('');
                 if (hidden > 0) {
                     html += '<div style="text-align:center;font-size:11px;opacity:0.45;padding:4px 0;">📅 이전 기록 ' + hidden + '건 — 24시간 전체 보기 버튼으로 확인</div>';
