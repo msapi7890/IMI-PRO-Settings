@@ -1137,16 +1137,16 @@
             <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
             <button id="mfNavBtn" onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼<span id="mfNavBadge" style="display:none;font-size:10px;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:3px;"></span></button><button id="mfNavCancelBtn" onclick="_mfNavCancel()" title="취소" style="display:none;font-size:11px;font-weight:900;border:1.5px solid #7f1d1d;border-radius:8px;padding:0 8px;height:32px;background:none;color:#f87171;cursor:pointer;white-space:nowrap;transition:0.15s;margin-left:-4px;">✕</button>
         </div>
-        <!-- 비거래 탭 존 (좌측 빈공간) -->
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-width:0;">
+        <!-- 비거래 탭 존 (좌측 빈공간) — 좌측 정렬 -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-start;position:relative;min-width:0;padding-left:10px;">
             <div id="watchHeaderTab" class="hdr-tab-pill hdr-tab-watch" onclick="_watchPanelToggle()"></div>
-            <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;border-top:none;"></div>
+            <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;border-top:none;left:10px;transform:none;"></div>
         </div>
         <div id="liveClock" onclick="openScheduleModal()" title="직원 스케쥴 확인" style="position:absolute;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=1;this.style.textDecoration='underline'" onmouseout="this.style.opacity=0.65;this.style.textDecoration='none'"></div>
-        <!-- 사기글 탭 존 (우측 빈공간) -->
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-width:0;">
+        <!-- 사기글 탭 존 (우측 빈공간) — 우측 정렬 -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;position:relative;min-width:0;padding-right:10px;">
             <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
-            <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;border-top:none;"></div>
+            <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;border-top:none;left:auto;right:10px;transform:none;"></div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
             <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 10px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
