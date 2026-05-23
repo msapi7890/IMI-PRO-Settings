@@ -6371,11 +6371,14 @@
     /* ── 고객센터 템플릿 채팅 ── */
     function addCSMsg(html, role, id){
         var box=document.getElementById('csChatBox'); if(!box)return;
-        var div=document.createElement('div');
-        div.className='msg '+role;
-        if(id)div.id=id;
-        div.innerHTML='<div class="bubble">'+html+'</div>';
-        box.appendChild(div);
+        var row=document.createElement('div');
+        row.className=role==='user'?'flex justify-end w-full':'flex justify-start w-full';
+        if(id)row.id=id;
+        var b=document.createElement('div');
+        b.className=role==='user'?'bubble user-bubble shadow-sm':'bubble bot-bubble shadow-sm';
+        b.innerHTML=html;
+        row.appendChild(b);
+        box.appendChild(row);
         box.scrollTop=99999;
     }
     function clearCSChat(){
