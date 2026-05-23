@@ -8158,10 +8158,14 @@
         });
     };
 
+    var _watchAlertMinimized = false;
+    var _watchAlertPos = null;
+
     function _showWatchAlert(data, alertKey){
         var existing = document.getElementById('_imiWatchAlert');
         if(existing){
-            // 기존 Firebase 리스너 정리
+            var er = existing.getBoundingClientRect();
+            _watchAlertPos = {left: er.left, top: er.top};
             if(existing._procRef && existing._procListener) existing._procRef.off('value', existing._procListener);
             if(existing._doneRef && existing._doneListener) existing._doneRef.off('value', existing._doneListener);
             existing.remove();
@@ -8177,71 +8181,148 @@
         el.id = '_imiWatchAlert';
         if(alertKey) el.dataset.alertKey = alertKey;
         el.style.cssText = [
-            'position:fixed','bottom:20px','left:20px','z-index:99999',
+            'position:fixed','z-index:99999',
             'background:#0a1f10','border:2px solid #22c55e','border-radius:14px',
-            'padding:14px 16px','width:320px','max-width:calc(100vw - 40px)',
+            'width:320px','max-width:calc(100vw - 40px)',
             'font-family:Segoe UI,sans-serif',
             'box-shadow:0 4px 28px rgba(34,197,94,0.3)',
-            'animation:_watchSlideIn 0.3s ease'
+            'user-select:none'
         ].join(';');
+        if(_watchAlertPos){
+            el.style.left = _watchAlertPos.left+'px';
+            el.style.top  = _watchAlertPos.top+'px';
+        } else {
+            el.style.bottom = '20px';
+            el.style.left   = '20px';
+        }
         document.body.appendChild(el);
 
         if(!document.getElementById('_watchAlertStyle')){
             var sty = document.createElement('style');
             sty.id = '_watchAlertStyle';
-            sty.textContent = '@keyframes _watchSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
+            sty.textContent = [
+                '@keyframes _watchSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}',
+                '@keyframes _watchBlink{0%,100%{box-shadow:0 4px 28px rgba(34,197,94,0.3);border-color:#22c55e}50%{box-shadow:0 0 24px rgba(34,197,94,0.95),0 0 48px rgba(34,197,94,0.35);border-color:#86efac}}'
+            ].join('');
             document.head.appendChild(sty);
         }
 
-        var hdr = document.createElement('div');
-        hdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
-        hdr.innerHTML = '<span style="background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;">🔔 비거래 감지</span>';
-        var closeX = document.createElement('span');
-        closeX.textContent = '✕';
-        closeX.style.cssText = 'margin-left:auto;cursor:pointer;opacity:0.4;font-size:18px;line-height:1;';
-        closeX.onclick = function(){
-            if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
-            el.remove();
-        };
-        hdr.appendChild(closeX);
-        el.appendChild(hdr);
+        /* ── 드래그바(헤더) ── */
+        var dragBar = document.createElement('div');
+        dragBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:move;border-radius:12px 12px 0 0;';
+
+        var badge = document.createElement('span');
+        badge.style.cssText = 'background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;pointer-events:none;';
+        badge.textContent = '🔔 비거래 감지';
+        dragBar.appendChild(badge);
 
         var labelEl = document.createElement('div');
-        labelEl.style.cssText = 'font-size:13px;font-weight:800;color:#f0fdf4;margin-bottom:4px;';
-        labelEl.textContent = label;
-        el.appendChild(labelEl);
+        labelEl.style.cssText = 'font-size:12px;font-weight:800;color:#f0fdf4;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;';
+        labelEl.textContent = label + (count ? ' · '+count+'개' : '');
+        dragBar.appendChild(labelEl);
 
+        var minBtn = document.createElement('span');
+        minBtn.textContent = '−';
+        minBtn.title = '최소화 / 복원';
+        minBtn.style.cssText = 'cursor:pointer;opacity:0.65;font-size:20px;line-height:1;flex-shrink:0;padding:0 3px;';
+        dragBar.appendChild(minBtn);
+
+        var closeX = document.createElement('span');
+        closeX.textContent = '✕';
+        closeX.style.cssText = 'cursor:pointer;opacity:0.4;font-size:16px;line-height:1;flex-shrink:0;';
+        closeX.onclick = function(){
+            if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
+            if(el._doneRef && el._doneListener) el._doneRef.off('value', el._doneListener);
+            _watchAlertMinimized = false;
+            el.remove();
+        };
+        dragBar.appendChild(closeX);
+        el.appendChild(dragBar);
+
+        /* ── 본문 ── */
+        var body = document.createElement('div');
+        body.style.cssText = 'padding:0 14px 14px;';
         if(keyword && keyword !== label){
             var kwEl = document.createElement('div');
-            kwEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:3px;';
-            kwEl.textContent = '키워드: ' + keyword;
-            el.appendChild(kwEl);
+            kwEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;';
+            kwEl.textContent = '키워드: '+keyword;
+            body.appendChild(kwEl);
         }
-
-        if(count){
-            var cntEl = document.createElement('div');
-            cntEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;';
-            cntEl.textContent = count + '개 감지';
-            el.appendChild(cntEl);
-        }
-
         var tidContainer = document.createElement('div');
         tidContainer.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-        el.appendChild(tidContainer);
+        body.appendChild(tidContainer);
+        el.appendChild(body);
 
+        /* ── 최소화 토글 ── */
+        function _updateBlink(){
+            if(_watchAlertMinimized){
+                el.style.animation = tidContainer.children.length > 0
+                    ? '_watchBlink 0.85s ease-in-out infinite' : '';
+            }
+        }
+        function _setMinimized(v){
+            _watchAlertMinimized = v;
+            if(v){
+                body.style.display = 'none';
+                dragBar.style.cursor = 'pointer';
+                el.style.borderRadius = '10px';
+                dragBar.style.borderRadius = '8px';
+                _updateBlink();
+            } else {
+                body.style.display = '';
+                dragBar.style.cursor = 'move';
+                el.style.borderRadius = '14px';
+                dragBar.style.borderRadius = '12px 12px 0 0';
+                el.style.animation = '';
+            }
+        }
+        minBtn.onclick = function(){ _setMinimized(!_watchAlertMinimized); };
+        dragBar.addEventListener('click', function(e){
+            if(e.target === minBtn || e.target === closeX) return;
+            if(_watchAlertMinimized) _setMinimized(false);
+        });
+
+        /* ── 드래그 ── */
+        dragBar.addEventListener('mousedown', function(e){
+            if(e.target === minBtn || e.target === closeX) return;
+            if(_watchAlertMinimized) return; // 최소화 상태에선 클릭으로 복원만
+            e.preventDefault();
+            var rect = el.getBoundingClientRect();
+            el.style.top = rect.top+'px'; el.style.bottom = '';
+            var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+            function onMove(e){
+                el.style.left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, e.clientX-sx))+'px';
+                el.style.top  = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, e.clientY-sy))+'px';
+            }
+            function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
+            document.addEventListener('mousemove',onMove);
+            document.addEventListener('mouseup',onUp);
+        });
+
+        /* ── 초기 최소화 적용 ── */
+        if(_watchAlertMinimized){
+            _setMinimized(true);
+        } else {
+            el.style.animation = '_watchSlideIn 0.3s ease';
+        }
+
+        /* ── 처리 완료 체크 ── */
         function _checkAllDone(){
             if(!tidContainer.children.length){
                 if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
                 if(el._doneRef && el._doneListener) el._doneRef.off('value', el._doneListener);
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
                 el.remove();
+            } else {
+                _updateBlink();
             }
         }
 
+        /* ── 물품 행 렌더 ── */
         if(tids.length > 0){
             tids.forEach(function(tid){
                 var rowData = itemRows.find(function(r){ return r.tid === tid; }) || {};
-                var itemKey = rowData.key || (rowData.t || '').substring(0,30).trim();
+                var itemKey   = rowData.key || (rowData.t || '').substring(0,30).trim();
                 var itemTitle = rowData.t || '';
 
                 var row = document.createElement('div');
@@ -8252,10 +8333,10 @@
                 topRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
 
                 var tidLink = document.createElement('a');
-                tidLink.href = 'https://www.itemmania.com/sell/application.html?id=' + tid;
+                tidLink.href = 'https://www.itemmania.com/sell/application.html?id='+tid;
                 tidLink.target = '_blank';
                 tidLink.style.cssText = 'flex:1;color:#4ade80;text-decoration:none;font-weight:900;font-size:15px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-                tidLink.textContent = '#' + (typeof _fmtTid === 'function' ? _fmtTid(tid) : tid);
+                tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
                 topRow.appendChild(tidLink);
 
                 var doneBtn = document.createElement('button');
@@ -8277,8 +8358,7 @@
                     titleEl2.textContent = itemTitle;
                     bottomRow.appendChild(titleEl2);
                 } else {
-                    var spacer = document.createElement('div');
-                    spacer.style.cssText = 'flex:1;';
+                    var spacer = document.createElement('div'); spacer.style.cssText = 'flex:1;';
                     bottomRow.appendChild(spacer);
                 }
                 if(itemKey){
@@ -8290,7 +8370,7 @@
                             var list = snap.val() || [];
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
-                            list.push({ key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch' });
+                            list.push({key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch'});
                             db.ref('/imi_blocked').set(list, function(){
                                 filterBtn.textContent = '제외됨';
                                 filterBtn.disabled = true;
@@ -8304,7 +8384,6 @@
                 tidContainer.appendChild(row);
             });
 
-            // Firebase 실시간 동기화 — 다른 사용자가 처리완료 누르면 즉시 반영
             if(alertKey){
                 var procRef = db.ref('imi_watch_alerts/'+alertKey+'/processedTids');
                 var procListener = procRef.on('value', function(snap){
@@ -8317,7 +8396,6 @@
                 el._procRef = procRef;
                 el._procListener = procListener;
             }
-            // 로그에서 처리완료 눌렀을 때도 팝업 실시간 반영 (imi_watch_done 경로)
             if(tids.length){
                 var doneRef = db.ref('imi_watch_done');
                 var doneListener = doneRef.on('value', function(snap){
@@ -8341,7 +8419,6 @@
             };
             tidContainer.appendChild(doneBtn2);
         }
-        // 자동 닫힘 없음 — 처리완료 버튼으로만 닫힘
     }
 
     db.ref('notices_mania').on('value',function(s){
