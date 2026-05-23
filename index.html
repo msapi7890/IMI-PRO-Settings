@@ -7759,12 +7759,17 @@
     // 키워드로 항목 찾기
     function searchByKeyword(kw, callback) {
         var mode = currentMode;
+        var kwL = kw.toLowerCase();
+        var kwNS = kwL.replace(/\s/g, ''); // 공백 제거 버전
         db.ref('keywords/' + mode).once('value', function(snap) {
             var data = snap.val() || {};
             var results = [];
             Object.keys(data).forEach(function(dbKey) {
                 var tags = data[dbKey] || [];
-                if(tags.some(function(t) { return t.toLowerCase().indexOf(kw.toLowerCase()) >= 0; })) {
+                if(tags.some(function(t) {
+                    var tL = t.toLowerCase();
+                    return tL.indexOf(kwL) >= 0 || tL.replace(/\s/g,'').indexOf(kwNS) >= 0;
+                })) {
                     results.push(dbKey.replace(/_/g, ' '));
                 }
             });
