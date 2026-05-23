@@ -6608,7 +6608,7 @@
         relatedArr=relatedArr.filter(function(n){
             var full=noticesObj[n.id]; if(!full)return true;
             var text=((full.title||'')+' '+(full.content||''));
-            var isEvent=/점검|이용\s*불가|서비스\s*중단|이벤트|한정|오픈행사|종료|일시\s*중지/.test(text);
+            var isEvent=/점검|정기\s*점검|긴급\s*점검|시스템\s*점검/.test(text);
             if(!isEvent)return true;
             var dateRe=/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/g;
             var m2; var hasFuture=false; var hasDate=false;
