@@ -648,7 +648,7 @@ function _showMonitorFlash(s) {
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab && fraudPanel){
         fraudTab.style.display = 'flex';
-        fraudTab.classList.remove('hdr-tab-blink'); // 패널 열릴 때는 깜빡임 없음
+        fraudTab.classList.add('hdr-tab-blink');
 
         // 전체 스크롤 컨테이너 (없으면 생성)
         var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
