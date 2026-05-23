@@ -243,7 +243,7 @@
         @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);box-shadow:none;border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);box-shadow:0 0 14px rgba(239,68,68,0.9),0 0 28px rgba(239,68,68,0.4);border-color:#fca5a5} }
         .hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
         .hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
-        .hdr-drop-panel { position:absolute; top:calc(100% + 2px); left:50%; transform:translateX(-50%); width:420px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; }
+        .hdr-drop-panel { position:absolute; top:calc(100% + 2px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
         @keyframes mfBadgePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
@@ -8233,7 +8233,7 @@
             _watchAlertMinimized = true;
             if(tab) tab.classList.add('hdr-tab-blink');
         } else {
-            panel.style.maxHeight = '60vh';
+            panel.style.maxHeight = '75vh';
             _watchAlertMinimized = false;
             if(tab) tab.classList.remove('hdr-tab-blink');
         }
@@ -8245,7 +8245,7 @@
         if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
             panel.style.maxHeight = '0px';
         } else {
-            panel.style.maxHeight = '60vh';
+            panel.style.maxHeight = '75vh';
         }
     }
 
@@ -8273,7 +8273,7 @@
         // 패널 내용 초기화
         panel.innerHTML = '';
         var inner = document.createElement('div');
-        inner.style.cssText = 'padding:10px 12px;max-height:calc(60vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
+        inner.style.cssText = 'padding:10px 12px;max-height:calc(75vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
 
         var lblEl = document.createElement('div');
         lblEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;font-weight:800;';
@@ -8400,7 +8400,7 @@
 
         // 패널 열기 (최소화 상태면 탭만 표시)
         if(!_watchAlertMinimized){
-            panel.style.maxHeight = '60vh';
+            panel.style.maxHeight = '75vh';
         }
     }
 

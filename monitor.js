@@ -650,7 +650,7 @@ function _showMonitorFlash(s) {
             fraudPanel.innerHTML = '';
             scrollBox = document.createElement('div');
             scrollBox.setAttribute('data-fraud-scroll','1');
-            scrollBox.style.cssText = 'padding:6px 8px;max-height:calc(60vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:5px;';
+            scrollBox.style.cssText = 'padding:6px 8px;max-height:calc(75vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;display:flex;flex-direction:column;gap:5px;';
             fraudPanel.appendChild(scrollBox);
         }
 
@@ -709,7 +709,7 @@ function _showMonitorFlash(s) {
         fraudPanel._totalCount = totalCount;
         fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
 
-        fraudPanel.style.maxHeight = '60vh';
+        fraudPanel.style.maxHeight = '75vh';
 
         // 카드별 30초 자동 제거
         var _cardTimer = setTimeout(function(){
