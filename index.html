@@ -233,7 +233,14 @@
         #hdrMonDot { width:7px; height:7px; border-radius:50%; background:#94a3b8; flex-shrink:0; transition:background 0.3s; }
         #hdrMonDot.active { background:#22c55e; animation:monPulse 2s infinite; }
         @keyframes monPulse { 0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.3)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0.1)} }
-        #monitorAlertFlash { position:fixed; bottom:20px; right:20px; z-index:9700; background:var(--bg-card); border:2.5px solid #ef4444; border-radius:14px; padding:14px 16px; width:min(94vw,420px); max-height:min(90vh,380px); display:flex; flex-direction:column; box-shadow:0 6px 32px rgba(239,68,68,0.35); }
+        #monitorAlertFlash { display:none!important; } /* 헤더 드롭패널로 대체 */
+        /* ── 헤더 탭 & 드롭패널 ── */
+        .hdr-tab-pill { padding:3px 10px; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; white-space:nowrap; user-select:none; display:none; align-items:center; gap:4px; }
+        .hdr-tab-watch { background:rgba(34,197,94,0.12); border:1.5px solid #22c55e; color:#22c55e; }
+        .hdr-tab-fraud { background:rgba(239,68,68,0.12); border:1.5px solid #ef4444; color:#ef4444; }
+        @keyframes _hdrTabBlink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+        .hdr-tab-blink { animation:_hdrTabBlink 0.85s ease-in-out infinite; }
+        .hdr-drop-panel { position:absolute; top:calc(100% + 2px); left:50%; transform:translateX(-50%); width:300px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:0 0 12px 12px; }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
         @keyframes mfBadgePulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
@@ -1117,7 +1124,7 @@
         <span id="syncStatusBadge" style="display:none;"></span>
     </div>
     <div class="h-center" style="position:relative; justify-content:flex-start;">
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <!-- 유저 배지 -->
             <div id="authUserBadge" style="display:none;position:relative;">
                 <div onclick="_toggleUserMenu(event)" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border-ui);cursor:pointer;user-select:none;height:32px;">
@@ -1130,8 +1137,18 @@
             <button id="monitorBtn" onclick="openMonitorModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'"><span id="hdrMonDot"></span>👁 모니터링</button>
             <button id="mfNavBtn" onclick="openManualFilesModal()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">&#x1f4c2; 파일매뉴얼<span id="mfNavBadge" style="display:none;font-size:10px;font-weight:900;padding:1px 6px;border-radius:10px;margin-left:3px;"></span></button><button id="mfNavCancelBtn" onclick="_mfNavCancel()" title="취소" style="display:none;font-size:11px;font-weight:900;border:1.5px solid #7f1d1d;border-radius:8px;padding:0 8px;height:32px;background:none;color:#f87171;cursor:pointer;white-space:nowrap;transition:0.15s;margin-left:-4px;">✕</button>
         </div>
+        <!-- 비거래 탭 존 (좌측 빈공간) -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-width:0;">
+            <div id="watchHeaderTab" class="hdr-tab-pill hdr-tab-watch" onclick="_watchPanelToggle()"></div>
+            <div id="watchDropPanel" class="hdr-drop-panel" style="background:#0a1f10;border:2px solid #22c55e;border-top:none;"></div>
+        </div>
         <div id="liveClock" onclick="openScheduleModal()" title="직원 스케쥴 확인" style="position:absolute;left:50%;transform:translateX(-50%);font-size:11.5px;font-weight:900;opacity:0.65;letter-spacing:0.05em;white-space:nowrap;cursor:pointer;transition:opacity 0.15s;" onmouseover="this.style.opacity=1;this.style.textDecoration='underline'" onmouseout="this.style.opacity=0.65;this.style.textDecoration='none'"></div>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <!-- 사기글 탭 존 (우측 빈공간) -->
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;min-width:0;">
+            <div id="fraudHeaderTab" class="hdr-tab-pill hdr-tab-fraud" onclick="_fraudPanelToggle()"></div>
+            <div id="fraudDropPanel" class="hdr-drop-panel" style="background:var(--bg-card);border:2px solid #ef4444;border-top:none;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
             <button onclick="openLogPanel()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 10px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;gap:5px;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📋 로그</button>
             <button id="bellBtn" onclick="openBellModal()" style="position:relative;background:none;border:1.5px solid var(--border-ui);border-radius:8px;cursor:pointer;font-size:16px;padding:5px 10px;height:32px;transition:0.15s;color:var(--text-main);display:flex;align-items:center;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">🔔<span id="bellBadge" class="hidden" style="position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:9px;font-weight:900;border-radius:99px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">0</span></button>
             <button onclick="clearCurrentChat()" style="font-size:11px;font-weight:900;border:1.5px solid var(--border-ui);border-radius:8px;padding:0 12px;height:32px;background:none;color:var(--text-main);cursor:pointer;white-space:nowrap;transition:0.15s;display:flex;align-items:center;" onmouseover="this.style.background='#ef4444';this.style.color='#fff';this.style.borderColor='#ef4444'" onmouseout="this.style.background='none';this.style.color='var(--text-main)';this.style.borderColor='var(--border-ui)'">🧹 채팅비우기</button>
@@ -8159,19 +8176,39 @@
     };
 
     var _watchAlertMinimized = false;
-    var _watchAlertPos = (function(){ try{ var s=localStorage.getItem('_imiAlertPos'); return s?JSON.parse(s):null; }catch(e){return null;} })();
-    function _saveAlertPos(p){ _watchAlertPos=p; try{ localStorage.setItem('_imiAlertPos',JSON.stringify(p)); }catch(e){} }
+
+    function _watchPanelToggle(){
+        var panel = document.getElementById('watchDropPanel');
+        var tab   = document.getElementById('watchHeaderTab');
+        if(!panel) return;
+        if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
+            panel.style.maxHeight = '0px';
+            _watchAlertMinimized = true;
+        } else {
+            panel.style.maxHeight = '520px';
+            _watchAlertMinimized = false;
+            if(tab) tab.classList.add('hdr-tab-blink');
+        }
+    }
+
+    function _fraudPanelToggle(){
+        var panel = document.getElementById('fraudDropPanel');
+        if(!panel) return;
+        if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
+            panel.style.maxHeight = '0px';
+        } else {
+            panel.style.maxHeight = '400px';
+        }
+    }
 
     function _showWatchAlert(data, alertKey){
-        var existing = document.getElementById('_imiWatchAlert');
-        if(existing){
-            var er = existing.getBoundingClientRect();
-            var _ez = er.width / (existing.offsetWidth || 1); // zoom 보정
-            _saveAlertPos({left: er.left / _ez, top: er.top / _ez}); // CSS px
-            if(existing._procRef && existing._procListener) existing._procRef.off('value', existing._procListener);
-            if(existing._doneRef && existing._doneListener) existing._doneRef.off('value', existing._doneListener);
-            existing.remove();
-        }
+        var panel = document.getElementById('watchDropPanel');
+        var tab   = document.getElementById('watchHeaderTab');
+        if(!panel || !tab) return;
+
+        // 기존 Firebase 리스너 정리
+        if(panel._procRef && panel._procListener){ panel._procRef.off('value', panel._procListener); panel._procRef = null; }
+        if(panel._doneRef && panel._doneListener){ panel._doneRef.off('value', panel._doneListener); panel._doneRef = null; }
 
         var tids     = data.tids || (data.tid ? [data.tid] : []);
         var itemRows = data.itemRows || [];
@@ -8179,149 +8216,48 @@
         var keyword  = data.keyword || '';
         var count    = data.count   || tids.length || 0;
 
-        var el = document.createElement('div');
-        el.id = '_imiWatchAlert';
-        if(alertKey) el.dataset.alertKey = alertKey;
-        el.style.cssText = [
-            'position:fixed','z-index:2147483647',
-            'background:#0a1f10','border:2px solid #22c55e','border-radius:14px',
-            'width:320px','max-width:calc(100vw - 40px)',
-            'font-family:Segoe UI,sans-serif',
-            'box-shadow:0 4px 28px rgba(34,197,94,0.3)',
-            'user-select:none'
-        ].join(';');
-        if(_watchAlertPos){
-            el.style.left = _watchAlertPos.left+'px';
-            el.style.top  = _watchAlertPos.top+'px';
-        } else {
-            el.style.bottom = '20px';
-            el.style.left   = '20px';
-        }
-        document.body.appendChild(el);
+        // 탭 표시
+        tab.style.display = 'flex';
+        tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
+        tab.classList.add('hdr-tab-blink');
 
-        if(!document.getElementById('_watchAlertStyle')){
-            var sty = document.createElement('style');
-            sty.id = '_watchAlertStyle';
-            sty.textContent = [
-                '@keyframes _watchSlideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}',
-                '@keyframes _watchBlink{0%,100%{box-shadow:0 4px 28px rgba(34,197,94,0.3);border-color:#22c55e}50%{box-shadow:0 0 24px rgba(34,197,94,0.95),0 0 48px rgba(34,197,94,0.35);border-color:#86efac}}'
-            ].join('');
-            document.head.appendChild(sty);
-        }
+        // 패널 내용 초기화
+        panel.innerHTML = '';
+        var inner = document.createElement('div');
+        inner.style.cssText = 'padding:10px 12px;max-height:480px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
 
-        /* ── 드래그바(헤더) ── */
-        var dragBar = document.createElement('div');
-        dragBar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:move;border-radius:12px 12px 0 0;';
+        var lblEl = document.createElement('div');
+        lblEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;font-weight:800;';
+        lblEl.textContent = '📌 '+label+(keyword&&keyword!==label?' · '+keyword:'');
+        inner.appendChild(lblEl);
 
-        var badge = document.createElement('span');
-        badge.style.cssText = 'background:#22c55e;color:#000;font-size:10px;font-weight:900;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;pointer-events:none;';
-        badge.textContent = '🔔 비거래 감지';
-        dragBar.appendChild(badge);
-
-        var labelEl = document.createElement('div');
-        labelEl.style.cssText = 'font-size:12px;font-weight:800;color:#f0fdf4;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;';
-        labelEl.textContent = label + (count ? ' · '+count+'개' : '');
-        dragBar.appendChild(labelEl);
-
-        var minBtn = document.createElement('span');
-        minBtn.textContent = '−';
-        minBtn.title = '최소화 / 복원';
-        minBtn.style.cssText = 'cursor:pointer;opacity:0.65;font-size:20px;line-height:1;flex-shrink:0;padding:0 3px;';
-        dragBar.appendChild(minBtn);
-
-        el.appendChild(dragBar);
-
-        /* ── 본문 ── */
-        var body = document.createElement('div');
-        body.style.cssText = 'padding:0 14px 14px;';
-        if(keyword && keyword !== label){
-            var kwEl = document.createElement('div');
-            kwEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;';
-            kwEl.textContent = '키워드: '+keyword;
-            body.appendChild(kwEl);
-        }
         var tidContainer = document.createElement('div');
         tidContainer.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-        body.appendChild(tidContainer);
-        el.appendChild(body);
+        inner.appendChild(tidContainer);
+        panel.appendChild(inner);
 
-        /* ── 최소화 토글 ── */
-        function _updateBlink(){
-            if(_watchAlertMinimized){
-                el.style.animation = tidContainer.children.length > 0
-                    ? '_watchBlink 0.85s ease-in-out infinite' : '';
-            }
-        }
-        function _setMinimized(v){
-            _watchAlertMinimized = v;
-            if(v){
-                // top 좌표 고정 후 접어야 위치 그대로 아래쪽만 사라지는 느낌
-                var rect = el.getBoundingClientRect();
-                var cssZoom = rect.width / (el.offsetWidth || 1);
-                el.style.top = (rect.top / cssZoom) + 'px'; el.style.bottom = '';
-                body.style.display = 'none';
-                dragBar.style.cursor = 'pointer';
-                el.style.borderRadius = '10px';
-                dragBar.style.borderRadius = '8px';
-                _updateBlink();
+        function _updateTabBlink(){
+            if(tidContainer.children.length > 0){
+                tab.classList.add('hdr-tab-blink');
             } else {
-                body.style.display = '';
-                dragBar.style.cursor = 'move';
-                el.style.borderRadius = '14px';
-                dragBar.style.borderRadius = '12px 12px 0 0';
-                el.style.animation = '';
+                tab.classList.remove('hdr-tab-blink');
             }
         }
-        minBtn.onclick = function(){ _setMinimized(!_watchAlertMinimized); };
-        dragBar.addEventListener('click', function(e){
-            if(e.target === minBtn) return;
-            if(_watchAlertMinimized) _setMinimized(false);
-        });
 
-        /* ── 드래그 ── */
-        dragBar.addEventListener('mousedown', function(e){
-            if(e.target === minBtn) return;
-            if(_watchAlertMinimized) return; // 최소화 상태에선 클릭으로 복원만
-            e.preventDefault();
-            var rect = el.getBoundingClientRect();
-            var cssZoom = rect.width / (el.offsetWidth || 1);
-            el.style.top = (rect.top / cssZoom) + 'px'; el.style.bottom = '';
-            var sx = e.clientX - rect.left, sy = e.clientY - rect.top;
-            var vw = rect.width, vh = rect.height;
-            function onMove(e){
-                var nl = Math.max(0, Math.min(window.innerWidth - vw, e.clientX - sx));
-                var nt = Math.max(0, Math.min(window.innerHeight - vh, e.clientY - sy));
-                el.style.left = (nl / cssZoom) + 'px';
-                el.style.top  = (nt / cssZoom) + 'px';
-            }
-            function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
-            document.addEventListener('mousemove',onMove);
-            document.addEventListener('mouseup',onUp);
-        });
-
-        /* ── 초기 최소화 적용 ── */
-        if(_watchAlertMinimized){
-            _setMinimized(true);
-        } else {
-            el.style.animation = '_watchSlideIn 0.3s ease';
-        }
-
-        /* ── 처리 완료 체크 ── */
         function _checkAllDone(){
             if(!tidContainer.children.length){
-                if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
-                if(el._doneRef && el._doneListener) el._doneRef.off('value', el._doneListener);
+                if(panel._procRef && panel._procListener){ panel._procRef.off('value', panel._procListener); panel._procRef = null; }
+                if(panel._doneRef && panel._doneListener){ panel._doneRef.off('value', panel._doneListener); panel._doneRef = null; }
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
-                var _fr = el.getBoundingClientRect();
-                var _fz = _fr.width / (el.offsetWidth || 1);
-                _saveAlertPos({left: _fr.left / _fz, top: _fr.top / _fz});
-                el.remove();
+                tab.style.display = 'none';
+                tab.innerHTML = '';
+                panel.style.maxHeight = '0px';
+                panel.innerHTML = '';
             } else {
-                _updateBlink();
+                _updateTabBlink();
             }
         }
 
-        /* ── 물품 행 렌더 ── */
         if(tids.length > 0){
             tids.forEach(function(tid){
                 var rowData = itemRows.find(function(r){ return r.tid === tid; }) || {};
@@ -8361,8 +8297,8 @@
                     titleEl2.textContent = itemTitle;
                     bottomRow.appendChild(titleEl2);
                 } else {
-                    var spacer = document.createElement('div'); spacer.style.cssText = 'flex:1;';
-                    bottomRow.appendChild(spacer);
+                    var sp = document.createElement('div'); sp.style.flex='1';
+                    bottomRow.appendChild(sp);
                 }
                 if(itemKey){
                     var filterBtn = document.createElement('button');
@@ -8374,11 +8310,7 @@
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
                             list.push({key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch'});
-                            db.ref('/imi_blocked').set(list, function(){
-                                filterBtn.textContent = '제외됨';
-                                filterBtn.disabled = true;
-                                filterBtn.style.opacity = '0.45';
-                            });
+                            db.ref('/imi_blocked').set(list, function(){ filterBtn.textContent='제외됨'; filterBtn.disabled=true; filterBtn.style.opacity='0.45'; });
                         });
                     };
                     bottomRow.appendChild(filterBtn);
@@ -8391,36 +8323,34 @@
                 var procRef = db.ref('imi_watch_alerts/'+alertKey+'/processedTids');
                 var procListener = procRef.on('value', function(snap){
                     var processed = snap.val() || {};
-                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
-                        if(processed[r.dataset.tid]) r.remove();
-                    });
+                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){ if(processed[r.dataset.tid]) r.remove(); });
                     _checkAllDone();
                 });
-                el._procRef = procRef;
-                el._procListener = procListener;
+                panel._procRef = procRef; panel._procListener = procListener;
             }
-            if(tids.length){
-                var doneRef = db.ref('imi_watch_done');
-                var doneListener = doneRef.on('value', function(snap){
-                    var doneObj = snap.val() || {};
-                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
-                        if(doneObj[r.dataset.tid]) r.remove();
-                    });
-                    _checkAllDone();
-                });
-                el._doneRef = doneRef;
-                el._doneListener = doneListener;
-            }
+            var doneRef = db.ref('imi_watch_done');
+            var doneListener = doneRef.on('value', function(snap){
+                var doneObj = snap.val() || {};
+                Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){ if(doneObj[r.dataset.tid]) r.remove(); });
+                _checkAllDone();
+            });
+            panel._doneRef = doneRef; panel._doneListener = doneListener;
         } else {
             var doneBtn2 = document.createElement('button');
             doneBtn2.textContent = '처리완료';
             doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
             doneBtn2.onclick = function(){
-                (tids.length ? tids : []).forEach(function(t){ db.ref('imi_watch_done/'+t).set({at:Date.now()}); });
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
-                el.remove();
+                tab.style.display = 'none';
+                panel.style.maxHeight = '0px';
+                panel.innerHTML = '';
             };
             tidContainer.appendChild(doneBtn2);
+        }
+
+        // 패널 열기 (최소화 상태면 탭만 표시)
+        if(!_watchAlertMinimized){
+            panel.style.maxHeight = '520px';
         }
     }
 

@@ -640,25 +640,36 @@ function _playAlertBeep(){
     }catch(e){}
 }
 function _showMonitorFlash(s) {
-    if (s.ruleType === 'watch') return; // 비거래는 왼쪽 팝업만 사용
+    if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
     var _np=_getNotifPrefs();
-    document.getElementById('monitorAlertTitle').textContent = '🚨 '+(s.ruleName||'모니터링 경고');
-    document.getElementById('monitorAlertCount').textContent = (s.itemCount||0)+'개 물품 감지됨';
-    document.getElementById('monitorAlertItems').innerHTML = (s.itemRows||[]).map(function(it){
-        var k = _esc(it.key || (it.t||'').substring(0,30).trim());
-        return '<div style="padding:6px 0;border-bottom:1px solid var(--border-ui);">'
-            +(it.tid?'<div style="font-size:20px;font-weight:900;color:#38bdf8;margin-bottom:2px;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>':'')
-            +'<div style="display:flex;align-items:center;gap:6px;">'
-            +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
-            +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
-            +'</div>'
-            +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">'
-            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
-            +'<span style="font-size:9px;color:#94a3b8;font-weight:600;">정상 물품일 경우 눌러주세요</span>'
-            +'</div>'
+
+    // 사기글 헤더 탭 + 드롭패널 업데이트
+    var fraudTab   = document.getElementById('fraudHeaderTab');
+    var fraudPanel = document.getElementById('fraudDropPanel');
+    if(fraudTab && fraudPanel){
+        fraudTab.style.display = 'flex';
+        fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(s.itemCount||0)+'</span>';
+        fraudTab.classList.add('hdr-tab-blink');
+        var itemsHtml = (s.itemRows||[]).map(function(it){
+            var k = _esc(it.key || (it.t||'').substring(0,30).trim());
+            return '<div style="padding:6px 0;border-bottom:1px solid #334155;">'
+                +(it.tid?'<div style="font-size:18px;font-weight:900;color:#38bdf8;margin-bottom:2px;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>':'')
+                +'<div style="display:flex;align-items:center;gap:6px;">'
+                +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
+                +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
+                +'</div>'
+                +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">'
+                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
+                +'<span style="font-size:9px;color:#94a3b8;font-weight:600;">정상 물품일 경우 눌러주세요</span>'
+                +'</div>'
+                +'</div>';
+        }).join('');
+        fraudPanel.innerHTML = '<div style="padding:10px 12px;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;">'
+            +'<div style="font-size:12px;font-weight:900;color:#ef4444;margin-bottom:6px;">🚨 '+(s.ruleName||'모니터링 경고')+'&nbsp;<span style="font-size:10px;font-weight:700;color:#94a3b8;">'+(s.itemCount||0)+'개 감지</span></div>'
+            + itemsHtml
             +'</div>';
-    }).join('');
-    document.getElementById('monitorAlertFlash').classList.remove('hidden');
+        fraudPanel.style.maxHeight = '400px';
+    }
 
     if (_np.flash) {
         document.getElementById('chatSection').classList.add('monitor-border-flash');
@@ -740,13 +751,17 @@ function _stopTabBlink() {
 }
 
 function _hideMonitorFlashLocal() {
-    document.getElementById('monitorAlertFlash').classList.add('hidden');
     document.getElementById('chatSection').classList.remove('monitor-border-flash');
     if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
     if (window._overlayFlashInterval) { clearInterval(window._overlayFlashInterval); window._overlayFlashInterval = null; }
     var overlay = document.getElementById('monFullscreenOverlay');
     if (overlay) overlay.style.background = 'rgba(239,68,68,0)';
     _stopTabBlink();
+    // 사기글 헤더 탭 & 드롭패널 숨기기
+    var fraudTab   = document.getElementById('fraudHeaderTab');
+    var fraudPanel = document.getElementById('fraudDropPanel');
+    if(fraudTab){ fraudTab.style.display = 'none'; fraudTab.innerHTML = ''; fraudTab.classList.remove('hdr-tab-blink'); }
+    if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; }
 }
 
 db.ref('monitor_flash_state').on('value', function(snap) {
@@ -765,10 +780,13 @@ db.ref('monitor_flash_state').on('value', function(snap) {
     } else if (!s.active) _hideMonitorFlashLocal();
 });
 
-// 필터제외 버튼 — 이벤트 위임 (monitorAlertFlash 내)
+// 필터제외 버튼 — 이벤트 위임 (fraudDropPanel 내)
 document.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-bk]');
-    if (!btn || !document.getElementById('monitorAlertItems').contains(btn)) return;
+    if (!btn) return;
+    var fraudPanel = document.getElementById('fraudDropPanel');
+    var monItems   = document.getElementById('monitorAlertItems');
+    if (!(fraudPanel && fraudPanel.contains(btn)) && !(monItems && monItems.contains(btn))) return;
     var key   = btn.getAttribute('data-bk');
     var title = btn.getAttribute('data-title') || '';
     var tid   = btn.getAttribute('data-tid') || '';
