@@ -652,7 +652,10 @@ function _showMonitorFlash(s) {
             +'<div style="font-size:12px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+_esc(it.t||'')+'</div>'
             +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:12px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
             +'</div>'
-            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="margin-top:4px;font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;">필터제외</button>'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px;">'
+            +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
+            +'<span style="font-size:9px;color:#94a3b8;font-weight:600;">정상 물품일 경우 눌러주세요</span>'
+            +'</div>'
             +'</div>';
     }).join('');
     document.getElementById('monitorAlertFlash').classList.remove('hidden');
