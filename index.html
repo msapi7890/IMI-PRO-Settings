@@ -8181,7 +8181,7 @@
         el.id = '_imiWatchAlert';
         if(alertKey) el.dataset.alertKey = alertKey;
         el.style.cssText = [
-            'position:fixed','z-index:99999',
+            'position:fixed','z-index:2147483647',
             'background:#0a1f10','border:2px solid #22c55e','border-radius:14px',
             'width:320px','max-width:calc(100vw - 40px)',
             'font-family:Segoe UI,sans-serif',
@@ -8227,16 +8227,6 @@
         minBtn.style.cssText = 'cursor:pointer;opacity:0.65;font-size:20px;line-height:1;flex-shrink:0;padding:0 3px;';
         dragBar.appendChild(minBtn);
 
-        var closeX = document.createElement('span');
-        closeX.textContent = '✕';
-        closeX.style.cssText = 'cursor:pointer;opacity:0.4;font-size:16px;line-height:1;flex-shrink:0;';
-        closeX.onclick = function(){
-            if(el._procRef && el._procListener) el._procRef.off('value', el._procListener);
-            if(el._doneRef && el._doneListener) el._doneRef.off('value', el._doneListener);
-            _watchAlertMinimized = false;
-            el.remove();
-        };
-        dragBar.appendChild(closeX);
         el.appendChild(dragBar);
 
         /* ── 본문 ── */
@@ -8263,6 +8253,9 @@
         function _setMinimized(v){
             _watchAlertMinimized = v;
             if(v){
+                // top 좌표 고정 후 접어야 위치 그대로 아래쪽만 사라지는 느낌
+                var rect = el.getBoundingClientRect();
+                el.style.top = rect.top+'px'; el.style.bottom = '';
                 body.style.display = 'none';
                 dragBar.style.cursor = 'pointer';
                 el.style.borderRadius = '10px';
@@ -8278,13 +8271,13 @@
         }
         minBtn.onclick = function(){ _setMinimized(!_watchAlertMinimized); };
         dragBar.addEventListener('click', function(e){
-            if(e.target === minBtn || e.target === closeX) return;
+            if(e.target === minBtn) return;
             if(_watchAlertMinimized) _setMinimized(false);
         });
 
         /* ── 드래그 ── */
         dragBar.addEventListener('mousedown', function(e){
-            if(e.target === minBtn || e.target === closeX) return;
+            if(e.target === minBtn) return;
             if(_watchAlertMinimized) return; // 최소화 상태에선 클릭으로 복원만
             e.preventDefault();
             var rect = el.getBoundingClientRect();
