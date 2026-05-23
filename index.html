@@ -1095,7 +1095,7 @@
                 </div>
             </div>
             <div id="editMode" class="hidden">
-                <textarea id="editContent" class="w-full h-[280px] p-5 bordered-input mb-3 text-base font-bold" placeholder="내용 입력..."></textarea>
+                <textarea id="editContent" class="w-full p-5 bordered-input mb-3 text-base font-bold" style="height:340px;resize:vertical;" placeholder="내용 입력..."></textarea>
                 <div style="margin-bottom:10px;">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                         <label for="noticeImgInput" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:900;padding:5px 12px;border-radius:8px;border:1.5px solid var(--border-ui);background:var(--bg-card);transition:0.15s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📎 이미지 첨부</label>
@@ -1104,12 +1104,13 @@
                     </div>
                     <div id="noticeImgPreviews" style="display:flex;flex-wrap:wrap;gap:6px;min-height:0;"></div>
                 </div>
-                <input type="url" id="editUrl" class="w-full px-4 py-2.5 bordered-input mb-5 text-sm font-bold rounded-xl" placeholder="관련 URL (선택사항, https://...)">
-                <div class="flex justify-end gap-4">
-                    <button onclick="switchToViewMode()" class="text-sm font-bold opacity-40">취소</button>
-                    <button onclick="saveNotice()" id="saveBtn" class="px-12 py-3 rounded-xl font-black text-white text-sm shadow-lg">저장 완료</button>
-                </div>
+                <input type="url" id="editUrl" class="w-full px-4 py-2.5 bordered-input mb-2 text-sm font-bold rounded-xl" placeholder="관련 URL (선택사항, https://...)">
             </div>
+        </div>
+        <!-- 하단 고정 버튼 (편집 모드 전용) -->
+        <div id="noticeEditFooter" style="display:none;flex-shrink:0;border-top:2px solid var(--border-ui);padding:14px 24px;align-items:center;justify-content:flex-end;gap:12px;">
+            <button onclick="switchToViewMode()" style="font-size:13px;font-weight:700;opacity:0.5;cursor:pointer;background:none;border:none;color:var(--text-main);padding:0 8px;">취소</button>
+            <button onclick="saveNotice()" id="saveBtn" style="font-size:13px;font-weight:900;padding:10px 32px;border-radius:10px;background:#3abff8;color:#0f172a;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(58,191,248,0.35);">저장 완료</button>
         </div>
         <!-- 하단 고정 버튼 (뷰 모드 전용) -->
         <div id="noticeViewFooter" style="flex-shrink:0;border-top:2px solid var(--border-ui);padding:14px 24px;display:flex;align-items:center;gap:10px;">
@@ -7643,6 +7644,7 @@
         document.getElementById('viewMode').classList.add('hidden');
         document.getElementById('editMode').classList.remove('hidden');
         var f=document.getElementById('noticeViewFooter'); if(f) f.style.display='none';
+        var ef=document.getElementById('noticeEditFooter'); if(ef){ ef.style.display='flex'; }
         if(currentEditId){
             var n=allNotices[currentMode][currentEditId];
             document.getElementById('editContent').value=(n&&n.content)?n.content:'';
@@ -7660,6 +7662,7 @@
         document.getElementById('editMode').classList.add('hidden');
         document.getElementById('viewMode').classList.remove('hidden');
         var f=document.getElementById('noticeViewFooter'); if(f) f.style.display='';
+        var ef=document.getElementById('noticeEditFooter'); if(ef) ef.style.display='none';
     }
     function openUrgentCreate(){
         var inp=document.getElementById('urgentInput'); if(inp) inp.value='';
