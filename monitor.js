@@ -910,9 +910,11 @@ db.ref('imi_watch_done').on('value', function(snap) {
     _watchDoneSet = snap.val() || {};
     document.querySelectorAll('[data-logdone]').forEach(function(btn) {
         var tid = btn.getAttribute('data-logdone');
-        if (_watchDoneSet[tid] && !btn.disabled) {
+        var info = _watchDoneSet[tid];
+        if (info && !btn.disabled) {
             btn.disabled = true;
-            btn.textContent = '✅ 처리완료';
+            var byName = (info && typeof info === 'object') ? (info.by || '') : '';
+            btn.textContent = '✅ 처리완료' + (byName ? ' · ' + byName : '');
             btn.style.background = 'none';
             btn.style.border = '1px solid #22c55e';
             btn.style.color = '#22c55e';
@@ -1053,9 +1055,11 @@ function _loadLogByType(fullDay, isWatch) {
                         : '';
                     var doneHtml = '';
                     if (entryIsWatch && it.tid) {
-                        var isDone = !!_watchDoneSet[it.tid];
+                        var doneInfo = _watchDoneSet[it.tid];
+                        var isDone = !!doneInfo;
+                        var doneBy = (doneInfo && typeof doneInfo === 'object') ? (doneInfo.by || '') : '';
                         doneHtml = isDone
-                            ? '<button data-logdone="' + _esc(it.tid) + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;flex-shrink:0;opacity:0.4;cursor:default;">✅ 처리완료</button>'
+                            ? '<button data-logdone="' + _esc(it.tid) + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #22c55e;color:#22c55e;background:none;flex-shrink:0;opacity:0.4;cursor:default;">✅ 처리완료' + (doneBy ? ' · ' + _esc(doneBy) : '') + '</button>'
                             : '<button data-logdone="' + _esc(it.tid) + '" style="font-size:10px;padding:2px 7px;border-radius:4px;background:#22c55e;color:#000;border:none;cursor:pointer;font-weight:900;flex-shrink:0;">처리완료</button>';
                     }
                     return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'

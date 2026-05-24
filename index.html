@@ -8556,6 +8556,7 @@
 
                 // 하단 액션 바: 필터제외(좌) — 처리완료(우)
                 var actionBar = document.createElement('div');
+                actionBar.setAttribute('data-actionbar','1');
                 actionBar.style.cssText = 'display:flex;align-items:stretch;border-top:1px solid var(--border-ui);';
 
                 if(itemKey){
@@ -8568,7 +8569,10 @@
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
                             list.push({key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch'});
-                            db.ref('/imi_blocked').set(list, function(){ filterBtn.textContent='제외됨'; filterBtn.disabled=true; filterBtn.style.opacity='0.45'; });
+                            db.ref('/imi_blocked').set(list, function(){
+                                filterBtn.textContent = addedBy ? '제외됨 · '+addedBy : '제외됨';
+                                filterBtn.disabled=true; filterBtn.style.opacity='0.45';
+                            });
                         });
                     };
                     actionBar.appendChild(filterBtn);
@@ -8578,8 +8582,9 @@
                 doneBtn.textContent = '✅ 처리완료';
                 doneBtn.style.cssText = 'flex:1;padding:6px 0;font-size:10px;font-weight:900;background:none;border:none;color:#22c55e;cursor:pointer;';
                 doneBtn.onclick = function(){
-                    db.ref('imi_watch_done/'+tid).set({at:Date.now()});
-                    if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(true);
+                    var byName = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
+                    db.ref('imi_watch_done/'+tid).set({at:Date.now(), by:byName});
+                    if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/processedTids/'+tid).set(byName||true);
                     else { row.remove(); _checkAllDone(); }
                 };
                 actionBar.appendChild(doneBtn);
@@ -8587,11 +8592,27 @@
                 tidContainer.appendChild(row);
             });
 
+            // 처리자 표시 헬퍼
+            function _markRowDone(r, byName) {
+                if (r.dataset.doneShown) return;
+                r.dataset.doneShown = '1';
+                var ab = r.querySelector('[data-actionbar]');
+                if (ab) {
+                    ab.innerHTML = '<div style="flex:1;text-align:center;padding:5px 0;font-size:10px;font-weight:700;color:#22c55e;opacity:0.8;">✅ 처리완료'+(byName?' · '+byName:'')+'</div>';
+                }
+                r.style.opacity = '0.45';
+                setTimeout(function(){ r.remove(); _checkAllDone(); }, 4000);
+            }
+
             if(alertKey){
                 var procRef = db.ref('imi_watch_alerts/'+alertKey+'/processedTids');
                 var procListener = procRef.on('value', function(snap){
                     var processed = snap.val() || {};
-                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){ if(processed[r.dataset.tid]) r.remove(); });
+                    Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
+                        var v = processed[r.dataset.tid];
+                        if(!v) return;
+                        _markRowDone(r, typeof v==='string' ? v : '');
+                    });
                     _checkAllDone();
                 });
                 panel._procRef = procRef; panel._procListener = procListener;
@@ -8599,7 +8620,12 @@
             var doneRef = db.ref('imi_watch_done');
             var doneListener = doneRef.on('value', function(snap){
                 var doneObj = snap.val() || {};
-                Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){ if(doneObj[r.dataset.tid]) r.remove(); });
+                Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
+                    var v = doneObj[r.dataset.tid];
+                    if(!v) return;
+                    var byName = typeof v==='object' ? (v.by||'') : '';
+                    _markRowDone(r, byName);
+                });
                 _checkAllDone();
             });
             panel._doneRef = doneRef; panel._doneListener = doneListener;
