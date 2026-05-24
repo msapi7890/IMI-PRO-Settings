@@ -567,7 +567,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
 <!-- ═══ 4. 멤버 확인 ═══ -->
 <section class="section" id="sec-member">
 <h2>👥 멤버 확인</h2>
-<p>상단 왼쪽에 내 이름이 표시된 배지를 클릭하면 드롭다운이 열립니다. 여기서 현재 접속 중인 멤버 목록을 확인하고, 설정에 접근할 수 있습니다.</p>
+<p>상단 왼쪽에 내 이름이 표시된 배지를 클릭하면 드롭다운이 열립니다. 여기서 설정에 접근할 수 있습니다.</p>
 
 <div class="click-result">
   <div>
@@ -748,7 +748,6 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       <span class="bdg bdg-b" style="font-size:9px;">비거래</span>
       <span class="bdg bdg-g" style="font-size:9px;">감시중</span>
     </div>
-    <div class="r-bigbtn-red">■ 봇 중지</div>
   </div>
 </div>
 
@@ -802,15 +801,11 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       <div style="font-size:9px;">🚫 필터 제외</div>
       <div style="font-size:8.5px;margin-top:1px;opacity:.7;">앞으로 무시</div>
     </div>
-    <div class="r-act-btn r-act-link">
-      <div style="font-size:9px;">🔗 상품 보기</div>
-      <div style="font-size:8.5px;margin-top:1px;opacity:.7;">링크 열기</div>
-    </div>
   </div>
 </div>
 
 <h3>버튼별 처리 방법</h3>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
   <div style="background:#0a1f10;border:1.5px solid #22c55e;border-radius:9px;padding:12px;">
     <div style="font-size:11px;font-weight:900;color:#4ade80;margin-bottom:6px;">✅ 처리완료</div>
     <div style="font-size:11px;line-height:1.7;">상품을 직접 확인하고 처리했을 때 누릅니다.<br><br>누른 사람 이름이 로그에 기록됩니다.</div>
@@ -818,13 +813,8 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   </div>
   <div style="background:rgba(251,191,36,.05);border:1.5px solid #fbbf24;border-radius:9px;padding:12px;">
     <div style="font-size:11px;font-weight:900;color:#fbbf24;margin-bottom:6px;">🚫 필터 제외</div>
-    <div style="font-size:11px;line-height:1.7;">앞으로 이 상품(TID)을 감지해도 무시합니다.<br><br>실수한 경우 로그 → 필터제외 탭에서 취소 가능.</div>
+    <div style="font-size:11px;line-height:1.7;">앞으로 이 상품(TID)을 감지해도 무시합니다.<br><br>실수한 경우 로그 → 필터제외 탭에서 해제 가능.</div>
     <div class="warn" style="margin-top:8px;padding:6px 10px;font-size:10.5px;">신중하게 사용하세요</div>
-  </div>
-  <div style="background:rgba(58,191,248,.05);border:1.5px solid #3abff8;border-radius:9px;padding:12px;">
-    <div style="font-size:11px;font-weight:900;color:#3abff8;margin-bottom:6px;">🔗 상품 보기</div>
-    <div style="font-size:11px;line-height:1.7;">감지된 상품 페이지를 새 탭으로 엽니다.<br><br>내용을 직접 확인하고 싶을 때 사용합니다.</div>
-    <div class="tip" style="margin-top:8px;padding:6px 10px;font-size:10.5px;">아이템매니아 사이트 열림</div>
   </div>
 </div>
 </section>
@@ -857,7 +847,6 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   <div class="r-popup-actions" style="border-top-color:rgba(239,68,68,.2);">
     <div class="r-act-btn" style="background:rgba(239,68,68,.15);border:1.5px solid #ef4444;color:#f87171;font-size:9px;">✅ 처리완료</div>
     <div class="r-act-btn r-act-filter">🚫 필터 제외</div>
-    <div class="r-act-btn r-act-link">🔗 상품 보기</div>
   </div>
 </div>
 
@@ -899,7 +888,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
         <span style="font-size:9px;color:#fbbf24;font-weight:900;">🚫 제외됨 · 백휘섭</span>
-        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #ef4444;background:none;color:#ef4444;cursor:pointer;">↩ 제외 취소</button>
+        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #22c55e;background:rgba(34,197,94,0.15);color:#22c55e;cursor:pointer;">↩ 제외 해제</button>
       </div>
     </div>
     <div class="r-filter-item" style="border-bottom:none;">
@@ -910,7 +899,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
         <span style="font-size:9px;color:#fbbf24;font-weight:900;">🚫 제외됨 · 김철수</span>
-        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #ef4444;background:none;color:#ef4444;cursor:pointer;">↩ 제외 취소</button>
+        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #22c55e;background:rgba(34,197,94,0.15);color:#22c55e;cursor:pointer;">↩ 제외 해제</button>
       </div>
     </div>
   </div>
@@ -974,7 +963,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
     <div style="font-weight:900;margin-bottom:4px;">3 🚫 필터제외</div>
-    <div style="color:#94a3b8;">무시 처리한 상품 목록. 여기서 제외 취소 가능.</div>
+    <div style="color:#94a3b8;">무시 처리한 상품 목록. 여기서 제외 해제 가능.</div>
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
     <div style="font-weight:900;margin-bottom:4px;">4 ✅ 처리완료</div>
@@ -1270,7 +1259,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
     <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 실수로 필터 제외했어요</div>
-    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">📋 로그 → 3 🚫 필터제외 탭 → 해당 항목의 <span class="ui-btn red">↩ 제외 취소</span> 버튼 클릭</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">📋 로그 → 3 🚫 필터제외 탭 → 해당 항목의 <span class="ui-btn red">↩ 제외 해제</span> 버튼 클릭</div>
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
     <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 비밀번호를 잊었어요</div>
