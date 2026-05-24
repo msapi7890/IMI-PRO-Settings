@@ -161,6 +161,10 @@ function _renderBotStatus() {
         ruleList.innerHTML = '<div style="text-align:center;padding:18px 0;opacity:0.35;font-size:12px;font-style:italic;">등록된 규칙이 없습니다</div>';
         return;
     }
+    // 사기글 먼저, 비거래 나중
+    rules = rules.slice().sort(function(a, b) {
+        return (a.type === 'watch' ? 1 : 0) - (b.type === 'watch' ? 1 : 0);
+    });
     var canCtrl = _isBotPrivileged();
     ruleList.innerHTML = rules.map(function(r) {
         var runColor = (r.enabled && r.tabOpen) ? '#22c55e' : (r.enabled ? '#f59e0b' : '#94a3b8');
@@ -619,7 +623,7 @@ function _triggerMonitorAlert(id, rule, items) {
 function closeMonitorFlash() { db.ref('monitor_flash_state/active').set(false); }
 
 function _getNotifPrefs(){
-    try{ return Object.assign({flash:true,popup:true,sound:false},JSON.parse(localStorage.getItem('imi_notif_prefs')||'{}')); }catch(e){ return {flash:true,popup:true,sound:false}; }
+    try{ return Object.assign({flash:true,popup:true,sound:false,watchPopup:false},JSON.parse(localStorage.getItem('imi_notif_prefs')||'{}')); }catch(e){ return {flash:true,popup:true,sound:false,watchPopup:false}; }
 }
 function _playAlertBeep(){
     try{
@@ -637,6 +641,14 @@ function _playAlertBeep(){
 function _showMonitorFlash(s) {
     if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
     var _np=_getNotifPrefs();
+
+    // popup ON → 크롬 팝업창 모드: 드롭패널 스킵
+    if (_np.popup) {
+        if (_np.flash) { document.getElementById('chatSection').classList.add('monitor-border-flash'); _triggerFullscreenFlash(); }
+        if (_np.sound) _playAlertBeep();
+        _startTabBlink(s.ruleName, s.itemCount);
+        return;
+    }
 
     // 사기글 헤더 탭 + 드롭패널 — 키워드별 카드 위로 쌓기
     var fraudTab   = document.getElementById('fraudHeaderTab');
@@ -1489,7 +1501,12 @@ function _renderBotRuleList() {
         return;
     }
     var canEdit = _isBotPrivileged();
-    list.innerHTML = _botRules.map(function(r) {
+    var fraudRules = _botRules.filter(function(r) { return r.type !== 'watch'; });
+    if (!fraudRules.length) {
+        list.innerHTML = '<div style="text-align:center;padding:20px 0;opacity:0.35;font-size:12px;">등록된 사기글 규칙이 없습니다</div>';
+        return;
+    }
+    list.innerHTML = fraudRules.map(function(r) {
         var runStatus = (_botStatus && _botStatus.rules) ? _botStatus.rules.find(function(sr){ return sr.id === r.id; }) : null;
         var isRunning = !!(runStatus && runStatus.tabOpen);
         var runColor  = isRunning ? '#22c55e' : '#94a3b8';

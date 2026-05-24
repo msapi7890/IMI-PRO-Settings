@@ -401,6 +401,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
                     showWatchPopup(msg.data);
+                } else {
+                    const fraudPopupOn = await store.get('imi_notif_popup');
+                    if (fraudPopupOn === true) showFraudPopup(msg.data);
                 }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
                 const logRows = msg.data.logItemRows;
@@ -643,19 +646,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 });
 
+// 사기글 감지 팝업 (우측 하단, 빨간 테마) — popup 토글 ON일 때
+async function showFraudPopup(data) {
+    await chrome.storage.local.set({ imi_alert_popup_data: data });
+    chrome.windows.create({
+        url: chrome.runtime.getURL('alert_popup.html'),
+        type: 'popup',
+        width: 460,
+        height: 300
+    });
+}
+
 // 비거래 감지 팝업 (좌측 하단, 초록 테마)
 let _watchWinId = null;
 let _lastWatchAt = 0;
 
 async function showWatchPopup(data) {
-    const popupOn = await store.get('imi_notif_popup');
-    if (popupOn === false) return;
+    const watchPopupOn = await store.get('imi_notif_watchPopup');
 
     const now = Date.now();
     if (now - _lastWatchAt < 5000) return;
     _lastWatchAt = now;
 
-    // IMI PRO 인페이지 알림 (Firebase 경유 — 확장프로그램 없는 사용자도 수신)
+    if (watchPopupOn === true) {
+        // 팝업창 모드: watch_popup.html 크롬 창 열기
+        await chrome.storage.local.set({ imi_watch_popup_data: data });
+        chrome.windows.create({
+            url: chrome.runtime.getURL('watch_popup.html'),
+            type: 'popup',
+            width: 460,
+            height: 300
+        });
+        return;
+    }
+
+    // 드롭다운 모드: Firebase 경유 → 상단 watchDropPanel
     try {
         const itemRows = (data.itemRows || []);
         const tids = itemRows.map(r => r.tid || '').filter(Boolean);
