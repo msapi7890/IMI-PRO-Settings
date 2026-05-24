@@ -183,6 +183,7 @@ function _renderBotStatus() {
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
             + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + (r.subKeyword     ? '<span class="mon-tag" style="color:#7dd3fc;border-color:#0284c7;">🔗 AND: ' + _esc(r.subKeyword) + '</span>' : '')
             + (r.minPrice       ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
             + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
@@ -1508,6 +1509,7 @@ function _renderBotRuleList() {
             + '</div>'
             + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'
             + (r.keyword        ? '<span class="mon-tag">🔑 ' + _esc(r.keyword) + '</span>' : '')
+            + (r.subKeyword     ? '<span class="mon-tag" style="color:#7dd3fc;border-color:#0284c7;">🔗 AND: ' + _esc(r.subKeyword) + '</span>' : '')
             + (r.minPrice       ? '<span class="mon-tag">💰 ' + Number(r.minPrice).toLocaleString() + '원↑</span>' : '')
             + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
@@ -1544,6 +1546,7 @@ function startEditBotRule(id) {
     document.getElementById('brName').value     = r.name || '';
     document.getElementById('brUrl').value      = r.url  || '';
     document.getElementById('brKw').value       = r.keyword || '';
+    document.getElementById('brSubKw').value    = r.subKeyword || '';
     document.getElementById('brMin').value      = r.minPrice || '';
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
@@ -1560,7 +1563,7 @@ function startEditBotRule(id) {
 
 function _cancelBotRuleEdit() {
     _botRuleEditingId = null;
-    ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
+    ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
@@ -1576,7 +1579,8 @@ function addBotRule() {
     if (!_isBotPrivileged()) { alert('관리자 또는 부관리자만 봇 규칙을 관리할 수 있습니다.'); return; }
     var name           = (document.getElementById('brName').value || '').trim();
     var url            = (document.getElementById('brUrl').value  || '').trim();
-    var keyword        = (document.getElementById('brKw').value   || '').trim();
+    var keyword        = (document.getElementById('brKw').value     || '').trim();
+    var subKeyword     = (document.getElementById('brSubKw').value  || '').trim();
     var minPrice       = parseInt(document.getElementById('brMin').value)      || 0;
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
@@ -1592,7 +1596,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1600,13 +1604,13 @@ function addBotRule() {
     } else {
         var newRule = {
             id: 'r_' + Date.now(),
-            name: name, url: url, keyword: keyword,
+            name: name, url: url, keyword: keyword, subKeyword: subKeyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
             photoOnly: photoOnly, type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
-        ['brName','brUrl','brKw','brMin','brMax','brExclude'].forEach(function(id) {
+        ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
             document.getElementById(id).value = '';
         });
         document.getElementById('brInterval').value = '300';

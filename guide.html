@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMI PRO 사용설명서</title>
+<style>
+:root {
+  --bg:#0f172a; --bg2:#1e293b; --bg3:#0a1628;
+  --border:#334155; --text:#cbd5e1; --muted:#64748b;
+  --blue:#3abff8; --green:#22c55e; --red:#ef4444;
+  --yellow:#fbbf24; --purple:#a78bfa; --pink:#db2777;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+
+/* 사이드 네비 */
+.nav{position:fixed;top:0;left:0;width:210px;height:100vh;background:var(--bg2);border-right:2px solid var(--border);overflow-y:auto;z-index:100;padding:16px 0;}
+.nav-logo{padding:0 14px 14px;border-bottom:1px solid var(--border);margin-bottom:8px;font-size:15px;font-weight:900;font-style:italic;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.06em;}
+.nav a{display:block;padding:6px 14px;font-size:11.5px;color:var(--muted);text-decoration:none;border-left:3px solid transparent;transition:.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nav a:hover,.nav a.active{color:var(--blue);border-left-color:var(--blue);background:rgba(58,191,248,.06);}
+.nav-sec{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:12px 14px 3px;opacity:.5;}
+
+/* 본문 */
+.content{margin-left:210px;padding:36px 44px;max-width:1400px;}
+.section{margin-bottom:60px;scroll-margin-top:20px;}
+h2{font-size:19px;font-weight:900;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+h2::after{content:'';flex:1;height:1px;background:var(--border);}
+h3{font-size:14px;font-weight:900;color:#e2e8f0;margin:18px 0 8px;}
+p{font-size:13px;color:var(--text);margin-bottom:8px;}
+
+/* 커버 */
+.cover{text-align:center;padding:50px 0 36px;border-bottom:2px solid var(--border);margin-bottom:44px;}
+.cover-logo{font-size:38px;font-weight:900;font-style:italic;letter-spacing:.06em;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.cover-sub{font-size:13px;color:var(--muted);}
+
+/* 스텝 */
+.steps{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+.step{display:flex;gap:10px;align-items:flex-start;}
+.snum{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#0f172a;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.sbody{flex:1;font-size:12.5px;padding-top:3px;}
+.sbody strong{color:#fff;}
+
+/* 콜아웃 */
+.tip{background:rgba(58,191,248,.08);border:1.5px solid rgba(58,191,248,.3);border-radius:9px;padding:10px 14px;margin:10px 0;font-size:12px;}
+.tip::before{content:'💡 ';}
+.warn{background:rgba(251,191,36,.08);border:1.5px solid rgba(251,191,36,.3);border-radius:9px;padding:10px 14px;margin:10px 0;font-size:12px;}
+.warn::before{content:'⚠️ ';}
+.danger{background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.3);border-radius:9px;padding:10px 14px;margin:10px 0;font-size:12px;}
+.danger::before{content:'🚨 ';}
+.good{background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.3);border-radius:9px;padding:10px 14px;margin:10px 0;font-size:12px;}
+.good::before{content:'✅ ';}
+
+/* 목업 공통 */
+.mockup{background:#0f172a;border:2px solid var(--border);border-radius:10px;overflow:hidden;margin:14px 0;position:relative;font-family:'Segoe UI',sans-serif;}
+.mockup-lbl{position:absolute;top:6px;right:8px;font-size:8px;font-weight:900;opacity:.2;letter-spacing:.1em;text-transform:uppercase;}
+
+/* 어노테이션 번호 */
+.an{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;font-weight:900;vertical-align:middle;margin:0 2px;flex-shrink:0;}
+.an.g{background:var(--green);color:#000;}
+.an.b{background:var(--blue);color:#000;}
+.an.y{background:var(--yellow);color:#000;}
+.an.p{background:var(--purple);}
+
+/* 배지 */
+.bdg{display:inline-block;font-size:10px;font-weight:900;padding:2px 7px;border-radius:99px;}
+.bdg-g{background:rgba(34,197,94,.15);color:var(--green);border:1px solid var(--green);}
+.bdg-r{background:rgba(239,68,68,.15);color:var(--red);border:1px solid var(--red);}
+.bdg-b{background:rgba(58,191,248,.15);color:var(--blue);border:1px solid var(--blue);}
+
+/* 화살표 */
+.arrow{display:block;text-align:center;font-size:22px;color:var(--yellow);margin:6px 0;line-height:1;}
+
+/* 클릭→결과 박스 */
+.click-result{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin:14px 0;}
+.click-result .arr{font-size:28px;color:var(--yellow);text-align:center;}
+
+/* 인라인 버튼 모형 */
+.ui-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:7px;border:1.5px solid var(--border);background:none;color:var(--text);font-size:10px;font-weight:900;white-space:nowrap;}
+.ui-btn.blue{border-color:var(--blue);color:var(--blue);}
+.ui-btn.red{border-color:var(--red);color:var(--red);}
+.ui-btn.green{border-color:var(--green);color:var(--green);}
+
+/* ── 실제 UI 재현 ── */
+
+/* 헤더 */
+.r-header{background:#1e293b;border-bottom:2px solid #334155;height:42px;display:flex;align-items:center;padding:0;overflow:hidden;}
+.r-hleft{width:160px;padding:0 12px;border-right:2px solid #334155;height:100%;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.r-hlogo{font-size:13px;font-weight:900;font-style:italic;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
+.r-hcenter{flex:1;padding:0 10px;display:flex;align-items:center;justify-content:space-between;min-width:0;overflow:hidden;}
+.r-hright{width:180px;padding:0 10px;border-left:2px solid #334155;height:100%;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.r-hbtn{font-size:10px;font-weight:900;border:1.5px solid #334155;border-radius:7px;padding:0 9px;height:26px;background:none;color:#cbd5e1;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+.r-clock{font-size:10px;font-weight:900;opacity:.65;letter-spacing:.04em;white-space:nowrap;}
+.r-dot-g{width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0;}
+.r-dot-gray{width:7px;height:7px;border-radius:50%;background:#94a3b8;display:inline-block;flex-shrink:0;}
+.r-userbadge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid #334155;height:26px;font-size:10px;color:#cbd5e1;font-weight:700;white-space:nowrap;}
+.r-tab-watch{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:7px;background:rgba(34,197,94,.15);border:2px solid #22c55e;color:#22c55e;font-size:10px;font-weight:900;height:26px;}
+.r-tab-fraud{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:7px;background:rgba(239,68,68,.15);border:2px solid #ef4444;color:#ef4444;font-size:10px;font-weight:900;height:26px;}
+
+/* 메인 레이아웃 */
+.r-main{display:flex;height:380px;overflow:hidden;}
+.r-sidebar{width:200px;border-right:2px solid #334155;background:#1e293b;display:flex;flex-direction:column;gap:0;overflow:hidden;flex-shrink:0;}
+.r-chat{flex:1;background:#0f172a;display:flex;flex-direction:column;min-width:0;}
+.r-notice{width:260px;border-left:2px solid #334155;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+
+/* 티커 */
+.r-ticker{background:#1e293b;border-bottom:2px solid #334155;padding:4px 10px;display:flex;align-items:center;gap:6px;font-size:10px;}
+.r-ticker-lbl{font-size:9px;font-weight:900;color:#ef4444;background:rgba(239,68,68,.12);padding:1px 5px;border-radius:4px;white-space:nowrap;}
+.r-ticker-txt{flex:1;font-size:10px;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+
+/* 채팅 탭 */
+.r-chat-tabs{padding:6px;display:flex;flex-direction:column;gap:4px;background:#0f172a;border-bottom:2px solid #334155;}
+.r-tab-row{display:flex;gap:4px;}
+.r-ctab{flex:1;padding:5px;border-radius:7px;border:1.5px solid #334155;background:none;color:#64748b;font-size:9.5px;font-weight:900;text-align:center;}
+.r-ctab.active{background:#0284c7;color:#fff;border-color:#0284c7;}
+.r-modebtn{flex:1;padding:5px;border-radius:7px;border:1.5px solid #334155;background:none;color:#64748b;font-size:9px;font-weight:900;text-align:center;}
+.r-modebtn.mania{border-color:#3abff8;color:#3abff8;}
+
+/* 사이드바 섹션 */
+.r-sec{padding:6px 8px;border-bottom:1px solid #334155;}
+.r-sec-hdr{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;opacity:.5;margin-bottom:4px;}
+.r-link-btn{display:block;width:100%;padding:5px 7px;border-radius:7px;border:1.5px solid #334155;text-align:center;font-size:9px;font-weight:900;color:#cbd5e1;margin-bottom:4px;}
+.r-game-btn{display:block;width:100%;padding:7px;border-radius:7px;border:1.5px solid #334155;text-align:center;font-size:10px;font-weight:900;color:#cbd5e1;}
+.r-memo-item{font-size:9px;color:#64748b;font-style:italic;padding:4px 0;}
+
+/* 공지 패널 */
+.r-notice-hdr{padding:8px 10px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;}
+.r-notice-title{font-size:10px;font-weight:900;font-style:italic;letter-spacing:.1em;text-transform:uppercase;}
+.r-notice-card{margin:6px 8px;padding:8px 9px;background:#0f172a;border:1.5px solid #334155;border-radius:9px;}
+.r-ncard-title{font-size:10px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px;}
+.r-ncard-body{font-size:9px;opacity:.65;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.r-ncard-date{font-size:8.5px;opacity:.4;margin-top:4px;font-weight:700;}
+
+/* 모니터링 모달 */
+.r-modal{background:#1e293b;border:2px solid #334155;border-radius:14px;overflow:hidden;margin:14px 0;}
+.r-modal-hdr{padding:14px 18px 12px;border-bottom:2px solid #334155;display:flex;justify-content:space-between;align-items:center;}
+.r-modal-title{font-size:13px;font-weight:900;}
+.r-modal-sub{font-size:10px;color:#64748b;margin-top:2px;}
+.r-modal-tabs{display:flex;border-bottom:2px solid #334155;}
+.r-mtab{flex:1;padding:8px 0;font-size:10px;font-weight:900;background:none;border:none;cursor:pointer;color:#64748b;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.r-mtab.active{color:#3abff8;border-bottom-color:#3abff8;}
+.r-modal-body{padding:14px 16px;}
+
+/* 규칙 아이템 */
+.r-rule{border:1.5px solid #334155;border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;align-items:center;gap:8px;}
+.r-chk{width:13px;height:13px;border:1.5px solid #334155;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(58,191,248,.15);color:var(--blue);font-size:9px;}
+.r-rule-name{flex:1;font-size:11px;font-weight:900;}
+.r-rule-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.r-rule-tag{font-size:9px;padding:1px 5px;border-radius:4px;border:1px solid #334155;color:#94a3b8;font-weight:700;}
+
+/* 상태 섹션 */
+.r-status-box{border:1.5px solid #334155;border-radius:9px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.r-status-left{display:flex;align-items:center;gap:8px;}
+.r-status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;}
+.r-status-txt{font-size:11px;font-weight:900;}
+.r-status-sub{font-size:9.5px;color:#64748b;margin-top:2px;}
+.r-status-btns{display:flex;gap:6px;align-items:center;}
+.r-bigbtn-red{width:100%;padding:12px;border-radius:9px;background:#ef4444;border:none;color:#fff;font-size:13px;font-weight:900;text-align:center;margin-top:8px;}
+.r-toggle{width:34px;height:18px;border-radius:99px;background:#22c55e;display:flex;align-items:center;padding:2px;justify-content:flex-end;flex-shrink:0;}
+.r-toggle-dot{width:14px;height:14px;border-radius:50%;background:#fff;}
+.r-toggle-off{background:#334155;justify-content:flex-start;}
+
+/* 로그인 화면 */
+.r-lock{background:#0f172a;border-radius:14px;padding:28px;width:320px;margin:0 auto;border:2px solid #334155;}
+.r-lock-logo{text-align:center;font-size:22px;font-weight:900;font-style:italic;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.r-lock-sub{text-align:center;font-size:11px;color:#64748b;margin-bottom:18px;}
+.r-inp{width:100%;padding:10px 13px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;font-weight:600;outline:none;margin-bottom:8px;display:block;}
+.r-loginbtn{width:100%;padding:11px;border-radius:9px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:13px;font-weight:900;text-align:center;margin-top:4px;}
+.r-locklinks{display:flex;justify-content:space-between;margin-top:12px;font-size:11px;color:#64748b;}
+
+/* 드롭다운 (유저메뉴) */
+.r-dropdown{background:#1e293b;border:1.5px solid #334155;border-radius:12px;width:240px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.r-dd-hdr{padding:8px 13px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;}
+.r-dd-row{padding:8px 14px;font-size:11px;font-weight:700;color:#cbd5e1;border-bottom:1px solid #334155;display:flex;align-items:center;gap:6px;cursor:pointer;}
+.r-dd-row:last-child{border-bottom:none;}
+.r-dd-row.red{color:#ef4444;}
+.r-member-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:6px;background:#1e3a5f;border:1px solid #1d4ed8;font-size:9.5px;font-weight:900;color:#93c5fd;margin:2px;}
+
+/* 테마 카드 */
+.theme-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0;}
+.theme-card{border-radius:10px;overflow:hidden;border:2px solid var(--border);}
+.theme-card.active{border-color:var(--blue);}
+.theme-card-hdr{padding:6px 10px;font-size:10px;font-weight:900;display:flex;align-items:center;gap:5px;}
+.tc-dark{background:#0f172a;}.tc-dark .theme-card-hdr{background:#1e293b;color:#cbd5e1;border-bottom:1px solid #334155;}
+.tc-light{background:#f1f3f5;}.tc-light .theme-card-hdr{background:#fff;color:#111827;border-bottom:1px solid #e5e7eb;}
+.tc-green{background:#c2d1c2;}.tc-green .theme-card-hdr{background:#d8e4d8;color:#162a16;border-bottom:1px solid #a9bba9;}
+.theme-body{padding:8px 10px;font-size:10px;display:flex;flex-direction:column;gap:4px;}
+.theme-demo-row{border-radius:5px;padding:4px 8px;font-size:9.5px;font-weight:700;}
+
+/* 감지 팝업 */
+.r-popup{background:#0a1f10;border:2px solid #22c55e;border-radius:12px;overflow:hidden;margin:12px 0;}
+.r-popup-hdr{padding:10px 14px;border-bottom:1px solid rgba(34,197,94,.3);background:#0a1f10;font-size:11px;font-weight:900;color:#4ade80;display:flex;align-items:center;gap:6px;}
+.r-popup-body{padding:10px 14px;}
+.r-popup-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(34,197,94,.15);font-size:11px;}
+.r-popup-row:last-child{border-bottom:none;}
+.r-popup-label{font-size:9.5px;color:#64748b;width:52px;flex-shrink:0;font-weight:700;}
+.r-popup-val{flex:1;font-weight:700;color:#f0fdf4;}
+.r-popup-actions{padding:8px 14px;display:flex;gap:6px;border-top:1px solid rgba(34,197,94,.2);}
+.r-act-btn{flex:1;padding:7px;border-radius:7px;font-size:10px;font-weight:900;text-align:center;}
+.r-act-done{background:rgba(34,197,94,.2);border:1.5px solid #22c55e;color:#4ade80;}
+.r-act-filter{background:rgba(251,191,36,.1);border:1.5px solid #fbbf24;color:#fbbf24;}
+.r-act-link{background:rgba(58,191,248,.1);border:1.5px solid #3abff8;color:#3abff8;}
+
+/* 로그 패널 */
+.r-log-hdr{padding:12px 18px;border-bottom:2px solid #334155;display:flex;align-items:center;justify-content:space-between;}
+.r-log-tabs{display:flex;gap:0;border-bottom:2px solid #334155;background:#1e293b;}
+.r-ltab{padding:8px 14px;font-size:10.5px;font-weight:900;border-bottom:3px solid transparent;color:#64748b;margin-bottom:-2px;white-space:nowrap;}
+.r-ltab.active{color:#3abff8;border-bottom-color:#3abff8;}
+.r-log-item{border:1.5px solid #334155;border-radius:9px;padding:10px 13px;background:#0f172a;margin:0 0 8px;}
+.r-log-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #334155;font-size:11px;}
+.r-log-row:last-child{border-bottom:none;}
+
+/* 거래번호 감시 */
+.r-tid-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #334155;font-size:11px;}
+.r-tid-num{font-weight:900;color:#3abff8;font-size:13px;}
+.r-tid-game{font-size:10px;color:#94a3b8;}
+
+/* 알림 설정 */
+.r-notif-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #334155;font-size:12px;font-weight:700;}
+
+/* 통계 */
+.r-stat-bar{display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 8px;}
+.r-bar{border-radius:3px 3px 0 0;min-width:14px;flex:1;}
+.r-stat-labels{display:flex;gap:4px;padding:3px 8px;}
+.r-stat-lbl{flex:1;text-align:center;font-size:8.5px;color:#64748b;}
+
+hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
+
+/* 화살표 연결 */
+.flow{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap;}
+.flow-box{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;}
+.flow-box.highlight{border-color:var(--blue);color:var(--blue);}
+.flow-box.result{border-color:var(--green);color:var(--green);}
+.flow-arr{color:var(--yellow);font-size:18px;flex-shrink:0;}
+
+/* 필터 제외 탭 */
+.r-filter-item{padding:9px 14px;border-bottom:1px solid #334155;font-size:11px;display:flex;align-items:center;gap:8px;}
+.r-filter-kw{font-size:10px;color:#94a3b8;margin-top:2px;}
+</style>
+</head>
+<body>
+
+<!-- 사이드 네비 -->
+<nav class="nav">
+  <div class="nav-logo">✦ IMI PRO ✦</div>
+  <div class="nav-sec">기본 설정</div>
+  <a href="#sec-main">🖥 화면 구성</a>
+  <a href="#sec-login">🔐 로그인</a>
+  <a href="#sec-theme">🎨 테마 변경</a>
+  <a href="#sec-member">👥 멤버 확인</a>
+  <div class="nav-sec">봇 운영</div>
+  <a href="#sec-bot">🤖 봇 시작/중지</a>
+  <a href="#sec-watch">🛒 비거래 알림</a>
+  <a href="#sec-fraud">🚨 사기글 알림</a>
+  <a href="#sec-filter">🚫 필터 제외</a>
+  <div class="nav-sec">기록/분석</div>
+  <a href="#sec-log">📋 로그 확인</a>
+  <a href="#sec-stats">📊 통계</a>
+  <div class="nav-sec">고급 설정</div>
+  <a href="#sec-rule">⚙️ 규칙 설정</a>
+  <a href="#sec-tid">🔍 거래번호 감시</a>
+  <a href="#sec-notif">🔔 알림 설정</a>
+  <a href="#sec-notice">📢 긴급공지</a>
+  <a href="#sec-files">📂 파일 매뉴얼</a>
+  <a href="#sec-memo">📝 메모</a>
+  <div class="nav-sec">참고</div>
+  <a href="#sec-faq">❓ FAQ</a>
+</nav>
+
+<div class="content">
+
+<!-- 커버 -->
+<div class="cover">
+  <div class="cover-logo">✦ IMI PRO ✦</div>
+  <div class="cover-sub">아이템매니아 · 아이템베이 통합 관리 시스템 사용설명서</div>
+  <div style="margin-top:10px;font-size:11px;color:#475569;background:#1e293b;display:inline-block;padding:4px 14px;border-radius:6px;border:1px solid #334155;">2026년 5월 기준</div>
+</div>
+
+<!-- ═══ 1. 화면 구성 ═══ -->
+<section class="section" id="sec-main">
+<h2>🖥 화면 구성</h2>
+<p>IMI PRO를 처음 열면 아래와 같은 화면이 나옵니다. 크게 <strong>헤더(상단 바)</strong>, <strong>왼쪽 사이드바</strong>, <strong>중앙 채팅 영역</strong>, <strong>오른쪽 공지 패널</strong> 4개 구역으로 나뉩니다.</p>
+
+<!-- 전체 화면 목업 -->
+<div class="mockup">
+  <div class="mockup-lbl">MAIN SCREEN</div>
+  <!-- 헤더 -->
+  <div class="r-header">
+    <div class="r-hleft">
+      <span class="r-hlogo">✦ IMI PRO ✦</span>
+    </div>
+    <div class="r-hcenter">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span class="r-userbadge"><span class="r-dot-g"></span>백휘섭</span>
+        <span class="r-hbtn">👁 모니터링</span>
+        <span class="r-hbtn">📂 파일매뉴얼</span>
+        <span class="r-tab-watch" style="font-size:9px;">🛒 비거래 감지 · 2건</span>
+      </div>
+      <span class="r-clock">2026.5.24 (일) 16:27:12</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span class="r-tab-fraud" style="font-size:9px;">🚨 사기글 감지 · 1건</span>
+        <span class="r-hbtn">📋 로그</span>
+        <span class="r-hbtn">🔔</span>
+        <span class="r-hbtn">🧹 채팅비우기</span>
+      </div>
+    </div>
+    <div class="r-hright">
+      <span style="font-size:9px;opacity:.5;font-weight:900;">FONT 16</span>
+      <input type="range" style="width:80px;accent-color:#3abff8;" disabled>
+      <span style="font-size:18px;">🌙</span>
+    </div>
+  </div>
+  <!-- 티커 -->
+  <div class="r-ticker">
+    <span class="r-ticker-lbl">🚨 긴급공지</span>
+    <span class="r-ticker-txt">05/26 기획팀 공장으로 인해 매니아 장에 게시한 등록건들은 수도일 이후에 처리 가능하다고 합니다...</span>
+    <span class="r-hbtn" style="font-size:9px;border-color:#ef4444;color:#ef4444;">+ 등록</span>
+    <span style="font-size:11px;margin-left:4px;opacity:.5;">▲</span>
+  </div>
+  <!-- 본문 -->
+  <div class="r-main">
+    <!-- 왼쪽 사이드바 -->
+    <div class="r-sidebar">
+      <div class="r-sec">
+        <div class="r-sec-hdr">🏠 홈페이지 바로가기</div>
+        <div class="r-link-btn" style="border-color:#3abff8;color:#3abff8;">1iem<br>mania</div>
+        <div class="r-link-btn" style="border-color:#db2877;color:#db2877;">item<br>bay</div>
+      </div>
+      <div class="r-sec">
+        <div class="r-link-btn">📜 이용약관</div>
+      </div>
+      <div class="r-sec">
+        <div class="r-game-btn">🎮 게임정보 바로가기 ↗</div>
+      </div>
+      <div class="r-sec" style="flex:1;">
+        <div class="r-sec-hdr">📝 내 메모</div>
+        <div class="r-memo-item">메모 없음<br>+ 노리서 추가</div>
+      </div>
+      <div style="padding:8px;">
+        <div class="r-link-btn">📂 전체 메모</div>
+      </div>
+    </div>
+    <!-- 중앙 채팅 -->
+    <div class="r-chat">
+      <div class="r-chat-tabs">
+        <div class="r-tab-row">
+          <div class="r-ctab active">📚 매뉴얼</div>
+          <div class="r-ctab">❓ 고객 예상 QNA</div>
+        </div>
+        <div class="r-tab-row">
+          <div class="r-modebtn mania">아이템매니아 (MANIA)</div>
+          <div class="r-modebtn">아이템베이 (BAY)</div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;opacity:.2;font-size:12px;">채팅 영역</div>
+      <div style="padding:8px;border-top:1px solid #334155;display:flex;gap:6px;">
+        <div style="flex:1;background:#1e293b;border:1.5px solid #334155;border-radius:16px;padding:7px 14px;font-size:10px;color:#64748b;">질문을 입력하세요...</div>
+        <div style="background:#3abff8;color:#0f172a;border-radius:16px;padding:7px 16px;font-size:10px;font-weight:900;">전송</div>
+      </div>
+    </div>
+    <!-- 오른쪽 공지 -->
+    <div class="r-notice">
+      <div class="r-notice-hdr">
+        <span class="r-notice-title">📌 NOTICE</span>
+        <span class="r-hbtn" style="font-size:9px;background:#0284c7;border-color:#0284c7;color:#fff;">글쓰기</span>
+      </div>
+      <div style="padding:4px 8px;">
+        <div style="font-size:9px;color:#64748b;padding:3px 0;">이전공지검색</div>
+        <div style="font-size:9px;color:#64748b;padding:3px 0;border-bottom:1px solid #334155;">연도-월-일 🗓 조기 →</div>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:4px 0;">
+        <div class="r-notice-card">
+          <div class="r-ncard-title">[베니아] 이메일/팩스/공문</div>
+          <div class="r-ncard-body">[매니아 이메일] 아이디: itemmania 비번: mania30001§ ...</div>
+          <div class="r-ncard-date">2026. 4. 27. 월요일 오후 3:15 · 백휘섭</div>
+        </div>
+        <div class="r-notice-card">
+          <div class="r-ncard-title">[베니아] 05/26 기획팀 공장으로...</div>
+          <div class="r-ncard-body">05/26 기획팀 공장으로 인해 매니아 장에 게시한 등록건들은 수도일 이후에 처리 가능...</div>
+          <div class="r-ncard-date">2026. 5. 22. 금요일 오후 6:32 · 백휘섭</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 각 구역 설명 -->
+<h3>① 헤더 (상단 바) 버튼 설명</h3>
+<div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin:10px 0;">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <tr style="border-bottom:1px solid #334155;">
+      <td style="padding:8px 12px;width:140px;font-weight:900;color:#fff;">버튼</td>
+      <td style="padding:8px 12px;color:#94a3b8;">위치</td>
+      <td style="padding:8px 12px;">누르면?</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">● 이름 배지</td>
+      <td style="padding:8px 12px;color:#94a3b8;">왼쪽</td>
+      <td style="padding:8px 12px;">멤버 목록·비밀번호 변경·로그아웃 메뉴</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">👁 모니터링</td>
+      <td style="padding:8px 12px;color:#94a3b8;">왼쪽</td>
+      <td style="padding:8px 12px;">봇 감시 상태 창 열기 (봇 시작/중지)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">📂 파일매뉴얼</td>
+      <td style="padding:8px 12px;color:#94a3b8;">왼쪽</td>
+      <td style="padding:8px 12px;">업로드된 업무 매뉴얼 파일 열기</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🛒 비거래 탭</td>
+      <td style="padding:8px 12px;color:#94a3b8;">중앙 왼쪽</td>
+      <td style="padding:8px 12px;">비거래 감지 패널 열기/닫기 (녹색 깜빡임)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🕐 시계</td>
+      <td style="padding:8px 12px;color:#94a3b8;">중앙</td>
+      <td style="padding:8px 12px;">직원 스케줄 달력 열기</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🚨 사기글 탭</td>
+      <td style="padding:8px 12px;color:#94a3b8;">중앙 오른쪽</td>
+      <td style="padding:8px 12px;">사기글 감지 패널 열기/닫기 (빨간 깜빡임)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">📋 로그</td>
+      <td style="padding:8px 12px;color:#94a3b8;">오른쪽</td>
+      <td style="padding:8px 12px;">비거래·사기글·필터제외 로그 기록 보기</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🔔 벨</td>
+      <td style="padding:8px 12px;color:#94a3b8;">오른쪽</td>
+      <td style="padding:8px 12px;">최근 공지 알림 목록 보기</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🧹 채팅비우기</td>
+      <td style="padding:8px 12px;color:#94a3b8;">오른쪽</td>
+      <td style="padding:8px 12px;">중앙 채팅창 내용 초기화</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;font-weight:900;">🌙/🌞/🌿 테마</td>
+      <td style="padding:8px 12px;color:#94a3b8;">맨 오른쪽</td>
+      <td style="padding:8px 12px;">다크→라이트→그린 순서로 테마 전환</td>
+    </tr>
+  </table>
+</div>
+</section>
+
+<!-- ═══ 2. 로그인 ═══ -->
+<section class="section" id="sec-login">
+<h2>🔐 로그인</h2>
+<p>프로그램을 처음 열면 로그인 화면이 나옵니다. 관리자가 승인한 계정이 있어야 사용할 수 있습니다.</p>
+
+<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;margin:14px 0;">
+  <!-- 로그인 화면 -->
+  <div>
+    <div style="font-size:11px;font-weight:900;color:var(--muted);margin-bottom:8px;text-align:center;">로그인 화면</div>
+    <div class="r-lock">
+      <div class="r-lock-logo">✦ IMI PRO ✦</div>
+      <div class="r-lock-sub">로그인하여 시작하세요</div>
+      <div style="position:relative;">
+        <input class="r-inp" placeholder="이름 (아이디)" style="border-color:#3abff8;" readonly>
+        <span class="an b" style="position:absolute;right:-26px;top:8px;">1</span>
+      </div>
+      <div style="position:relative;">
+        <input class="r-inp" placeholder="비밀번호" type="password" style="border-color:#334155;" readonly>
+        <span class="an b" style="position:absolute;right:-26px;top:8px;">2</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <input type="checkbox" style="accent-color:#3abff8;">
+        <span style="font-size:10px;color:#64748b;font-weight:700;">아이디·비밀번호 기억</span>
+        <span class="an y" style="margin-left:auto;">3</span>
+      </div>
+      <div class="r-loginbtn">로그인</div>
+      <div class="r-locklinks">
+        <span style="color:#94a3b8;">비밀번호 찾기</span>
+        <span style="color:#3abff8;">회원가입 신청</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;line-height:1.8;">
+      <div><span class="an b">1</span> 이름(아이디)를 입력합니다</div>
+      <div><span class="an b">2</span> 비밀번호를 입력 후 Enter</div>
+      <div><span class="an y">3</span> 체크하면 다음에 자동 입력</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;font-size:28px;color:var(--yellow);padding-top:60px;">→</div>
+  <!-- 로그인 후 -->
+  <div>
+    <div style="font-size:11px;font-weight:900;color:var(--muted);margin-bottom:8px;text-align:center;">로그인 후 메인화면</div>
+    <div class="mockup" style="padding:10px;">
+      <div class="r-header" style="border-radius:7px;margin-bottom:8px;">
+        <div class="r-hleft" style="width:120px;"><span class="r-hlogo" style="font-size:11px;">✦ IMI PRO ✦</span></div>
+        <div class="r-hcenter" style="padding:0 8px;">
+          <span class="r-userbadge"><span class="r-dot-g"></span>백휘섭 ▾</span>
+        </div>
+        <div class="r-hright" style="width:60px;"><span style="font-size:16px;">🌙</span></div>
+      </div>
+      <div style="font-size:11px;color:#4ade80;text-align:center;padding:8px;background:#0a1f10;border-radius:7px;border:1px solid #22c55e;">✅ 로그인 완료! 이제 사용 가능합니다</div>
+    </div>
+  </div>
+</div>
+
+<h3>비밀번호를 잊었을 때</h3>
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody"><strong>비밀번호 찾기</strong> 클릭</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">이름과 <strong>사번</strong>을 입력하고 "임시 비밀번호 발급" 클릭</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody">화면에 표시된 임시 비밀번호로 로그인 후 새 비밀번호로 변경</div></div>
+</div>
+
+<h3>처음 사용자 (회원가입)</h3>
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody"><strong>회원가입 신청</strong> 클릭 → 이름·사번·비밀번호 입력</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">관리자 승인 대기 (승인 전 로그인 불가)</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody">승인 완료 후 로그인</div></div>
+</div>
+<div class="warn">첫 번째로 가입하는 사람이 자동으로 <strong>관리자</strong>가 됩니다.</div>
+</section>
+
+<!-- ═══ 3. 테마 변경 ═══ -->
+<section class="section" id="sec-theme">
+<h2>🎨 테마 변경</h2>
+<p>오른쪽 상단의 이모지 버튼을 누를 때마다 테마가 순서대로 바뀝니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">🌞 라이트 (밝은 흰 배경)</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">🌿 그린 (초록 배경)</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">🌙 다크 (어두운 배경)</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box" style="border-color:#94a3b8;color:#94a3b8;">🌞 다시 처음으로...</div>
+</div>
+
+<div class="theme-cards">
+  <!-- 다크 -->
+  <div class="theme-card tc-dark active">
+    <div class="theme-card-hdr" style="background:#1e293b;color:#cbd5e1;border-bottom:1px solid #334155;">🌙 다크 <span style="margin-left:auto;font-size:9px;background:#3abff8;color:#000;padding:1px 6px;border-radius:4px;">기본</span></div>
+    <div class="theme-body" style="background:#0f172a;">
+      <div class="theme-demo-row" style="background:#1e293b;color:#cbd5e1;">카드 영역</div>
+      <div class="theme-demo-row" style="background:#334155;color:#94a3b8;font-size:8.5px;">테두리 색상</div>
+      <div style="font-size:9px;color:#64748b;margin-top:4px;">눈이 덜 피로한 어두운 테마</div>
+    </div>
+  </div>
+  <!-- 라이트 -->
+  <div class="theme-card tc-light">
+    <div class="theme-card-hdr" style="background:#fff;color:#111827;border-bottom:1px solid #e5e7eb;">🌞 라이트</div>
+    <div class="theme-body" style="background:#f1f3f5;">
+      <div class="theme-demo-row" style="background:#fff;color:#111827;">카드 영역</div>
+      <div class="theme-demo-row" style="background:#e5e7eb;color:#4b5563;font-size:8.5px;">테두리 색상</div>
+      <div style="font-size:9px;color:#6b7280;margin-top:4px;">밝은 환경에서 사용하기 좋은 테마</div>
+    </div>
+  </div>
+  <!-- 그린 -->
+  <div class="theme-card tc-green">
+    <div class="theme-card-hdr" style="background:#d8e4d8;color:#162a16;border-bottom:1px solid #a9bba9;">🌿 그린</div>
+    <div class="theme-body" style="background:#c2d1c2;">
+      <div class="theme-demo-row" style="background:#d8e4d8;color:#162a16;">카드 영역</div>
+      <div class="theme-demo-row" style="background:#a9bba9;color:#354a35;font-size:8.5px;">테두리 색상</div>
+      <div style="font-size:9px;color:#354a35;margin-top:4px;">눈에 편안한 초록 계열 테마</div>
+    </div>
+  </div>
+</div>
+<div class="tip">선택한 테마는 자동으로 저장되어 다음에 열어도 유지됩니다.</div>
+</section>
+
+<!-- ═══ 4. 멤버 확인 ═══ -->
+<section class="section" id="sec-member">
+<h2>👥 멤버 확인</h2>
+<p>상단 왼쪽에 내 이름이 표시된 배지를 클릭하면 드롭다운이 열립니다. 여기서 현재 접속 중인 멤버 목록을 확인하고, 설정에 접근할 수 있습니다.</p>
+
+<div class="click-result">
+  <div>
+    <div style="font-size:11px;font-weight:900;color:var(--muted);margin-bottom:6px;text-align:center;">이름 배지 클릭 전</div>
+    <div class="mockup" style="padding:10px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="r-userbadge" style="cursor:pointer;">
+          <span class="r-dot-g"></span>백휘섭 ▾
+        </span>
+        <span class="an" style="animation:pulse 1.5s infinite;">👆</span>
+      </div>
+    </div>
+  </div>
+  <div class="arr">→</div>
+  <div>
+    <div style="font-size:11px;font-weight:900;color:var(--muted);margin-bottom:6px;text-align:center;">드롭다운 열림</div>
+    <div class="r-dropdown">
+      <div class="r-dd-hdr">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:#94a3b8;font-weight:900;">멤버</span>
+          <span style="font-size:10px;font-weight:700;color:#e2e8f0;">4명</span>
+        </div>
+        <span style="font-size:14px;color:#64748b;">⚙</span>
+      </div>
+      <!-- 팀별 멤버 -->
+      <div style="padding:6px 12px 4px;border-bottom:1px solid #334155;">
+        <div style="font-size:9px;font-weight:900;color:#94a3b8;margin-bottom:4px;">📋 상담팀</div>
+        <div style="padding-left:8px;border-left:2px solid #0284c7;margin-bottom:6px;">
+          <div style="font-size:8.5px;color:#7dd3fc;font-weight:700;margin-bottom:3px;">매니아</div>
+          <span class="r-member-chip">백휘섭 (나)</span>
+          <span class="r-member-chip">김철수</span>
+        </div>
+        <div style="padding-left:8px;border-left:2px solid #0284c7;">
+          <div style="font-size:8.5px;color:#7dd3fc;font-weight:700;margin-bottom:3px;">베이</div>
+          <span class="r-member-chip">이영희</span>
+        </div>
+      </div>
+      <!-- ⚙ 클릭 시 설정 메뉴 -->
+      <div id="settingsMenu" style="background:#0f172a;border-bottom:1px solid #334155;">
+        <div class="r-dd-row">👥 멤버 목록</div>
+        <div class="r-dd-row">🔑 비밀번호 변경</div>
+        <div class="r-dd-row red">🚪 로그아웃</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>멤버 목록 전체 보기 (관리자·부관리자)</h3>
+<div class="flow">
+  <div class="flow-box">⚙ 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">👥 멤버 목록 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box result">전체 멤버 관리 창</div>
+</div>
+
+<div class="mockup">
+  <div class="r-modal-hdr">
+    <div>
+      <div class="r-modal-title">👥 멤버 관리</div>
+      <div class="r-modal-sub">팀·파트·권한 설정 가능 (관리자 전용)</div>
+    </div>
+    <span style="font-size:18px;color:#64748b;cursor:pointer;">×</span>
+  </div>
+  <div class="r-modal-tabs">
+    <div class="r-mtab active">👥 멤버 목록</div>
+    <div class="r-mtab">⏳ 가입 대기</div>
+  </div>
+  <div class="r-modal-body">
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #334155;">
+      <span style="padding:3px 9px;border-radius:6px;font-size:10px;font-weight:900;border:1.5px solid #3abff8;background:#3abff833;color:#3abff8;">전체 4</span>
+      <span style="padding:3px 9px;border-radius:6px;font-size:10px;font-weight:900;border:1.5px solid #334155;color:#64748b;">상담팀 3</span>
+      <span style="padding:3px 9px;border-radius:6px;font-size:10px;font-weight:900;border:1.5px solid #334155;color:#64748b;">운영팀 1</span>
+    </div>
+    <!-- 멤버 행들 -->
+    <div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #334155;">
+      <span style="font-size:11px;font-weight:700;min-width:60px;">백휘섭<span style="font-size:9px;color:#64748b;"> (나)</span></span>
+      <span style="background:#0284c7;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;">상담팀</span>
+      <span style="background:#0c4a6e;color:#7dd3fc;font-size:9px;border-radius:4px;padding:1px 5px;">매니아</span>
+      <span style="background:#7c3aed;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;">관리자</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #334155;">
+      <span style="font-size:11px;font-weight:700;min-width:60px;">김철수</span>
+      <span style="background:#0284c7;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;">상담팀</span>
+      <span style="background:#0c4a6e;color:#7dd3fc;font-size:9px;border-radius:4px;padding:1px 5px;">매니아</span>
+      <span style="background:#334155;color:#94a3b8;font-size:9px;border-radius:4px;padding:1px 5px;">일반</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:8px 0;">
+      <span style="font-size:11px;font-weight:700;min-width:60px;">이영희</span>
+      <span style="background:#0284c7;color:#fff;font-size:9px;border-radius:4px;padding:1px 5px;">상담팀</span>
+      <span style="background:#0c4a6e;color:#7dd3fc;font-size:9px;border-radius:4px;padding:1px 5px;">베이</span>
+      <span style="background:#0e7490;color:#a5f3fc;font-size:9px;border-radius:4px;padding:1px 5px;">부관리자</span>
+    </div>
+  </div>
+</div>
+<div class="tip">관리자만 팀·파트·권한을 변경하거나 멤버를 삭제할 수 있습니다.</div>
+</section>
+
+<!-- ═══ 5. 봇 시작/중지 ═══ -->
+<section class="section" id="sec-bot">
+<h2>🤖 봇 시작 / 중지</h2>
+<p>봇은 크롬 확장프로그램(IMI BOT)이 아이템매니아/아이템베이 상품 목록 페이지를 자동으로 감시합니다. 봇 제어는 <strong>모니터링 창</strong>에서 합니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">👁 모니터링 버튼 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box result">모니터링 창 열림</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box">규칙 체크 후 봇 시작</div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-lbl">모니터링 창</div>
+  <div class="r-modal-hdr">
+    <div>
+      <div class="r-modal-title">🏠 IMI BOT 모니터링 현황</div>
+      <div class="r-modal-sub">크롬 확장프로그램 IMI BOT 실시간 감시 상태</div>
+    </div>
+    <span style="font-size:18px;color:#64748b;cursor:pointer;">×</span>
+  </div>
+  <div class="r-modal-tabs">
+    <div class="r-mtab active">● 현황</div>
+    <div class="r-mtab">🚨 사기글 규칙</div>
+    <div class="r-mtab">🛒 비거래 규칙</div>
+    <div class="r-mtab">🔍 거래번호 감시</div>
+    <div class="r-mtab">🔔 알림 설정</div>
+  </div>
+  <div class="r-modal-body">
+    <!-- 상태 박스 -->
+    <div class="r-status-box">
+      <div class="r-status-left">
+        <div class="r-status-dot" style="animation:pulse 2s infinite;"></div>
+        <div>
+          <div class="r-status-txt">감시 중 — 7개 규칙 실행 중</div>
+          <div class="r-status-sub">마지막 동기화: 오후 4:22:34</div>
+        </div>
+      </div>
+      <div class="r-status-btns">
+        <span class="bdg bdg-g">● 감시 중</span>
+        <span style="background:#ef4444;color:#fff;font-size:10px;font-weight:900;padding:3px 10px;border-radius:6px;">■ 봇 중지</span>
+      </div>
+    </div>
+    <!-- 오늘 등록 토글 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1.5px solid #334155;border-radius:9px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;">📅</span>
+        <span style="font-size:11px;font-weight:900;">오늘 등록 물품만 감지</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:9.5px;color:#94a3b8;">켜면 전체 규칙에 적용</span>
+        <div class="r-toggle"><div class="r-toggle-dot"></div></div>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:900;color:#94a3b8;margin-bottom:8px;letter-spacing:.05em;">■ IMI BOT 감시 규칙</div>
+    <!-- 규칙들 -->
+    <div class="r-rule">
+      <div class="r-chk">✓</div>
+      <div style="flex:1;">
+        <div class="r-rule-name">린셀</div>
+        <div class="r-rule-tags">
+          <span class="r-rule-tag">🔑 내용</span>
+          <span class="r-rule-tag">💰 1,500,000원↑</span>
+          <span class="r-rule-tag">⏱ 300초</span>
+        </div>
+      </div>
+      <span class="bdg bdg-r" style="font-size:9px;">사기글</span>
+      <span class="bdg bdg-g" style="font-size:9px;">감시중</span>
+    </div>
+    <div class="r-rule">
+      <div class="r-chk">✓</div>
+      <div style="flex:1;">
+        <div class="r-rule-name">베이플몰딩 비거래</div>
+        <div class="r-rule-tags">
+          <span class="r-rule-tag">🔑 동생,딸,홍,블,손사람...</span>
+          <span class="r-rule-tag">⏱ 300초</span>
+        </div>
+      </div>
+      <span class="bdg bdg-b" style="font-size:9px;">비거래</span>
+      <span class="bdg bdg-g" style="font-size:9px;">감시중</span>
+    </div>
+    <div class="r-bigbtn-red">■ 봇 중지</div>
+  </div>
+</div>
+
+<h3>봇 시작하는 방법</h3>
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody">상단의 <strong>👁 모니터링</strong> 버튼을 클릭합니다</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">감시할 규칙 옆 체크박스에 <strong>✓ 체크</strong>합니다</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody">하단의 <strong style="color:#22c55e;">▶ 봇 시작</strong> 버튼을 클릭합니다</div></div>
+  <div class="step"><div class="snum">4</div><div class="sbody">상태가 <span class="bdg bdg-g">● 감시 중</span> 으로 바뀌면 봇이 작동 중입니다</div></div>
+</div>
+<div class="warn">봇을 실행하려면 크롬에 <strong>IMI BOT 확장프로그램</strong>이 설치되어 있어야 합니다. 설치 후 삭제→재설치 방식으로 업데이트하세요.</div>
+<div class="tip"><strong>오늘 등록 물품만 감지</strong> 토글을 켜면 오늘 날짜로 올라온 상품만 감지합니다. 과거 상품까지 보려면 끄세요.</div>
+</section>
+
+<!-- ═══ 6. 비거래 알림 ═══ -->
+<section class="section" id="sec-watch">
+<h2>🛒 비거래 알림 처리</h2>
+<p>비거래 의심 상품이 감지되면 헤더 왼쪽에 <span class="r-tab-watch" style="font-size:10px;">🛒 비거래 감지 · N건</span> 탭이 <strong>녹색으로 깜빡입니다.</strong> 클릭하면 아래로 패널이 펼쳐집니다.</p>
+
+<!-- 감지 팝업 -->
+<div class="r-popup">
+  <div class="r-popup-hdr">🛒 비거래 의심 감지 — 린셀</div>
+  <div class="r-popup-body">
+    <div class="r-popup-row">
+      <span class="r-popup-label">규칙명</span>
+      <span class="r-popup-val">베이플몰딩 비거래</span>
+    </div>
+    <div class="r-popup-row">
+      <span class="r-popup-label">키워드</span>
+      <span class="r-popup-val">동생</span>
+    </div>
+    <div class="r-popup-row">
+      <span class="r-popup-label">거래번호</span>
+      <span class="r-popup-val" style="color:#3abff8;">TID 1234567</span>
+    </div>
+    <div class="r-popup-row">
+      <span class="r-popup-label">제목</span>
+      <span class="r-popup-val">동생이 팔아달라고 해서 내놓는 린셀 대검</span>
+    </div>
+    <div class="r-popup-row">
+      <span class="r-popup-label">감지시각</span>
+      <span class="r-popup-val">2026-05-24 16:22:10</span>
+    </div>
+  </div>
+  <div class="r-popup-actions">
+    <div class="r-act-btn r-act-done">
+      <div style="font-size:9px;">✅ 처리완료</div>
+      <div style="font-size:8.5px;margin-top:1px;opacity:.7;">확인 후 처리</div>
+    </div>
+    <div class="r-act-btn r-act-filter">
+      <div style="font-size:9px;">🚫 필터 제외</div>
+      <div style="font-size:8.5px;margin-top:1px;opacity:.7;">앞으로 무시</div>
+    </div>
+    <div class="r-act-btn r-act-link">
+      <div style="font-size:9px;">🔗 상품 보기</div>
+      <div style="font-size:8.5px;margin-top:1px;opacity:.7;">링크 열기</div>
+    </div>
+  </div>
+</div>
+
+<h3>버튼별 처리 방법</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0;">
+  <div style="background:#0a1f10;border:1.5px solid #22c55e;border-radius:9px;padding:12px;">
+    <div style="font-size:11px;font-weight:900;color:#4ade80;margin-bottom:6px;">✅ 처리완료</div>
+    <div style="font-size:11px;line-height:1.7;">상품을 직접 확인하고 처리했을 때 누릅니다.<br><br>누른 사람 이름이 로그에 기록됩니다.</div>
+    <div class="good" style="margin-top:8px;padding:6px 10px;font-size:10.5px;">4초 후 목록에서 사라짐</div>
+  </div>
+  <div style="background:rgba(251,191,36,.05);border:1.5px solid #fbbf24;border-radius:9px;padding:12px;">
+    <div style="font-size:11px;font-weight:900;color:#fbbf24;margin-bottom:6px;">🚫 필터 제외</div>
+    <div style="font-size:11px;line-height:1.7;">앞으로 이 상품(TID)을 감지해도 무시합니다.<br><br>실수한 경우 로그 → 필터제외 탭에서 취소 가능.</div>
+    <div class="warn" style="margin-top:8px;padding:6px 10px;font-size:10.5px;">신중하게 사용하세요</div>
+  </div>
+  <div style="background:rgba(58,191,248,.05);border:1.5px solid #3abff8;border-radius:9px;padding:12px;">
+    <div style="font-size:11px;font-weight:900;color:#3abff8;margin-bottom:6px;">🔗 상품 보기</div>
+    <div style="font-size:11px;line-height:1.7;">감지된 상품 페이지를 새 탭으로 엽니다.<br><br>내용을 직접 확인하고 싶을 때 사용합니다.</div>
+    <div class="tip" style="margin-top:8px;padding:6px 10px;font-size:10.5px;">아이템매니아 사이트 열림</div>
+  </div>
+</div>
+</section>
+
+<!-- ═══ 7. 사기글 알림 ═══ -->
+<section class="section" id="sec-fraud">
+<h2>🚨 사기글 알림 처리</h2>
+<p>사기글이 감지되면 헤더 오른쪽에 <span class="r-tab-fraud" style="font-size:10px;">🚨 사기글 감지 · N건</span> 탭이 <strong>빨간색으로 깜빡입니다.</strong> 비거래와 처리 방법은 동일합니다.</p>
+
+<div class="r-popup" style="background:#1a0a0a;border-color:#ef4444;">
+  <div class="r-popup-hdr" style="color:#f87171;border-bottom-color:rgba(239,68,68,.3);background:#1a0a0a;">🚨 사기글 의심 감지 — 린셀</div>
+  <div class="r-popup-body">
+    <div class="r-popup-row" style="border-bottom-color:rgba(239,68,68,.15);">
+      <span class="r-popup-label">규칙명</span>
+      <span class="r-popup-val">린셀</span>
+    </div>
+    <div class="r-popup-row" style="border-bottom-color:rgba(239,68,68,.15);">
+      <span class="r-popup-label">키워드</span>
+      <span class="r-popup-val">내용</span>
+    </div>
+    <div class="r-popup-row" style="border-bottom-color:rgba(239,68,68,.15);">
+      <span class="r-popup-label">거래번호</span>
+      <span class="r-popup-val" style="color:#f87171;">TID 9876543</span>
+    </div>
+    <div class="r-popup-row" style="border-bottom-color:rgba(239,68,68,.15);">
+      <span class="r-popup-label">제목</span>
+      <span class="r-popup-val">린셀) 대검 내용 최저가 판매합니다</span>
+    </div>
+  </div>
+  <div class="r-popup-actions" style="border-top-color:rgba(239,68,68,.2);">
+    <div class="r-act-btn" style="background:rgba(239,68,68,.15);border:1.5px solid #ef4444;color:#f87171;font-size:9px;">✅ 처리완료</div>
+    <div class="r-act-btn r-act-filter">🚫 필터 제외</div>
+    <div class="r-act-btn r-act-link">🔗 상품 보기</div>
+  </div>
+</div>
+
+<div class="tip">사기글과 비거래는 <strong>별도 패널</strong>로 분리되어 있어 동시에 뜰 수 있습니다. 각각 클릭해서 처리하세요.</div>
+<div class="warn">사기글 감지는 제목에서 키워드를 찾습니다. 띄어쓰기·점·콤마 등 특수문자가 섞여 있어도 감지됩니다.</div>
+</section>
+
+<!-- ═══ 8. 필터 제외 ═══ -->
+<section class="section" id="sec-filter">
+<h2>🚫 필터 제외 관리</h2>
+<p>알림에서 <strong>🚫 필터 제외</strong>를 눌러 무시 처리한 상품 목록입니다. 실수로 제외했을 때 여기서 취소할 수 있습니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">📋 로그 버튼 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box">로그 창 열기</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">🚫 필터제외 탭 선택</div>
+</div>
+
+<div class="mockup">
+  <div class="r-log-hdr">
+    <span style="font-size:13px;font-weight:900;">📋 로그</span>
+    <span style="font-size:18px;color:#64748b;">×</span>
+  </div>
+  <div class="r-log-tabs">
+    <div class="r-ltab">1 비거래</div>
+    <div class="r-ltab">2 사기글</div>
+    <div class="r-ltab active">3 🚫 필터제외</div>
+    <div class="r-ltab">4 처리완료</div>
+    <div class="r-ltab">5 📊 통계</div>
+  </div>
+  <div style="padding:12px 14px;">
+    <div class="r-filter-item">
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:900;">동생이 팔아달라고...</div>
+        <div class="r-filter-kw">TID 1234567 · 키워드: 동생 · 제외: 백휘섭</div>
+        <div style="font-size:9px;color:#64748b;">2026-05-24 16:25</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+        <span style="font-size:9px;color:#fbbf24;font-weight:900;">🚫 제외됨 · 백휘섭</span>
+        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #ef4444;background:none;color:#ef4444;cursor:pointer;">↩ 제외 취소</button>
+      </div>
+    </div>
+    <div class="r-filter-item" style="border-bottom:none;">
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:900;">린셀 대검 최저가...</div>
+        <div class="r-filter-kw">TID 9876543 · 키워드: 내용 · 제외: 김철수</div>
+        <div style="font-size:9px;color:#64748b;">2026-05-24 15:10</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+        <span style="font-size:9px;color:#fbbf24;font-weight:900;">🚫 제외됨 · 김철수</span>
+        <button style="font-size:9.5px;font-weight:900;padding:3px 9px;border-radius:6px;border:1.5px solid #ef4444;background:none;color:#ef4444;cursor:pointer;">↩ 제외 취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="danger">필터 제외 탭은 절대 없애면 안 됩니다! 실수로 제외한 상품을 여기서만 복구할 수 있습니다.</div>
+</section>
+
+<!-- ═══ 9. 로그 ═══ -->
+<section class="section" id="sec-log">
+<h2>📋 로그 확인</h2>
+<p>상단의 <strong>📋 로그</strong> 버튼을 누르면 모든 감지 기록을 볼 수 있습니다. 탭별로 구분되어 있습니다.</p>
+
+<div class="mockup">
+  <div class="r-log-hdr">
+    <span style="font-size:13px;font-weight:900;">📋 로그</span>
+    <span style="font-size:18px;color:#64748b;">×</span>
+  </div>
+  <div class="r-log-tabs">
+    <div class="r-ltab active">1 🛒 비거래</div>
+    <div class="r-ltab">2 🚨 사기글</div>
+    <div class="r-ltab">3 🚫 필터제외</div>
+    <div class="r-ltab">4 ✅ 처리완료</div>
+    <div class="r-ltab">5 📊 통계</div>
+  </div>
+  <div style="padding:12px 14px;">
+    <div class="r-log-item">
+      <div class="r-log-row">
+        <span style="font-size:10px;color:#3abff8;font-weight:900;">TID 1234567</span>
+        <span style="font-size:10px;font-weight:900;flex:1;">동생이 팔아달라고 해서 내놓는 린셀 대검</span>
+        <span class="bdg bdg-g" style="font-size:9px;">✅ 처리완료 · 백휘섭</span>
+      </div>
+      <div class="r-log-row" style="font-size:10px;color:#64748b;">
+        <span>규칙: 베이플몰딩 비거래</span>
+        <span style="margin-left:auto;">2026-05-24 16:22:10</span>
+      </div>
+    </div>
+    <div class="r-log-item">
+      <div class="r-log-row">
+        <span style="font-size:10px;color:#3abff8;font-weight:900;">TID 9876543</span>
+        <span style="font-size:10px;font-weight:900;flex:1;">린셀) 대검 내용 최저가 판매</span>
+        <span class="bdg" style="font-size:9px;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid #fbbf24;">🚫 필터제외 · 김철수</span>
+      </div>
+      <div class="r-log-row" style="font-size:10px;color:#64748b;">
+        <span>규칙: 린셀</span>
+        <span style="margin-left:auto;">2026-05-24 15:10:33</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3>탭 별 내용</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;font-size:12px;">
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
+    <div style="font-weight:900;margin-bottom:4px;">1 🛒 비거래</div>
+    <div style="color:#94a3b8;">비거래 의심 감지 전체 기록. 처리자 이름 포함.</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
+    <div style="font-weight:900;margin-bottom:4px;">2 🚨 사기글</div>
+    <div style="color:#94a3b8;">사기글 의심 감지 전체 기록. 처리자 이름 포함.</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
+    <div style="font-weight:900;margin-bottom:4px;">3 🚫 필터제외</div>
+    <div style="color:#94a3b8;">무시 처리한 상품 목록. 여기서 제외 취소 가능.</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;">
+    <div style="font-weight:900;margin-bottom:4px;">4 ✅ 처리완료</div>
+    <div style="color:#94a3b8;">처리완료 누른 기록. 누가 처리했는지 표시.</div>
+  </div>
+</div>
+</section>
+
+<!-- ═══ 10. 통계 ═══ -->
+<section class="section" id="sec-stats">
+<h2>📊 통계</h2>
+<p>로그 창 5번 탭에서 비거래·사기글 감지 건수를 <strong>막대그래프(일별)</strong>와 <strong>꺾은선 그래프(월별)</strong>로 확인할 수 있습니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">📋 로그 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">5 📊 통계 탭</div>
+</div>
+
+<div class="mockup">
+  <div class="r-log-tabs" style="background:#1e293b;border-bottom:2px solid #334155;">
+    <div class="r-ltab">1 비거래</div>
+    <div class="r-ltab">2 사기글</div>
+    <div class="r-ltab">3 필터제외</div>
+    <div class="r-ltab">4 처리완료</div>
+    <div class="r-ltab active">5 📊 통계</div>
+  </div>
+  <div style="padding:14px 16px;">
+    <!-- 타입 토글 -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <div style="padding:4px 14px;border-radius:7px;background:#0a1f10;border:2px solid #22c55e;color:#4ade80;font-size:11px;font-weight:900;">🛒 비거래</div>
+      <div style="padding:4px 14px;border-radius:7px;background:none;border:1.5px solid #334155;color:#64748b;font-size:11px;font-weight:900;">🚨 사기글</div>
+    </div>
+    <!-- 날짜 선택 -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:900;color:#94a3b8;">날짜</div>
+      <input type="date" style="background:#1e293b;border:1.5px solid #334155;border-radius:7px;padding:4px 8px;font-size:11px;color:#cbd5e1;" value="2026-05-24" readonly>
+      <div style="font-size:11px;font-weight:900;color:#94a3b8;margin-left:8px;">월별</div>
+      <input type="month" style="background:#1e293b;border:1.5px solid #334155;border-radius:7px;padding:4px 8px;font-size:11px;color:#cbd5e1;" value="2026-05" readonly>
+    </div>
+    <!-- 일별 막대그래프 -->
+    <div style="font-size:11px;font-weight:900;margin-bottom:6px;">📊 시간대별 감지 건수 (2026-05-24)</div>
+    <svg viewBox="0 0 400 90" style="width:100%;background:#0f172a;border-radius:8px;margin-bottom:10px;">
+      <line x1="30" y1="5" x2="30" y2="70" stroke="#334155" stroke-width="1"/>
+      <line x1="30" y1="70" x2="395" y2="70" stroke="#334155" stroke-width="1"/>
+      <rect x="40" y="50" width="14" height="20" fill="#22c55e" rx="2"/><text x="47" y="46" font-size="7" fill="#94a3b8" text-anchor="middle">09</text>
+      <rect x="60" y="40" width="14" height="30" fill="#22c55e" rx="2"/>
+      <rect x="80" y="55" width="14" height="15" fill="#22c55e" rx="2"/>
+      <rect x="100" y="30" width="14" height="40" fill="#22c55e" rx="2"/>
+      <rect x="120" y="20" width="14" height="50" fill="#22c55e" rx="2"/>
+      <rect x="140" y="45" width="14" height="25" fill="#22c55e" rx="2"/>
+      <rect x="160" y="60" width="14" height="10" fill="#22c55e" rx="2"/>
+      <rect x="180" y="35" width="14" height="35" fill="#22c55e" rx="2"/>
+      <text x="200" y="85" font-size="8" fill="#64748b" text-anchor="middle">마우스 올리면 건수 표시</text>
+    </svg>
+    <!-- 월별 꺾은선 -->
+    <div style="font-size:11px;font-weight:900;margin-bottom:6px;">📈 월별 감지 건수 (2026-05)</div>
+    <svg viewBox="0 0 400 90" style="width:100%;background:#0f172a;border-radius:8px;">
+      <line x1="30" y1="5" x2="30" y2="70" stroke="#334155" stroke-width="1"/>
+      <line x1="30" y1="70" x2="395" y2="70" stroke="#334155" stroke-width="1"/>
+      <polyline points="50,60 80,45 110,50 140,30 170,20 200,35 230,40 260,25 290,45 320,55 350,30 380,50" fill="none" stroke="#22c55e" stroke-width="2"/>
+      <circle cx="50" cy="60" r="3" fill="#22c55e"/>
+      <circle cx="110" cy="50" r="3" fill="#22c55e"/>
+      <circle cx="170" cy="20" r="3" fill="#22c55e"/>
+      <circle cx="260" cy="25" r="3" fill="#22c55e"/>
+      <text x="200" y="85" font-size="8" fill="#64748b" text-anchor="middle">마우스 올리면 건수 표시</text>
+    </svg>
+  </div>
+</div>
+<div class="tip">같은 거래번호(TID)가 여러 키워드에 감지돼도 1건으로 집계됩니다.</div>
+<div class="tip">데이터는 24시간 후 자동 삭제되지만 통계는 별도로 보관됩니다.</div>
+</section>
+
+<!-- ═══ 11. 규칙 설정 ═══ -->
+<section class="section" id="sec-rule">
+<h2>⚙️ 규칙 설정</h2>
+<p>모니터링 창의 <strong>사기글 규칙</strong> 또는 <strong>비거래 규칙</strong> 탭에서 감지 규칙을 추가·수정·삭제할 수 있습니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">👁 모니터링</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">🚨 사기글 규칙 탭</div>
+  <div class="flow-arr">또는</div>
+  <div class="flow-box highlight">🛒 비거래 규칙 탭</div>
+</div>
+
+<div class="mockup">
+  <div class="r-modal-tabs">
+    <div class="r-mtab">● 현황</div>
+    <div class="r-mtab active">🚨 사기글 규칙</div>
+    <div class="r-mtab">🛒 비거래 규칙</div>
+    <div class="r-mtab">🔍 거래번호 감시</div>
+    <div class="r-mtab">🔔 알림 설정</div>
+  </div>
+  <div class="r-modal-body">
+    <div class="r-rule" style="border-color:#ef444466;">
+      <div class="r-chk">✓</div>
+      <div style="flex:1;">
+        <div class="r-rule-name">린셀</div>
+        <div class="r-rule-tags">
+          <span class="r-rule-tag" style="border-color:#3abff8;color:#3abff8;">🔑 내용</span>
+          <span class="r-rule-tag">💰 1,500,000원↑</span>
+          <span class="r-rule-tag">⏱ 300초</span>
+          <span class="r-rule-tag">🌏 한국,전동</span>
+          <span class="r-rule-tag">📷 사진만</span>
+        </div>
+      </div>
+      <span style="font-size:14px;cursor:pointer;opacity:.5;margin-right:4px;">✏</span>
+      <span style="font-size:14px;cursor:pointer;opacity:.5;color:#ef4444;">🗑</span>
+    </div>
+    <div style="margin-top:8px;padding:10px;border:1.5px dashed #334155;border-radius:9px;text-align:center;font-size:11px;color:#64748b;cursor:pointer;">
+      + 새 규칙 추가
+    </div>
+  </div>
+</div>
+
+<h3>규칙 항목 설명</h3>
+<div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;overflow:hidden;margin:10px 0;">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <tr style="border-bottom:1px solid #334155;">
+      <td style="padding:8px 12px;width:110px;font-weight:900;color:#3abff8;">항목</td>
+      <td style="padding:8px 12px;">설명</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🔑 키워드</td>
+      <td style="padding:8px 12px;">감지할 단어. 콤마(,)로 여러 개 등록. 띄어쓰기·특수문자 섞여도 감지됨</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">💰 최소가격</td>
+      <td style="padding:8px 12px;">이 금액 이상인 상품만 감지. 0이면 전체</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">⏱ 간격</td>
+      <td style="padding:8px 12px;">몇 초마다 페이지를 다시 확인할지 설정</td>
+    </tr>
+    <tr style="border-bottom:1px solid #1e293b;">
+      <td style="padding:8px 12px;font-weight:900;">🌏 국가필터</td>
+      <td style="padding:8px 12px;">특정 서버(국가)만 감지. 예: 한국, 전동</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;font-weight:900;">📷 사진만</td>
+      <td style="padding:8px 12px;">사진이 첨부된 게시글만 감지</td>
+    </tr>
+  </table>
+</div>
+<div class="tip">키워드에 <strong>9검67셋</strong>으로 등록하면 <strong>9검 6, 7셋</strong>, <strong>9 검 6 7 셋</strong>, <strong>9검.67셋</strong> 등 다양한 형태로 쓴 것도 모두 감지됩니다.</div>
+</section>
+
+<!-- ═══ 12. 거래번호 감시 ═══ -->
+<section class="section" id="sec-tid">
+<h2>🔍 거래번호 감시</h2>
+<p>특정 거래번호(TID)를 등록해두면 해당 상품이 올라올 때 자동으로 알림을 받습니다.</p>
+
+<div class="mockup">
+  <div class="r-modal-tabs">
+    <div class="r-mtab">● 현황</div>
+    <div class="r-mtab">🚨 사기글 규칙</div>
+    <div class="r-mtab">🛒 비거래 규칙</div>
+    <div class="r-mtab active">🔍 거래번호 감시</div>
+    <div class="r-mtab">🔔 알림 설정</div>
+  </div>
+  <div class="r-modal-body">
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <input style="flex:1;background:#0f172a;border:1.5px solid #334155;border-radius:8px;padding:7px 11px;font-size:12px;color:#cbd5e1;" placeholder="거래번호(TID) 입력" readonly>
+      <div style="padding:7px 16px;border-radius:8px;background:#3abff8;color:#0f172a;font-size:11px;font-weight:900;">추가</div>
+    </div>
+    <div class="r-tid-item">
+      <div class="r-tid-num">1234567</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;">린셀 대검</div>
+        <div class="r-tid-game">🎮 디아블로2 · 등록: 2026-05-24</div>
+      </div>
+      <span style="font-size:13px;color:#ef4444;cursor:pointer;opacity:.6;">🗑</span>
+    </div>
+    <div class="r-tid-item" style="border-bottom:none;">
+      <div class="r-tid-num">9876543</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;">린엠 대범</div>
+        <div class="r-tid-game">🎮 리니지2 · 등록: 2026-05-23</div>
+      </div>
+      <span style="font-size:13px;color:#ef4444;cursor:pointer;opacity:.6;">🗑</span>
+    </div>
+  </div>
+</div>
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody">감시할 <strong>거래번호(TID)</strong>를 입력하고 추가 클릭</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">봇이 실행 중이면 해당 TID 상품 발견 시 즉시 알림</div></div>
+</div>
+</section>
+
+<!-- ═══ 13. 알림 설정 ═══ -->
+<section class="section" id="sec-notif">
+<h2>🔔 Windows 알림 설정</h2>
+<p>봇이 감지했을 때 크롬 팝업 알림(Windows 토스트 알림)을 받을 수 있습니다.</p>
+
+<div class="mockup">
+  <div class="r-modal-tabs">
+    <div class="r-mtab">● 현황</div>
+    <div class="r-mtab">🚨 사기글 규칙</div>
+    <div class="r-mtab">🛒 비거래 규칙</div>
+    <div class="r-mtab">🔍 거래번호 감시</div>
+    <div class="r-mtab active">🔔 알림 설정</div>
+  </div>
+  <div class="r-modal-body" style="padding:0;">
+    <div class="r-notif-row">
+      <div>
+        <div>비거래 감지 알림</div>
+        <div style="font-size:10px;color:#64748b;">비거래 의심 상품 발견 시 팝업</div>
+      </div>
+      <div class="r-toggle"><div class="r-toggle-dot"></div></div>
+    </div>
+    <div class="r-notif-row">
+      <div>
+        <div>사기글 감지 알림</div>
+        <div style="font-size:10px;color:#64748b;">사기글 의심 상품 발견 시 팝업</div>
+      </div>
+      <div class="r-toggle"><div class="r-toggle-dot"></div></div>
+    </div>
+    <div class="r-notif-row" style="border-bottom:none;">
+      <div>
+        <div>알림 소리</div>
+        <div style="font-size:10px;color:#64748b;">감지 시 소리도 함께 재생</div>
+      </div>
+      <div class="r-toggle r-toggle-off"><div class="r-toggle-dot"></div></div>
+    </div>
+  </div>
+</div>
+<div class="warn">알림이 오지 않는다면 Windows 설정 → 알림 → Chrome 알림이 허용되어 있는지 확인하세요.</div>
+</section>
+
+<!-- ═══ 14. 긴급공지 ═══ -->
+<section class="section" id="sec-notice">
+<h2>📢 긴급공지</h2>
+<p>화면 상단 티커 바에 흐르는 빨간 띠가 <strong>긴급공지</strong>입니다. 모든 사용자에게 즉시 표시됩니다.</p>
+
+<div class="mockup">
+  <div class="r-ticker" style="background:#1e293b;">
+    <span class="r-ticker-lbl">🚨 긴급공지</span>
+    <span class="r-ticker-txt">05/26 기획팀 공장으로 인해 매니아 장에 게시한 등록건들은 수도일 이후에 처리 가능하다고 합니다. 취급 운의 시 참고 부탁드립니다.</span>
+    <span class="an" style="cursor:pointer;">① 등록</span>
+    <span style="font-size:11px;margin-left:6px;opacity:.5;cursor:pointer;">▲ 접기</span>
+  </div>
+</div>
+
+<h3>긴급공지 등록하는 방법</h3>
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody">티커 오른쪽의 <span class="ui-btn red">+ 등록</span> 버튼 클릭</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">공지 내용 입력 후 등록</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody">모든 접속자 화면에 즉시 표시됨</div></div>
+</div>
+<div class="tip">▲/▼ 버튼으로 긴급공지 바를 접거나 펼칠 수 있습니다. 개인 설정으로 저장됩니다.</div>
+</section>
+
+<!-- ═══ 15. 파일 매뉴얼 ═══ -->
+<section class="section" id="sec-files">
+<h2>📂 파일 매뉴얼</h2>
+<p>업무 매뉴얼 파일(PDF, 이미지 등)을 올려두고 언제든 꺼내볼 수 있습니다.</p>
+
+<div class="flow">
+  <div class="flow-box highlight">📂 파일매뉴얼 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box result">파일 목록 창</div>
+</div>
+
+<div class="tip">관리자·부관리자는 파일 업로드·삭제 가능. 일반 사용자는 열람만 가능합니다.</div>
+</section>
+
+<!-- ═══ 16. 메모 ═══ -->
+<section class="section" id="sec-memo">
+<h2>📝 메모 패드</h2>
+<p>왼쪽 사이드바 하단에 개인 메모를 작성할 수 있습니다. 플로팅 스티커 형태로 화면에 고정할 수도 있습니다.</p>
+
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody">왼쪽 사이드바 하단 <strong>+ 버튼</strong>으로 새 메모 추가</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">메모 클릭 시 플로팅 스티커로 화면 어디서든 확인 가능</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody"><strong>📂 전체 메모</strong> 버튼으로 모든 메모 목록 보기</div></div>
+</div>
+<div class="tip">메모는 내 계정에 저장되어 다른 기기에서도 볼 수 있습니다.</div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section class="section" id="sec-faq">
+<h2>❓ FAQ</h2>
+
+<div style="display:flex;flex-direction:column;gap:10px;">
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 봇이 감지를 안 해요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">① 크롬에 IMI BOT 확장프로그램이 설치·활성화 되어 있는지 확인<br>② 모니터링 창에서 규칙에 체크가 되어 있는지 확인<br>③ 봇 상태가 <span class="bdg bdg-g">● 감시 중</span> 인지 확인<br>④ 확장프로그램을 삭제 후 재설치해 보세요</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 알림 팝업이 안 떠요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">Windows 설정 → 알림 및 작업 → Google Chrome → 알림 허용 확인<br>또는 크롬 주소창 자물쇠 아이콘 → 알림 허용</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 실수로 필터 제외했어요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">📋 로그 → 3 🚫 필터제외 탭 → 해당 항목의 <span class="ui-btn red">↩ 제외 취소</span> 버튼 클릭</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 비밀번호를 잊었어요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">로그인 화면 → 비밀번호 찾기 → 이름·사번 입력 → 임시 비밀번호 발급<br>또는 관리자에게 비밀번호 초기화 요청</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 키워드에 콤마(,)가 포함된 단어를 감지하고 싶어요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">콤마는 키워드 구분자로 사용되므로 키워드 자체에는 넣을 수 없습니다.<br>대신 콤마 없이 <strong>9검67셋</strong>으로 등록하면 <strong>9검6,7셋</strong> 형태도 자동으로 감지됩니다.</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
+    <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 프로그램 업데이트 후 적용이 안 돼요</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">크롬 확장프로그램 관리 → IMI BOT <strong>삭제</strong> → 다시 설치 (리로드 아님, 반드시 삭제 후 재설치)</div>
+  </div>
+</div>
+</section>
+
+</div><!-- /content -->
+
+<script>
+// 네비 스크롤 활성화
+var navLinks = document.querySelectorAll('.nav a');
+var sections = document.querySelectorAll('.section');
+window.addEventListener('scroll', function(){
+  var cur = '';
+  sections.forEach(function(s){
+    if(window.scrollY >= s.offsetTop - 40) cur = s.id;
+  });
+  navLinks.forEach(function(a){
+    a.classList.toggle('active', a.getAttribute('href') === '#'+cur);
+  });
+});
+</script>
+<style>
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.3)} 50%{box-shadow:0 0 0 5px rgba(34,197,94,.1)} }
+</style>
+</body>
+</html>

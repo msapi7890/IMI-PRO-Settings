@@ -212,6 +212,7 @@ async function syncStatus() {
         id: r.id,
         name: r.name,
         keyword: r.keyword || '',
+        subKeyword: r.subKeyword || '',
         minPrice: r.minPrice || 0,
         maxPrice: r.maxPrice || 0,
         scanInterval: r.scanInterval || 5,

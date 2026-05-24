@@ -189,6 +189,7 @@
     function scanPage() {
         if (!rule) return [];
         const kws    = (rule.keyword || '').split(',').map(k => k.trim()).filter(Boolean);
+        const subKws = (rule.subKeyword || '').split(',').map(k => k.trim()).filter(Boolean);
         const exKws  = (rule.excludeKeyword || '').split(',').map(k => k.trim()).filter(Boolean);
         const minPrice = rule.minPrice || 0;
         const maxPrice = rule.maxPrice || 0;
@@ -216,11 +217,12 @@
             const kwText = titleEl ? (titleEl.innerText || titleEl.textContent || '').replace(/\s+/g, ' ').trim() : text;
             // 비거래(watch)는 카테고리 직접 접속 → 전체 행 텍스트로 매칭 (사기글은 제목 열만)
             const matchText = (rule.type === 'watch') ? text : kwText;
-            // 점·공백 등 특수문자 제거 후 매칭 (자.쿰, 자 쿰 등 우회 패턴 감지)
-            const _norm = s => s.replace(/[\s.\-_·~*\/\\|!@#$%^&+=<>?;:'"()\[\]{}]/g, '');
+            // 점·공백·콤마 등 특수문자 제거 후 매칭 (자.쿰, 자 쿰, 9검6,7 등 우회 패턴 감지)
+            const _norm = s => s.replace(/[\s,.\-_·~*\/\\|!@#$%^&+=<>?;:'"()\[\]{}]/g, '');
             const normText = _norm(matchText);
 
             if (kws.length && !kws.some(k => normText.includes(_norm(k)))) return;
+            if (subKws.length && !subKws.every(k => normText.includes(_norm(k)))) return;
             if (exKws.length && exKws.some(k => normText.includes(_norm(k)))) return;
 
             const price = extractMaxPrice(text);
