@@ -939,7 +939,7 @@ function closeLogPanel() {
     document.getElementById('logPanel').classList.add('hidden');
 }
 function switchLogTab(n) {
-    [1,2,3,4].forEach(function(i) {
+    [1,2,3,4,5].forEach(function(i) {
         var t = document.getElementById('logTab'+i);
         var c = document.getElementById('logTabContent'+i);
         if (t) t.classList.toggle('mon-tab-active', i === n);
@@ -949,6 +949,7 @@ function switchLogTab(n) {
     if (n === 2) { _logFullModeW = false; loadWatchLog(false); }
     if (n === 3) loadBlockedFraud();
     if (n === 4) loadBlockedWatch();
+    if (n === 5) loadStatsTab();
 }
 
 function loadFullDayLog() {
@@ -1256,6 +1257,211 @@ function clearAllBlockedWatch() {
     });
 }
 function clearAllBlocked() { clearAllBlockedFraud(); }
+
+// ===== 감지 통계 =====
+var _statsType = 'watch';
+
+function loadStatsTab() {
+    var today = new Date();
+    var pad = function(n) { return String(n).padStart(2,'0'); };
+    var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
+    var monthStr = today.getFullYear() + '-' + pad(today.getMonth()+1);
+    var dp = document.getElementById('statsDayPicker');
+    var mp = document.getElementById('statsMonthPicker');
+    if (dp && !dp.value) dp.value = todayStr;
+    if (mp && !mp.value) mp.value = monthStr;
+    _switchStatsType(_statsType);
+}
+
+function _switchStatsType(type) {
+    _statsType = type;
+    var w = document.getElementById('statsTypeWatch');
+    var f = document.getElementById('statsTypeFraud');
+    if (w) { w.style.background = type==='watch'?'#22c55e':'none'; w.style.color = type==='watch'?'#000':'#94a3b8'; w.style.border = '1px solid '+(type==='watch'?'#22c55e':'#334155'); }
+    if (f) { f.style.background = type==='fraud'?'#ef4444':'none'; f.style.color = type==='fraud'?'#fff':'#94a3b8'; f.style.border = '1px solid '+(type==='fraud'?'#ef4444':'#334155'); }
+    _renderStatsForType(type);
+}
+
+function _onStatsDateChange()  { _renderStatsForType(_statsType); }
+function _onStatsMonthChange() { _renderStatsForType(_statsType); }
+
+function _renderStatsForType(type) {
+    var dp = document.getElementById('statsDayPicker');
+    var mp = document.getElementById('statsMonthPicker');
+    var dateStr  = dp ? dp.value : '';
+    var monthStr = mp ? mp.value : '';
+    var dc = document.getElementById('statsDayChart');
+    var mc = document.getElementById('statsMonthChart');
+    if (dc) dc.innerHTML = '<div style="text-align:center;padding:20px 0;font-size:11px;opacity:0.4;">불러오는 중...</div>';
+    if (mc) mc.innerHTML = '';
+    if (type === 'watch') _loadWatchStats(dateStr, monthStr);
+    else _loadFraudStats(dateStr, monthStr);
+}
+
+// 비거래 통계 — imi_watch_alerts(오늘) + imi_watch_stats(과거), TID 중복제거
+function _loadWatchStats(dateStr, monthStr) {
+    var pad = function(n) { return String(n).padStart(2,'0'); };
+    db.ref('imi_watch_alerts').limitToLast(100).once('value', function(alertsSnap) {
+        var alerts = alertsSnap.val() || {};
+        // dateStr+hour별 첫 감지 시각 기준으로 TID 배정 (중복 제거)
+        var tidFirstSeen = {}; // tid → { dStr, hStr, at }
+        Object.values(alerts).forEach(function(val) {
+            if (!val || !val.at) return;
+            var d = new Date(val.at);
+            var dStr = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+            var hStr = pad(d.getHours());
+            (val.tids || []).forEach(function(tid) {
+                if (!tid) return;
+                if (!tidFirstSeen[tid] || val.at < tidFirstSeen[tid].at) {
+                    tidFirstSeen[tid] = { dStr: dStr, hStr: hStr, at: val.at };
+                }
+            });
+        });
+        // 시간대별 카운트 (선택 날짜)
+        var hourCounts = {};
+        // 월별 일별 카운트
+        var monthDayCounts = {};
+        Object.values(tidFirstSeen).forEach(function(info) {
+            if (info.dStr === dateStr) hourCounts[info.hStr] = (hourCounts[info.hStr] || 0) + 1;
+            if (info.dStr.startsWith(monthStr)) {
+                var day = info.dStr.split('-')[2];
+                monthDayCounts[day] = (monthDayCounts[day] || 0) + 1;
+            }
+        });
+        // 과거 데이터(imi_watch_stats) 보완 — 오늘 데이터 없는 날에 한해 사용
+        db.ref('/imi_watch_stats').once('value', function(statsSnap) {
+            var allStats = statsSnap.val() || {};
+            // 선택 날짜가 과거인 경우 imi_watch_stats 사용
+            var histDay = allStats[dateStr] || {};
+            if (Object.keys(hourCounts).length === 0) {
+                Object.keys(histDay).forEach(function(hStr) { hourCounts[hStr] = histDay[hStr].total || 0; });
+            }
+            // 월별: imi_watch_stats에서 아직 없는 날 보완
+            Object.keys(allStats).forEach(function(dStr) {
+                if (!dStr.startsWith(monthStr)) return;
+                var day = dStr.split('-')[2];
+                if (!monthDayCounts[day]) {
+                    var t = 0;
+                    Object.values(allStats[dStr]).forEach(function(h) { t += (h.total || 0); });
+                    monthDayCounts[day] = t;
+                }
+            });
+            _renderBarChart('statsDayChart', hourCounts, '#22c55e');
+            _renderLineChart('statsMonthChart', monthDayCounts, '#22c55e');
+        });
+    });
+}
+
+// 사기글 통계 — imi_fraud_stats (미리 집계된 데이터)
+function _loadFraudStats(dateStr, monthStr) {
+    db.ref('/imi_fraud_stats').once('value', function(statsSnap) {
+        var allStats = statsSnap.val() || {};
+        var hourCounts = allStats[dateStr] || {};
+        var monthDayCounts = {};
+        Object.keys(allStats).forEach(function(dStr) {
+            if (!dStr.startsWith(monthStr)) return;
+            var day = dStr.split('-')[2];
+            var t = 0;
+            Object.values(allStats[dStr]).forEach(function(v) { t += (v || 0); });
+            monthDayCounts[day] = t;
+        });
+        _renderBarChart('statsDayChart', hourCounts, '#ef4444');
+        _renderLineChart('statsMonthChart', monthDayCounts, '#ef4444');
+    });
+}
+
+// 막대 그래프 (시간대별 단색, 툴팁 포함)
+function _renderBarChart(containerId, hourCounts, barColor) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var maxVal = 0;
+    for (var h=0; h<24; h++) { var v=hourCounts[String(h).padStart(2,'0')]||0; if(v>maxVal) maxVal=v; }
+    if (maxVal === 0) { container.innerHTML='<div style="text-align:center;padding:24px 0;font-size:11px;opacity:0.35;">해당 날짜 감지 기록 없음</div>'; return; }
+    var W=340,H=130,pL=24,pB=16,pT=6,pR=4,cW=W-pL-pR,cH=H-pB-pT,slotW=cW/24,barW=slotW*0.65;
+    var svg='<svg width="100%" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;">';
+    [0.25,0.5,0.75,1].forEach(function(r){
+        var y=pT+cH*(1-r);
+        svg+='<line x1="'+pL+'" y1="'+y.toFixed(1)+'" x2="'+(W-pR)+'" y2="'+y.toFixed(1)+'" stroke="#1e293b" stroke-width="1"/>';
+        svg+='<text x="'+(pL-2)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="7" fill="#475569">'+Math.round(maxVal*r)+'</text>';
+    });
+    svg+='<line x1="'+pL+'" y1="'+(pT+cH)+'" x2="'+(W-pR)+'" y2="'+(pT+cH)+'" stroke="#334155" stroke-width="1"/>';
+    for (var h=0; h<24; h++){
+        var hStr=String(h).padStart(2,'0'), v=hourCounts[hStr]||0;
+        var x=pL+slotW*h+(slotW-barW)/2;
+        if (v>0) {
+            var bH=(v/maxVal)*cH;
+            svg+='<rect x="'+x.toFixed(1)+'" y="'+(pT+cH-bH).toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+bH.toFixed(1)+'" fill="'+barColor+'" rx="1.5"/>';
+        }
+        // 투명 호버 영역 (data-tip 속성으로 툴팁)
+        svg+='<rect x="'+(pL+slotW*h).toFixed(1)+'" y="'+pT+'" width="'+slotW.toFixed(1)+'" height="'+cH+'" fill="transparent" data-tip="'+h+'시  '+v+'건"/>';
+        if(h%3===0) svg+='<text x="'+(x+barW/2).toFixed(1)+'" y="'+(H-3)+'" text-anchor="middle" font-size="7" fill="#475569">'+h+'</text>';
+    }
+    svg+='</svg>';
+    container.innerHTML=svg;
+    _attachChartTip(container);
+}
+
+// 꺾은선 그래프 (월별 일별, 툴팁 포함)
+function _renderLineChart(containerId, dailyCounts, lineColor) {
+    var container=document.getElementById(containerId);
+    if(!container) return;
+    if(!lineColor) lineColor='#60a5fa';
+    var maxVal=0;
+    for(var d=1;d<=31;d++){var v=dailyCounts[String(d).padStart(2,'0')]||0;if(v>maxVal)maxVal=v;}
+    if(maxVal===0){container.innerHTML='<div style="text-align:center;padding:20px 0;font-size:11px;opacity:0.35;">해당 월 감지 기록 없음</div>';return;}
+    var W=340,H=100,pL=24,pB=14,pT=6,pR=4,cW=W-pL-pR,cH=H-pB-pT,xStep=cW/30;
+    var svg='<svg width="100%" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;">';
+    [0.5,1].forEach(function(r){
+        var y=pT+cH*(1-r);
+        svg+='<line x1="'+pL+'" y1="'+y.toFixed(1)+'" x2="'+(W-pR)+'" y2="'+y.toFixed(1)+'" stroke="#1e293b" stroke-width="1"/>';
+        svg+='<text x="'+(pL-2)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="7" fill="#475569">'+Math.round(maxVal*r)+'</text>';
+    });
+    svg+='<line x1="'+pL+'" y1="'+(pT+cH)+'" x2="'+(W-pR)+'" y2="'+(pT+cH)+'" stroke="#334155" stroke-width="1"/>';
+    var points=[];
+    for(var d=1;d<=31;d++){
+        var v=dailyCounts[String(d).padStart(2,'0')]||0;
+        points.push({x:(pL+(d-1)*xStep),y:(pT+cH-(v/maxVal)*cH),v:v,d:d});
+    }
+    var pathD=points.map(function(p,i){return(i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ');
+    svg+='<path d="'+pathD+' L'+points[30].x.toFixed(1)+','+(pT+cH)+' L'+points[0].x.toFixed(1)+','+(pT+cH)+' Z" fill="'+lineColor+'" fill-opacity="0.08"/>';
+    svg+='<path d="'+pathD+'" fill="none" stroke="'+lineColor+'" stroke-width="1.5" stroke-linejoin="round"/>';
+    points.forEach(function(p){
+        if(p.v>0) svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.5" fill="'+lineColor+'"/>';
+        // 투명 호버 영역
+        svg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="8" fill="transparent" data-tip="'+p.d+'일  '+p.v+'건"/>';
+    });
+    [1,5,10,15,20,25,31].forEach(function(d){var p=points[d-1];svg+='<text x="'+p.x.toFixed(1)+'" y="'+(H-2)+'" text-anchor="middle" font-size="7" fill="#475569">'+d+'</text>';});
+    svg+='</svg>';
+    container.innerHTML=svg;
+    _attachChartTip(container);
+}
+
+// 툴팁 이벤트 연결
+function _attachChartTip(container) {
+    container.addEventListener('mousemove', function(e) {
+        var tip = e.target.getAttribute('data-tip');
+        if (tip) _showChartTip(e, tip);
+        else _hideChartTip();
+    });
+    container.addEventListener('mouseleave', _hideChartTip);
+}
+function _showChartTip(evt, text) {
+    var tip = document.getElementById('_statsTip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = '_statsTip';
+        tip.style.cssText = 'position:fixed;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:10px;font-weight:700;padding:4px 10px;border-radius:5px;pointer-events:none;z-index:9999;white-space:nowrap;';
+        document.body.appendChild(tip);
+    }
+    tip.textContent = text;
+    tip.style.display = '';
+    tip.style.left = (evt.clientX + 10) + 'px';
+    tip.style.top = (evt.clientY - 32) + 'px';
+}
+function _hideChartTip() {
+    var tip = document.getElementById('_statsTip');
+    if (tip) tip.style.display = 'none';
+}
 
 // ===== 봇 규칙 관리 (Firebase /imi_rules 배열) =====
 var _botRules = [];

@@ -85,6 +85,81 @@ const getBlocked        = () => store.get('imi_blocked').then(v => v || []);
 const getBlockedCleared = () => store.get('imi_blocked_cleared_at').then(v => v || 0);
 const THIRTY_DAYS_MS    = 30 * 24 * 60 * 60 * 1000;
 
+// 사기글 통계 버퍼 — 1분마다 Firebase에 플러시 (TID 중복 제거)
+const _fraudSeenTids = {}; // dateStr → Set (서비스워커 세션 내 중복 방지)
+const _fraudStatsBuffer = {}; // 'dateStr|hourStr' → count
+
+function _recordFraudStat(at, itemRows) {
+    const d = new Date(at);
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const hourStr = pad(d.getHours());
+    const key = dateStr + '|' + hourStr;
+    if (!_fraudSeenTids[dateStr]) _fraudSeenTids[dateStr] = new Set();
+    const seen = _fraudSeenTids[dateStr];
+    let newCount = 0;
+    for (const row of itemRows) {
+        const tid = row.tid || row.key || '';
+        if (tid && !seen.has(tid)) { seen.add(tid); newCount++; }
+    }
+    if (newCount > 0) _fraudStatsBuffer[key] = (_fraudStatsBuffer[key] || 0) + newCount;
+}
+
+async function _flushFraudStats() {
+    const keys = Object.keys(_fraudStatsBuffer);
+    if (!keys.length) return;
+    for (const key of keys) {
+        const count = _fraudStatsBuffer[key];
+        delete _fraudStatsBuffer[key];
+        const [dateStr, hourStr] = key.split('|');
+        const existing = await fireGet(`/imi_fraud_stats/${dateStr}/${hourStr}`) || 0;
+        await fireSet(`/imi_fraud_stats/${dateStr}/${hourStr}`, existing + count);
+    }
+}
+
+// 1일 이상 된 imi_watch_alerts 항목 → 통계 집계 후 삭제
+async function cleanupWatchAlerts() {
+    const data = await fireGet('/imi_watch_alerts');
+    if (!data || typeof data !== 'object') return;
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+
+    // 삭제 대상 항목을 날짜/시간대/키워드별로 집계
+    const statsMap = {}; // dateStr → hourStr → { total, keywords: {} }
+    const toDelete = [];
+    for (const [key, val] of Object.entries(data)) {
+        if (!val || (val.at || 0) >= cutoff) continue;
+        toDelete.push(key);
+        const d = new Date(val.at);
+        const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        const hourStr = String(d.getHours()).padStart(2,'0');
+        const keyword = val.keyword || '';
+        const count = val.count || 1;
+        if (!statsMap[dateStr]) statsMap[dateStr] = {};
+        if (!statsMap[dateStr][hourStr]) statsMap[dateStr][hourStr] = { total: 0, keywords: {} };
+        statsMap[dateStr][hourStr].total += count;
+        if (keyword) statsMap[dateStr][hourStr].keywords[keyword] = (statsMap[dateStr][hourStr].keywords[keyword] || 0) + count;
+    }
+
+    // Firebase에 통계 누적 저장
+    for (const [dateStr, hours] of Object.entries(statsMap)) {
+        const existing = await fireGet('/imi_watch_stats/' + dateStr) || {};
+        for (const [hourStr, hd] of Object.entries(hours)) {
+            if (!existing[hourStr]) existing[hourStr] = { total: 0, keywords: {} };
+            existing[hourStr].total = (existing[hourStr].total || 0) + hd.total;
+            if (!existing[hourStr].keywords) existing[hourStr].keywords = {};
+            for (const [kw, cnt] of Object.entries(hd.keywords)) {
+                existing[hourStr].keywords[kw] = (existing[hourStr].keywords[kw] || 0) + cnt;
+            }
+        }
+        await fireSet('/imi_watch_stats/' + dateStr, existing);
+    }
+
+    // 오래된 항목 삭제
+    for (const key of toDelete) {
+        await fireSet('/imi_watch_alerts/' + key, null);
+    }
+}
+
 // 30일 경과 시 차단 목록 자동 초기화 (전체 실무자 공유)
 async function maybeCleanupBlocked() {
     const clearedAt = await getBlockedCleared();
@@ -283,9 +358,10 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         if (remoteBlocked !== null) {
             await store.set('imi_blocked', remoteBlocked);
         }
+        await _flushFraudStats();
         await syncStatus();
     }
-    if (alarm.name === 'imi_cleanup') await maybeCleanupBlocked();
+    if (alarm.name === 'imi_cleanup') { await maybeCleanupBlocked(); await cleanupWatchAlerts(); }
     if (alarm.name === 'imi_tid_watch') { await checkWatchedTids(); }
     if (alarm.name === 'imi_rule_sync') await syncTidWatchInterval();
 });
@@ -328,14 +404,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
                 const logRows = msg.data.logItemRows;
                 if (Array.isArray(logRows) && logRows.length > 0) {
+                    const ruleType = msg.data.ruleType || 'fraud';
+                    const detectedAt = msg.data.at || Date.now();
                     await firePush('/monitor_history', {
                         ruleName: msg.data.ruleName || '',
                         ruleKeyword: msg.data.ruleKeyword || '',
-                        ruleType: msg.data.ruleType || 'fraud',
+                        ruleType,
                         itemCount: logRows.length,
                         itemRows: logRows,
-                        at: msg.data.at || Date.now()
+                        at: detectedAt
                     });
+                    if (ruleType === 'fraud') _recordFraudStat(detectedAt, logRows);
                 }
             }
             sendResponse({ ok: true });

@@ -980,6 +980,7 @@
             <button id="logTab2" class="mon-tab" onclick="switchLogTab(2)" style="font-size:11px;">📦 비거래 로그</button>
             <button id="logTab3" class="mon-tab" onclick="switchLogTab(3)" style="font-size:11px;">🚫 사기글 제외</button>
             <button id="logTab4" class="mon-tab" onclick="switchLogTab(4)" style="font-size:11px;">📦 비거래 제외</button>
+            <button id="logTab5" class="mon-tab" onclick="switchLogTab(5)" style="font-size:11px;">📊 통계</button>
         </div>
         <!-- 탭1: 사기글 로그 -->
         <div id="logTabContent1" class="log-body">
@@ -1014,6 +1015,28 @@
             </div>
             <div id="blockedItemListW"></div>
             <div id="blockedEmptyW" style="text-align:center;padding:40px 0;font-size:13px;opacity:0.35;">제외된 비거래 물품이 없습니다.</div>
+        </div>
+        <!-- 탭5: 감지 통계 -->
+        <div id="logTabContent5" class="log-body" style="display:none;">
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;">
+                <button id="statsTypeWatch" onclick="_switchStatsType('watch')" style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border-radius:6px;border:1px solid #22c55e;background:#22c55e;color:#000;cursor:pointer;">📦 비거래</button>
+                <button id="statsTypeFraud" onclick="_switchStatsType('fraud')" style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border-radius:6px;border:1px solid #334155;background:none;color:#94a3b8;cursor:pointer;">🚨 사기글</button>
+            </div>
+            <div style="flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <div style="font-size:10px;font-weight:900;opacity:0.5;letter-spacing:0.06em;">📅 일별 시간대</div>
+                    <input type="date" id="statsDayPicker" style="font-size:10px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:5px;padding:2px 6px;" onchange="_onStatsDateChange()">
+                </div>
+                <div id="statsDayChart"></div>
+            </div>
+            <div style="border-top:1px solid #1e293b;margin:10px 0;flex-shrink:0;"></div>
+            <div style="flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <div style="font-size:10px;font-weight:900;opacity:0.5;letter-spacing:0.06em;">📈 월별 추이</div>
+                    <input type="month" id="statsMonthPicker" style="font-size:10px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:5px;padding:2px 6px;" onchange="_onStatsMonthChange()">
+                </div>
+                <div id="statsMonthChart"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -8329,7 +8352,8 @@
         (function(){
             var _shownAlerts = {};
             var _startAt = Date.now();
-            db.ref('imi_watch_alerts').on('child_added', function(snap){
+            var _alertsRef = db.ref('imi_watch_alerts').limitToLast(20);
+            _alertsRef.on('child_added', function(snap){
                 var d = snap.val();
                 if(!d || _shownAlerts[snap.key]) return;
                 if(d.seen || d.done) return;
@@ -8338,7 +8362,7 @@
                 db.ref('imi_watch_alerts/'+snap.key+'/seen').set(true);
                 _showWatchAlert(d, snap.key);
             });
-            db.ref('imi_watch_alerts').on('child_changed', function(snap){
+            _alertsRef.on('child_changed', function(snap){
                 var d = snap.val();
                 if(d && d.done){
                     var el = document.getElementById('_imiWatchAlert');
