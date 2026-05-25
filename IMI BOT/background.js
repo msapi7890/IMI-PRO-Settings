@@ -401,9 +401,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
                     showWatchPopup(msg.data);
+                    showOsNotif('watch', msg.data);
                 } else {
                     const fraudPopupOn = await store.get('imi_notif_popup');
                     if (fraudPopupOn === true) showFraudPopup(msg.data);
+                    showOsNotif('fraud', msg.data);
                 }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
                 const logRows = msg.data.logItemRows;
@@ -705,6 +707,33 @@ async function _stackPopup(url, storageKey, data, arr, alignRight) {
         _registerPopupClose(win.id, arr);
     }
 }
+
+// 윈도우 OS 토스트 알림 (chrome.notifications)
+function showOsNotif(type, data) {
+    const isWatch = type === 'watch';
+    const id = 'imi_' + type + '_' + Date.now();
+    chrome.notifications.create(id, {
+        type: 'basic',
+        iconUrl: 'icon48.png',
+        title: isWatch ? 'IMI PRO — 비거래 물품 감지!' : 'IMI PRO — 물품 감지!',
+        message: (data.ruleName || '') + ' | ' + (data.itemCount || 0) + '개 물품 감지됨',
+        priority: 2
+    });
+}
+
+chrome.notifications.onClicked.addListener(function(notifId) {
+    chrome.tabs.query({}, function(tabs) {
+        var t = tabs.find(function(tab) {
+            return tab.title && tab.title.includes('IMI PRO') && tab.url && !tab.url.startsWith('chrome-extension://');
+        });
+        if (t) {
+            chrome.tabs.update(t.id, { active: true }, function() {
+                chrome.windows.update(t.windowId, { focused: true });
+            });
+        }
+    });
+    chrome.notifications.clear(notifId);
+});
 
 // 사기글 감지 팝업 (우측 하단, 빨간 테마) — popup 토글 ON일 때
 async function showFraudPopup(data) {
