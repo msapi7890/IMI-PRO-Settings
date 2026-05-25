@@ -16,16 +16,6 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
             + (it.p ? '<span class="item-price">' + Number(it.p).toLocaleString() + '원</span>' : '')
             + '</div>';
 
-        if (it.u) {
-            row.style.cursor = 'pointer';
-            (function(url, ruleId) {
-                row.addEventListener('click', function() {
-                    // 스캔 탭 bot.js에 DOM 클릭 요청 (세션 유지)
-                    chrome.runtime.sendMessage({ type: 'CLICK_ITEM_IN_SCAN_TAB', url: url, ruleId: ruleId });
-                    window.close();
-                });
-            })(it.u, data.ruleId);
-        }
         listEl.appendChild(row);
     });
 
@@ -34,9 +24,9 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
         window.close();
     });
 
-    // 팝업 클릭(아이템·닫기 제외) → IMI PRO 메인 창 포커스
+    // 팝업 어디 클릭해도(닫기 제외) → IMI PRO 메인 창 포커스
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.item') || e.target.closest('#closeBtn')) return;
+        if (e.target.closest('#closeBtn')) return;
         chrome.runtime.sendMessage({ type: 'FOCUS_MAIN_WINDOW' });
     });
 
