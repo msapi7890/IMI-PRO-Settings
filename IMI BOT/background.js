@@ -401,7 +401,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
                     showWatchPopup(msg.data);
-                    showOsNotif('watch', msg.data);
                 } else {
                     const fraudPopupOn = await store.get('imi_notif_popup');
                     if (fraudPopupOn === true) showFraudPopup(msg.data);
