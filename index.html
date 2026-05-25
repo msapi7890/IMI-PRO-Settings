@@ -8695,14 +8695,15 @@
                     filterBtn.textContent = '필터제외';
                     filterBtn.style.cssText = 'flex:1;padding:6px 0;font-size:10px;font-weight:900;background:none;border:none;border-right:1px solid var(--border-ui);color:#f87171;cursor:pointer;';
                     filterBtn.onclick = function(){
+                        filterBtn.disabled = true;
                         db.ref('/imi_blocked').once('value', function(snap){
                             var list = snap.val() || [];
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
                             list.push({key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch'});
                             db.ref('/imi_blocked').set(list, function(){
-                                filterBtn.textContent = addedBy ? '제외됨 · '+addedBy : '제외됨';
-                                filterBtn.disabled=true; filterBtn.style.opacity='0.45';
+                                row.style.opacity = '0.4';
+                                setTimeout(function(){ row.remove(); _checkAllDone(); }, 600);
                             });
                         });
                     };
@@ -8748,12 +8749,17 @@
                 });
                 panel._procRef = procRef; panel._procListener = procListener;
             }
+            var _alertOpenedAt = Date.now();
             var doneRef = db.ref('imi_watch_done');
             var doneListener = doneRef.on('value', function(snap){
                 var doneObj = snap.val() || {};
                 Array.from(tidContainer.querySelectorAll('[data-tid]')).forEach(function(r){
                     var v = doneObj[r.dataset.tid];
                     if(!v) return;
+                    // 이 알림 팝업이 열린 이후에 처리된 것만 반영
+                    // (이전 세션의 처리완료 기록이 새 알림을 자동으로 닫는 버그 방지)
+                    var at = typeof v === 'object' ? (v.at || 0) : 0;
+                    if(at < _alertOpenedAt) return;
                     var byName = typeof v==='object' ? (v.by||'') : '';
                     _markRowDone(r, byName);
                 });

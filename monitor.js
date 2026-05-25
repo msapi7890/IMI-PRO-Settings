@@ -752,19 +752,28 @@ function _showMonitorFlash(s) {
 
     // OS 브라우저 알림 — 비거래(watch) 타입은 스킵
     if (s.ruleType !== 'watch' && 'Notification' in window) {
-        var _fireNotif = function() {
-            new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
-                body: (s.itemCount||0) + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
-                icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
-                tag: 'imi-pro-alert'
-            });
-        };
-        if (Notification.permission === 'granted') {
-            _fireNotif();
-        } else if (Notification.permission === 'default') {
-            Notification.requestPermission().then(function(perm) {
-                if (perm === 'granted') _fireNotif();
-            });
+        // 이미 알림 보낸 TID는 제외 — 여러 규칙에서 같은 TID 감지 시 첫 번째만 알림
+        var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
+        var newTids = allTids.filter(function(t){ return !_notifSentTids.has(t); });
+        // TID 없는 감지(tid 없는 항목만 있는 경우)는 그냥 1회 허용
+        var shouldNotif = allTids.length === 0 || newTids.length > 0;
+        newTids.forEach(function(t){ _notifSentTids.add(t); });
+        var notifCount = allTids.length === 0 ? (s.itemCount||0) : newTids.length;
+        if (shouldNotif) {
+            var _fireNotif = function() {
+                new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
+                    body: notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
+                    icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+                    tag: 'imi-pro-alert'
+                });
+            };
+            if (Notification.permission === 'granted') {
+                _fireNotif();
+            } else if (Notification.permission === 'default') {
+                Notification.requestPermission().then(function(perm) {
+                    if (perm === 'granted') _fireNotif();
+                });
+            }
         }
     }
 
@@ -832,11 +841,15 @@ function _hideMonitorFlashLocal() {
     if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
 }
 
+var _lastFlashAt = 0;    // 이미 처리한 flash at — 같은 감지 재발화 방지
+var _notifSentTids = new Set(); // 이미 알림 보낸 TID — 여러 규칙 중복 알림 방지
 db.ref('monitor_flash_state').on('value', function(snap) {
     var s = snap.val();
     if (!s) return;
-    // at이 90초 이내인 최신 감지만 표시 — 페이지 로드 시 오래된 active 상태 재표시 방지
-    if (s.active && s.at && (Date.now() - s.at) < 90000) {
+    // at이 15초 이내 + 이전에 처리한 at과 다를 때만 표시
+    // (90초 → 15초로 단축: 오래된 감지가 뒤늦게 재울리는 현상 방지)
+    if (s.active && s.at && (Date.now() - s.at) < 15000 && s.at !== _lastFlashAt) {
+        _lastFlashAt = s.at;
         _showMonitorFlash(s);
         var panel = document.getElementById('logPanel');
         if (panel && !panel.classList.contains('hidden')) {
@@ -891,7 +904,7 @@ document.getElementById('monitorLogListW').addEventListener('click', function(e)
 });
 
 // 필터제외 버튼 — 이벤트 위임 (log-box 안 #monitorLogList에 직접 위임, stopPropagation 우회)
-document.getElementById('monitorLogList').addEventListener('click', function(e) {
+function _handleLogBkClick(e) {
     var btn = e.target.closest('[data-logbk]');
     if (!btn || btn.disabled) return;
     var key   = btn.getAttribute('data-logbk');
@@ -911,7 +924,9 @@ document.getElementById('monitorLogList').addEventListener('click', function(e) 
         btn.style.opacity = '0.4';
         btn.style.cursor = 'default';
     });
-});
+}
+document.getElementById('monitorLogList').addEventListener('click', _handleLogBkClick);
+document.getElementById('monitorLogListW').addEventListener('click', _handleLogBkClick);
 
 // ===== 로그 패널 =====
 var _logFullMode  = false;

@@ -646,19 +646,59 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 });
 
+// ── 팝업 스택 관리 ──
+// 새 팝업이 뜰 때 기존 팝업들을 위로 밀고 새 것은 아래에 배치
+const POPUP_W = 460, POPUP_H = 320, POPUP_GAP = 8, POPUP_MARGIN_BOTTOM = 70;
+
+let _fraudWinIds = [];
+let _watchWinIds = [];
+
+function _registerPopupClose(winId, arr) {
+    const handler = (id) => {
+        if (id !== winId) return;
+        const idx = arr.indexOf(winId);
+        if (idx !== -1) arr.splice(idx, 1);
+        chrome.windows.onRemoved.removeListener(handler);
+    };
+    chrome.windows.onRemoved.addListener(handler);
+}
+
+async function _stackPopup(url, storageKey, data, arr, alignRight) {
+    await chrome.storage.local.set({ [storageKey]: data });
+    const sw = screen.width, sh = screen.height;
+    const baseTop  = sh - POPUP_H - POPUP_MARGIN_BOTTOM;
+    const baseLeft = alignRight ? (sw - POPUP_W - 20) : 20;
+
+    // 기존 창들 위로 밀기
+    const shift = POPUP_H + POPUP_GAP;
+    await Promise.all(arr.map(wid =>
+        chrome.windows.get(wid).then(w =>
+            chrome.windows.update(wid, { top: Math.max(0, (w.top || baseTop) - shift) })
+        ).catch(() => {})
+    ));
+
+    // 새 창을 맨 아래에 열기
+    const win = await chrome.windows.create({
+        url: chrome.runtime.getURL(url),
+        type: 'popup',
+        width: POPUP_W,
+        height: POPUP_H,
+        top:  baseTop,
+        left: baseLeft
+    }).catch(() => null);
+
+    if (win) {
+        arr.push(win.id);
+        _registerPopupClose(win.id, arr);
+    }
+}
+
 // 사기글 감지 팝업 (우측 하단, 빨간 테마) — popup 토글 ON일 때
 async function showFraudPopup(data) {
-    await chrome.storage.local.set({ imi_alert_popup_data: data });
-    chrome.windows.create({
-        url: chrome.runtime.getURL('alert_popup.html'),
-        type: 'popup',
-        width: 460,
-        height: 300
-    });
+    await _stackPopup('alert_popup.html', 'imi_alert_popup_data', data, _fraudWinIds, true);
 }
 
 // 비거래 감지 팝업 (좌측 하단, 초록 테마)
-let _watchWinId = null;
 let _lastWatchAt = 0;
 
 async function showWatchPopup(data) {
@@ -669,14 +709,8 @@ async function showWatchPopup(data) {
     _lastWatchAt = now;
 
     if (watchPopupOn === true) {
-        // 팝업창 모드: watch_popup.html 크롬 창 열기
-        await chrome.storage.local.set({ imi_watch_popup_data: data });
-        chrome.windows.create({
-            url: chrome.runtime.getURL('watch_popup.html'),
-            type: 'popup',
-            width: 460,
-            height: 300
-        });
+        // 팝업창 모드: 좌측 하단 스택 쌓기
+        await _stackPopup('watch_popup.html', 'imi_watch_popup_data', data, _watchWinIds, false);
         return;
     }
 

@@ -96,6 +96,43 @@ hr.dc-hr { border:none; border-top:1px solid #334155; }
 
 /* ── Toast ── */
 .demo-toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:#334155; color:#cbd5e1; padding:7px 16px; border-radius:8px; font-size:11px; font-weight:700; z-index:9999; pointer-events:none; }
+
+/* ── 모니터링 모달 ── */
+#monitorModal { position:fixed; inset:0; z-index:9600; display:none; align-items:center; justify-content:center; }
+#monitorModal.open { display:flex; }
+.mon-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.5); }
+.mon-box { position:relative; background:#1e293b; border-radius:18px; border:2px solid #334155; width:min(96vw,560px); max-height:86vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.3); overflow:hidden; }
+.mon-hdr { padding:16px 20px 14px; border-bottom:2px solid #334155; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.mon-tabs { display:flex; border-bottom:2px solid #334155; flex-shrink:0; }
+.mon-tab { flex:1; padding:9px 0; font-size:11px; font-weight:900; background:none; border:none; cursor:pointer; color:#64748b; transition:0.15s; border-bottom:3px solid transparent; margin-bottom:-2px; }
+.mon-tab:hover { color:#cbd5e1; }
+.mon-tab.active { color:#3abff8; border-bottom-color:#3abff8; }
+.mon-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+.notif-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid #334155; }
+.notif-row:last-child { border-bottom:none; }
+.notif-label { font-size:12px; font-weight:900; }
+.notif-sub { font-size:10px; color:#64748b; margin-top:3px; }
+.ntoggle { width:40px; height:22px; border-radius:99px; background:#334155; display:flex; align-items:center; padding:3px; cursor:pointer; transition:background 0.2s; flex-shrink:0; }
+.ntoggle.on { background:#22c55e; justify-content:flex-end; }
+.ntoggle-dot { width:16px; height:16px; border-radius:50%; background:#fff; transition:all 0.2s; }
+
+/* ── 팝업 깜박임 ── */
+@keyframes _overlayBlink { 0%,100%{opacity:0} 50%{opacity:1} }
+#blinkOverlay.active { display:block; animation:_overlayBlink 0.75s ease-in-out infinite; }
+
+/* ── Windows 알림 시뮬레이션 ── */
+#winNotif { position:fixed; bottom:24px; right:24px; width:320px; background:#1e293b; border:1.5px solid #334155; border-radius:8px; padding:12px 14px; z-index:99999; display:none; box-shadow:0 8px 32px rgba(0,0,0,0.5); animation:slideInRight 0.3s ease; }
+#winNotif.show { display:flex; gap:10px; align-items:flex-start; }
+@keyframes slideInRight { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+.win-notif-icon { width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.win-notif-body { flex:1; min-width:0; }
+.win-notif-app { font-size:10px; font-weight:900; color:#94a3b8; margin-bottom:2px; }
+.win-notif-title { font-size:12px; font-weight:900; color:#e2e8f0; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.win-notif-msg { font-size:11px; color:#94a3b8; line-height:1.4; }
+.win-notif-close { font-size:14px; color:#64748b; cursor:pointer; flex-shrink:0; line-height:1; }
+.win-notif-close:hover { color:#cbd5e1; }
+.win-notif-bar { position:absolute; top:0; left:0; height:3px; border-radius:8px 8px 0 0; animation:notifProgress 4s linear forwards; }
+@keyframes notifProgress { from{width:100%} to{width:0%} }
 </style>
 </head>
 <body>
@@ -119,7 +156,7 @@ hr.dc-hr { border:none; border-top:1px solid #334155; }
           <span style="color:#22c55e;font-size:8px;line-height:1;">●</span>
           <span style="font-size:11px;color:#cbd5e1;font-weight:700;">백휘섭 👑</span>
         </div>
-        <button class="hdr-btn" onclick="showToast('모니터링 모달')">
+        <button class="hdr-btn" onclick="openMonitorModal()">
           <span id="hdrMonDot"></span>👁 모니터링
         </button>
         <button class="hdr-btn" onclick="showToast('파일매뉴얼')">📂 파일매뉴얼</button>
@@ -258,6 +295,144 @@ hr.dc-hr { border:none; border-top:1px solid #334155; }
     <button class="dc-btn" onclick="demo_both()">비거래 + 사기글 동시 깜빡임</button>
     <button class="dc-btn dim" onclick="demo_resetAll()">🔄 전체 초기화</button>
   </div>
+
+  <hr class="dc-hr">
+
+  <div class="dc-sec">
+    <div class="dc-lbl">🔔 Windows 알림 시연</div>
+    <button class="dc-btn" onclick="showWinNotif('watch','비거래 의심 글 감지','#2026050012345 — 테스트 아이템')">🟢 비거래 알림 시뮬레이션</button>
+    <button class="dc-btn" onclick="showWinNotif('fraud','사기글 의심 글 감지','#2026050099001 — 사기 아이템')">🔴 사기글 알림 시뮬레이션</button>
+    <div style="font-size:9px;opacity:0.4;padding:2px 0 0;">모니터링 → 알림설정 탭에서 토글 ON 시<br>자동으로 발생합니다</div>
+  </div>
+</div>
+
+<!-- ══ 모니터링 모달 ══ -->
+<div id="monitorModal">
+  <div class="mon-backdrop" onclick="closeMonitorModal()"></div>
+  <div class="mon-box">
+    <div class="mon-hdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="hdrMonDot2" style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px #22c55e;flex-shrink:0;"></span>
+        <span style="font-size:14px;font-weight:900;">👁 모니터링</span>
+      </div>
+      <button onclick="closeMonitorModal()" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div class="mon-tabs">
+      <button class="mon-tab active" onclick="switchMonTab(this,'tab-rules')" id="mtab-rules">📋 감지 규칙</button>
+      <button class="mon-tab" onclick="switchMonTab(this,'tab-watch')" id="mtab-watch">🟢 비거래</button>
+      <button class="mon-tab" onclick="switchMonTab(this,'tab-fraud')" id="mtab-fraud">🔴 사기글</button>
+      <button class="mon-tab" onclick="switchMonTab(this,'tab-log')" id="mtab-log">📋 로그</button>
+      <button class="mon-tab" onclick="switchMonTab(this,'tab-notif')" id="mtab-notif">🔔 알림설정</button>
+    </div>
+
+    <!-- 탭: 감지 규칙 -->
+    <div class="mon-body" id="tab-rules" style="padding:14px 18px;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:900;color:#94a3b8;">등록된 규칙 2개</span>
+        <button style="font-size:10px;padding:3px 10px;border-radius:6px;background:#0284c7;color:#fff;border:none;cursor:pointer;font-weight:900;">+ 추가</button>
+      </div>
+      <div style="border:1.5px solid #22c55e44;border-radius:8px;padding:10px 12px;background:rgba(34,197,94,0.05);">
+        <div style="font-size:12px;font-weight:900;color:#4ade80;">디아블로4 9검</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px;">키워드: <span style="color:#86efac;">9검</span> · AND: <span style="color:#7dd3fc;">67셋</span> · 제외: <span style="color:#f87171;">홍보</span></div>
+      </div>
+      <div style="border:1.5px solid #334155;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:12px;font-weight:900;color:#cbd5e1;">사기글 블랙리스트</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px;">거래번호: <span style="color:#38bdf8;">2026050099001</span></div>
+      </div>
+    </div>
+
+    <!-- 탭: 비거래 -->
+    <div class="mon-body" id="tab-watch" style="display:none;padding:14px 18px;align-items:center;justify-content:center;">
+      <div style="opacity:0.35;font-size:12px;">비거래 감지 목록이 없습니다.</div>
+    </div>
+
+    <!-- 탭: 사기글 -->
+    <div class="mon-body" id="tab-fraud" style="display:none;padding:14px 18px;align-items:center;justify-content:center;">
+      <div style="opacity:0.35;font-size:12px;">사기글 감지 목록이 없습니다.</div>
+    </div>
+
+    <!-- 탭: 로그 -->
+    <div class="mon-body" id="tab-log" style="display:none;padding:14px 18px;gap:4px;">
+      <div style="font-size:10px;color:#64748b;font-family:monospace;">[10:21:03] 봇 시작됨</div>
+      <div style="font-size:10px;color:#64748b;font-family:monospace;">[10:21:05] 규칙 로드: 2개</div>
+      <div style="font-size:10px;color:#4ade80;font-family:monospace;">[10:22:14] [비거래] #2026050012345 감지</div>
+      <div style="font-size:10px;color:#f87171;font-family:monospace;">[10:23:07] [사기글] #2026050099001 감지</div>
+    </div>
+
+    <!-- 탭: 알림설정 -->
+    <div class="mon-body" id="tab-notif" style="display:none;">
+      <div style="font-size:9px;color:#64748b;padding:10px 18px 4px;font-weight:700;">알림 설정 — 내 브라우저에만 적용</div>
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">빨간불 깜박임</div>
+          <div class="notif-sub">물품 감지 시 채팅창 테두리가 빨간색으로 깜박임</div>
+        </div>
+        <div class="ntoggle" id="ntog-blink" onclick="toggleNotif('blink')">
+          <div class="ntoggle-dot"></div>
+        </div>
+      </div>
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">사기글 팝업창</div>
+          <div class="notif-sub">켜면 우측 하단 팝업창 / 꺼면 우측 상단 드롭다운</div>
+        </div>
+        <div class="ntoggle" id="ntog-fraud" onclick="toggleNotif('fraud')">
+          <div class="ntoggle-dot"></div>
+        </div>
+      </div>
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">비거래 팝업창</div>
+          <div class="notif-sub">켜면 좌측 하단 팝업창 / 꺼면 좌측 상단 드롭다운</div>
+        </div>
+        <div class="ntoggle" id="ntog-watch" onclick="toggleNotif('watch')">
+          <div class="ntoggle-dot"></div>
+        </div>
+      </div>
+      <div class="notif-row">
+        <div>
+          <div class="notif-label">경고음</div>
+          <div class="notif-sub">감지 시 비프음 3회 울림 (기본 꺼짐)</div>
+        </div>
+        <div class="ntoggle" id="ntog-sound" onclick="toggleNotif('sound')">
+          <div class="ntoggle-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 팝업 깜박임 오버레이 ══ -->
+<div id="blinkOverlay" style="position:fixed;inset:0;pointer-events:none;z-index:99000;border:5px solid #ef4444;display:none;box-shadow:inset 0 0 60px rgba(239,68,68,0.35);"></div>
+
+<!-- ══ 비거래 하단 팝업창 ══ -->
+<div id="watchPopup" style="position:fixed;bottom:24px;left:24px;width:420px;background:#0a1f10;border:2px solid #22c55e;border-radius:14px;z-index:9500;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(34,197,94,0.25);">
+  <div style="padding:10px 14px;border-bottom:1px solid #22c55e33;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:12px;font-weight:900;color:#4ade80;">📌 비거래 감지 · 테스트 규칙</span>
+    <button onclick="closeWatchPopup()" style="background:none;border:none;color:#64748b;font-size:16px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="watchPopupBody" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+</div>
+
+<!-- ══ 사기글 하단 팝업창 ══ -->
+<div id="fraudPopup" style="position:fixed;bottom:24px;right:24px;width:420px;background:#1e293b;border:2px solid #ef4444;border-radius:14px;z-index:9500;display:none;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(239,68,68,0.25);">
+  <div style="padding:10px 14px;border-bottom:1px solid #ef444433;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:12px;font-weight:900;color:#ef4444;">🚨 사기글 감지</span>
+    <button onclick="closeFraudPopup()" style="background:none;border:none;color:#64748b;font-size:16px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="fraudPopupBody" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+</div>
+
+<!-- ══ Windows 알림 시뮬레이션 ══ -->
+<div id="winNotif">
+  <div class="win-notif-icon" id="winNotifIcon">⚠️</div>
+  <div class="win-notif-body">
+    <div class="win-notif-app">IMI PRO · Chrome</div>
+    <div class="win-notif-title" id="winNotifTitle">비거래 의심 글 감지</div>
+    <div class="win-notif-msg" id="winNotifMsg">#2026050012345 — 테스트 아이템</div>
+  </div>
+  <div class="win-notif-close" onclick="document.getElementById('winNotif').className=''">×</div>
+  <div class="win-notif-bar" id="winNotifBar" style="background:#22c55e;"></div>
 </div>
 
 <script>
@@ -285,6 +460,12 @@ var _watchMinimized=false;
 
 // ── 헤더 버튼 클릭 (패널 열기/닫기) ──
 function _watchPanelToggle(){
+    if(_notifState.watch){
+        // 팝업창 모드: 하단 팝업 접기/펼치기
+        var popup=document.getElementById('watchPopup');
+        popup.style.display = (popup.style.display==='none') ? 'flex' : 'none';
+        return;
+    }
     var p=document.getElementById('watchDropPanel');
     var tab=document.getElementById('watchHeaderTab');
     var open=p.style.maxHeight&&p.style.maxHeight!=='0px'&&p.style.maxHeight!=='4px';
@@ -297,8 +478,14 @@ function _watchPanelToggle(){
     }
 }
 function _fraudPanelToggle(){
-    var p=document.getElementById('fraudDropPanel');
-    if(p.style.maxHeight&&p.style.maxHeight!=='0px') demo_closeFraudPanel(); else demo_openFraudPanel();
+    if(_notifState.fraud){
+        // 팝업창 모드: 하단 팝업 접기/펼치기
+        var popup=document.getElementById('fraudPopup');
+        popup.style.display = (popup.style.display==='none') ? 'flex' : 'none';
+    } else {
+        var p=document.getElementById('fraudDropPanel');
+        if(p.style.maxHeight&&p.style.maxHeight!=='0px') demo_closeFraudPanel(); else demo_openFraudPanel();
+    }
 }
 
 // ════ 비거래 ════
@@ -411,11 +598,150 @@ function demo_hideFraud(){
     var tab=document.getElementById('fraudHeaderTab'); var panel=document.getElementById('fraudDropPanel');
     tab.style.display='none'; tab.innerHTML=''; tab.classList.remove('hdr-tab-blink');
     panel.style.maxHeight='0px'; panel.innerHTML=''; panel.classList.remove('fraud-panel-blink');
+    closeFraudPopup();
 }
 
 // ════ 시나리오 ════
 function demo_both(){ demo_showWatch(2); demo_minimizeWatch(); demo_showFraud(1); }
 function demo_resetAll(){ demo_hideWatch(); demo_hideFraud(); }
+
+// ════ 모니터링 모달 ════
+function openMonitorModal(){
+    document.getElementById('monitorModal').classList.add('open');
+}
+function closeMonitorModal(){
+    document.getElementById('monitorModal').classList.remove('open');
+}
+function switchMonTab(btn, tabId){
+    document.querySelectorAll('.mon-tab').forEach(function(t){ t.classList.remove('active'); });
+    btn.classList.add('active');
+    ['tab-rules','tab-watch','tab-fraud','tab-log','tab-notif'].forEach(function(id){
+        var el=document.getElementById(id);
+        if(el) el.style.display = (id===tabId) ? 'flex' : 'none';
+    });
+}
+
+// ════ 알림 토글 ════
+var _notifState = { blink: false, watch: false, fraud: false, sound: false };
+function toggleNotif(type){
+    _notifState[type] = !_notifState[type];
+    var tog = document.getElementById('ntog-'+type);
+    if(_notifState[type]) tog.classList.add('on');
+    else tog.classList.remove('on');
+    if(type === 'blink' && !_notifState.blink){
+        document.getElementById('blinkOverlay').classList.remove('active');
+    }
+}
+
+// ════ 빨간불 깜박임 오버레이 (채팅창 테두리) ════
+var _blinkTimer = null;
+
+function _triggerBlink(){
+    // 감지 시 채팅창 테두리(blinkOverlay) 3초 빨간 깜박임 — 팝업창 자체 깜박임과 무관
+    if(!_notifState.blink) return;
+    var el = document.getElementById('blinkOverlay');
+    el.classList.add('active');
+    if(_blinkTimer) clearTimeout(_blinkTimer);
+    _blinkTimer = setTimeout(function(){ el.classList.remove('active'); }, 3000);
+}
+
+// ════ 하단 팝업창 ════
+var _fraudPopupTimer = null;
+function closeWatchPopup(){ document.getElementById('watchPopup').style.display='none'; }
+function closeFraudPopup(){
+    if(_fraudPopupTimer){ clearTimeout(_fraudPopupTimer); _fraudPopupTimer=null; }
+    var p=document.getElementById('fraudPopup');
+    p.classList.remove('fraud-panel-blink');
+    p.style.display='none';
+}
+
+function _showWatchPopup(count){
+    var body = document.getElementById('watchPopupBody');
+    body.innerHTML = '';
+    ['2026050012345','2026050067890','2026050011111'].slice(0,count).forEach(function(tid,i){
+        var d = document.createElement('div');
+        d.style.cssText = 'background:#1e293b;border:1px solid #22c55e44;border-radius:8px;padding:8px 10px;';
+        d.innerHTML = '<div style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+tid+'</div>'
+            +'<div style="font-size:11px;color:#94a3b8;margin-top:2px;">테스트 아이템 '+(i+1)+'번 — 디아블로4 시즌14</div>'
+            +'<div style="display:flex;gap:6px;margin-top:6px;">'
+            +'<button onclick="this.closest(\'div[style]\').remove()" style="flex:1;padding:4px;border-radius:5px;border:1px solid #f87171;color:#f87171;background:none;font-size:10px;font-weight:900;cursor:pointer;">필터제외</button>'
+            +'<button onclick="this.closest(\'div[style]\').remove()" style="flex:1;padding:4px;border-radius:5px;border:none;background:#22c55e;color:#000;font-size:10px;font-weight:900;cursor:pointer;">처리완료</button>'
+            +'</div>';
+        body.appendChild(d);
+    });
+    document.getElementById('watchPopup').style.display='flex';
+}
+
+function _showFraudPopup(count){
+    var body = document.getElementById('fraudPopupBody');
+    body.innerHTML = '';
+    var rules=['사기꾼 블랙리스트','먹튀 계정 주의'];
+    rules.slice(0,count).forEach(function(r,i){
+        var d = document.createElement('div');
+        d.style.cssText = 'background:#0f172a;border:1px solid #ef444444;border-radius:8px;padding:8px 10px;';
+        d.innerHTML = '<div style="font-size:11px;font-weight:900;color:#ef4444;margin-bottom:4px;">🚨 '+r+'</div>'
+            +'<div style="font-size:16px;font-weight:900;color:#38bdf8;">#2026050099'+(i+1)+'01</div>'
+            +'<div style="font-size:11px;color:#94a3b8;margin-top:2px;">테스트 사기 아이템 '+(i+1)+'번</div>'
+            +'<button onclick="this.parentElement.remove()" style="width:100%;margin-top:6px;padding:4px;border-radius:5px;border:1px solid #f87171;color:#f87171;background:none;font-size:10px;font-weight:900;cursor:pointer;">필터제외</button>';
+        body.appendChild(d);
+    });
+    var popup=document.getElementById('fraudPopup');
+    popup.classList.add('fraud-panel-blink'); // 사기글: 열려있는 동안 계속 깜박임 (토글 무관)
+    popup.style.display='flex';
+    // 30초 후 자동 닫힘
+    if(_fraudPopupTimer) clearTimeout(_fraudPopupTimer);
+    _fraudPopupTimer = setTimeout(function(){ closeFraudPopup(); }, 30000);
+}
+
+// ════ Windows 알림 시뮬레이션 ════
+var _winNotifTimer = null;
+function showWinNotif(type, title, msg){
+    if(_winNotifTimer) clearTimeout(_winNotifTimer);
+    var el = document.getElementById('winNotif');
+    var bar = document.getElementById('winNotifBar');
+    document.getElementById('winNotifIcon').textContent = type==='fraud' ? '🚨' : '⚠️';
+    document.getElementById('winNotifTitle').textContent = title;
+    document.getElementById('winNotifMsg').textContent = msg;
+    bar.style.background = type==='fraud' ? '#ef4444' : '#22c55e';
+    bar.style.animation='none'; bar.offsetHeight; bar.style.animation='notifProgress 4s linear forwards';
+    el.style.animation='none'; el.offsetHeight; el.style.animation='slideInRight 0.3s ease';
+    el.className='show';
+    _winNotifTimer = setTimeout(function(){ el.className=''; }, 4200);
+}
+
+// ════ demo_showWatch / demo_showFraud 알림 연동 ════
+var _origShowWatch = demo_showWatch;
+demo_showWatch = function(count){
+    _triggerBlink();
+    if(_notifState.watch){
+        // 팝업창 ON → 하단 좌측 팝업 + 헤더 탭도 표시
+        demo_hideWatch();
+        _showWatchPopup(count);
+        var tab=document.getElementById('watchHeaderTab');
+        tab.style.display='flex';
+        tab.classList.remove('hdr-tab-blink');
+        tab.innerHTML='⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
+    } else {
+        // 팝업창 OFF → 상단 드롭다운 (기존 동작)
+        _origShowWatch(count);
+    }
+};
+var _origShowFraud = demo_showFraud;
+demo_showFraud = function(count){
+    _triggerBlink(); // 채팅창 테두리 빨간 깜박임 (설정 토글 따라)
+    if(_notifState.fraud){
+        // 팝업창 ON → 하단 우측 팝업 + 헤더 탭도 표시
+        demo_hideFraud();
+        _showFraudPopup(count);
+        var tab=document.getElementById('fraudHeaderTab');
+        tab.style.display='flex';
+        tab.classList.add('hdr-tab-blink');
+        tab.innerHTML='🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
+    } else {
+        // 팝업창 OFF → 상단 드롭다운 (기존 동작)
+        _origShowFraud(count);
+    }
+};
 </script>
 </body>
 </html>
