@@ -34,6 +34,12 @@ chrome.storage.local.get('imi_alert_popup_data', function(d) {
         window.close();
     });
 
+    // 팝업 클릭(아이템·닫기 제외) → IMI PRO 메인 창 포커스
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.item') || e.target.closest('#closeBtn')) return;
+        chrome.runtime.sendMessage({ type: 'FOCUS_MAIN_WINDOW' });
+    });
+
     // 프로그레스바 자동 닫힘
     var bar = document.getElementById('progBar');
     setTimeout(function() { bar.style.width = '0%'; }, 30);

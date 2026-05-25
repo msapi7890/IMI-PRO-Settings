@@ -644,6 +644,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         store.set('imi_notif_' + msg.key, msg.val);
         sendResponse({ ok: true });
     }
+    if (msg.type === 'FOCUS_MAIN_WINDOW') {
+        chrome.tabs.query({}, function(tabs) {
+            var t = tabs.find(function(t) {
+                return t.title && t.title.includes('IMI PRO') && t.url && !t.url.startsWith('chrome-extension://');
+            });
+            if (t) {
+                chrome.tabs.update(t.id, { active: true }, function() {
+                    chrome.windows.update(t.windowId, { focused: true });
+                });
+            }
+        });
+        sendResponse({ ok: true });
+    }
 });
 
 // ── 팝업 스택 관리 ──
