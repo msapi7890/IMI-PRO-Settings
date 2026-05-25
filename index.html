@@ -8619,7 +8619,7 @@
         if(_watchAlertMinimized) tab.classList.add('hdr-tab-blink');
         else tab.classList.remove('hdr-tab-blink');
         // 브라우저 탭 제목 + 작업표시줄 깜빡임
-        if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count);
+        if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
 
         // 패널 내용 초기화
         panel.innerHTML = '';
@@ -8653,7 +8653,7 @@
                 tab.innerHTML = '';
                 panel.style.maxHeight = '0px';
                 panel.innerHTML = '';
-                if(typeof _stopTabBlink === 'function') _stopTabBlink();
+                if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
             } else {
                 _updateTabBlink();
             }

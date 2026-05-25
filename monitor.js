@@ -646,7 +646,7 @@ function _showMonitorFlash(s) {
     if (_np.popup) {
         if (_np.flash) { document.getElementById('chatSection').classList.add('monitor-border-flash'); _triggerFullscreenFlash(); }
         if (_np.sound) _playAlertBeep();
-        _startTabBlink(s.ruleName, s.itemCount);
+        _startTabBlink(s.ruleName, s.itemCount, 'fraud');
         return;
     }
 
@@ -804,27 +804,39 @@ function _triggerFullscreenFlash() {
     }, 250);
 }
 
-function _startTabBlink(ruleName, itemCount) {
-    if (window._tabBlinkInterval) return;
-    var origTitle = document.title;
+function _startTabBlink(ruleName, itemCount, id) {
     var alertTitle = '🚨 [' + (itemCount||0) + '개 감지] ' + (ruleName||'모니터링 경고');
-    var toggle = false;
-    window._tabBlinkOrigTitle = origTitle;
+    var qid = id || 'default';
+    if (!window._tabBlinkQueue) window._tabBlinkQueue = [];
+    var q = window._tabBlinkQueue;
+    var idx = q.findIndex(function(e) { return e.id === qid; });
+    if (idx !== -1) { q[idx].title = alertTitle; }
+    else { q.push({ id: qid, title: alertTitle }); }
+    if (!window._tabBlinkOrigTitle) window._tabBlinkOrigTitle = document.title;
+    if (window._tabBlinkInterval) return;
+    window._tabBlinkTick = 0;
     window._tabBlinkInterval = setInterval(function() {
-        toggle = !toggle;
-        document.title = toggle ? alertTitle : origTitle;
+        var queue = window._tabBlinkQueue || [];
+        if (!queue.length) { _stopTabBlink(); return; }
+        var tick = window._tabBlinkTick++;
+        if (tick % 2 === 0) {
+            document.title = window._tabBlinkOrigTitle;
+        } else {
+            document.title = queue[Math.floor(tick / 2) % queue.length].title;
+        }
     }, 700);
 }
 
-function _stopTabBlink() {
-    if (window._tabBlinkInterval) {
-        clearInterval(window._tabBlinkInterval);
-        window._tabBlinkInterval = null;
+function _stopTabBlink(id) {
+    if (id !== undefined) {
+        window._tabBlinkQueue = (window._tabBlinkQueue || []).filter(function(e) { return e.id !== id; });
+        if (window._tabBlinkQueue.length > 0) return;
+    } else {
+        window._tabBlinkQueue = [];
     }
-    if (window._tabBlinkOrigTitle) {
-        document.title = window._tabBlinkOrigTitle;
-        window._tabBlinkOrigTitle = null;
-    }
+    if (window._tabBlinkInterval) { clearInterval(window._tabBlinkInterval); window._tabBlinkInterval = null; }
+    if (window._tabBlinkOrigTitle) { document.title = window._tabBlinkOrigTitle; window._tabBlinkOrigTitle = null; }
+    window._tabBlinkTick = 0;
 }
 
 function _hideMonitorFlashLocal() {
@@ -833,7 +845,7 @@ function _hideMonitorFlashLocal() {
     if (window._overlayFlashInterval) { clearInterval(window._overlayFlashInterval); window._overlayFlashInterval = null; }
     var overlay = document.getElementById('monFullscreenOverlay');
     if (overlay) overlay.style.background = 'rgba(239,68,68,0)';
-    _stopTabBlink();
+    _stopTabBlink('fraud');
     // 사기글 헤더 탭 & 드롭패널 숨기기
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
