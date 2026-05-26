@@ -709,14 +709,14 @@ async function _stackPopup(url, storageKey, data, arr, alignRight) {
 
 // 윈도우 OS 토스트 알림 (chrome.notifications)
 function showOsNotif(type, data) {
-    const isWatch = type === 'watch';
-    const id = 'imi_' + type + '_' + Date.now();
-    chrome.notifications.create(id, {
-        type: 'basic',
-        iconUrl: 'icon48.png',
-        title: isWatch ? 'IMI PRO — 비거래 물품 감지!' : 'IMI PRO — 물품 감지!',
-        message: (data.ruleName || '') + ' | ' + (data.itemCount || 0) + '개 물품 감지됨',
-        priority: 2
+    const id = 'imi_' + type;
+    chrome.notifications.clear(id, function() {
+        chrome.notifications.create(id, {
+            type: 'basic',
+            iconUrl: 'icon48.png',
+            title: 'IMI PRO — 물품 감지!',
+            message: (data.ruleName || '') + ' | ' + (data.itemCount || 0) + '개 물품 감지됨'
+        });
     });
 }
 
