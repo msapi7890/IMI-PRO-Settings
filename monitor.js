@@ -813,6 +813,10 @@ function _startTabBlink(ruleName, itemCount, id) {
     if (idx !== -1) { q[idx].title = alertTitle; }
     else { q.push({ id: qid, title: alertTitle }); }
     if (!window._tabBlinkOrigTitle) window._tabBlinkOrigTitle = document.title;
+    // id별 60초 자동 종료 타이머 (감지 후 미확인 시 자동 멈춤)
+    var autoKey = '_tabBlinkAuto_' + qid;
+    if (window[autoKey]) clearTimeout(window[autoKey]);
+    window[autoKey] = setTimeout(function() { _stopTabBlink(qid); window[autoKey] = null; }, 60000);
     if (window._tabBlinkInterval) return;
     window._tabBlinkTick = 0;
     window._tabBlinkInterval = setInterval(function() {
