@@ -10,7 +10,15 @@ window.addEventListener('message', function(e) {
         _botBridgeConnected = true;
         _updateBotToggleBtn();
         // 처음 연결 시 확장프로그램에 즉시 상태 동기화 요청
-        if (!wasConnected) _sendToBot({ type: 'SYNC_STATUS' });
+        if (!wasConnected) {
+            _sendToBot({ type: 'SYNC_STATUS' });
+            // 팝업 알림 설정 동기화 (localStorage → background.js)
+            try {
+                var prefs = Object.assign({popup:true,watchPopup:false}, JSON.parse(localStorage.getItem('imi_notif_prefs')||'{}'));
+                _sendToBot({ type: 'UPDATE_NOTIF_PREF', key: 'popup',      val: prefs.popup });
+                _sendToBot({ type: 'UPDATE_NOTIF_PREF', key: 'watchPopup', val: prefs.watchPopup });
+            } catch(e) {}
+        }
     }
 });
 
