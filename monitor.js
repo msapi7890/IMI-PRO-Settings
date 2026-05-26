@@ -202,8 +202,8 @@ function _renderBotStatus() {
 function openMonitorModal() {
     _renderBotStatus();
     document.getElementById('monitorModal').classList.remove('hidden');
-    // 브릿지 재확인 (모달 열 때 연결 상태 갱신)
     window.postMessage({ __imiBotPing: true }, '*');
+    _stopTabBlink('fraud');
 }
 function closeMonitorModal() { document.getElementById('monitorModal').classList.add('hidden'); }
 

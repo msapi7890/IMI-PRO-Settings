@@ -8589,6 +8589,7 @@
     function _fraudPanelToggle(){
         var panel = document.getElementById('fraudDropPanel');
         if(!panel) return;
+        if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
         if(panel.style.maxHeight && panel.style.maxHeight !== '0px'){
             panel.style.maxHeight = '0px';
         } else {
