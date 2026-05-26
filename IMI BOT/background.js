@@ -400,10 +400,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         fireSet(msg.path, msg.data).then(async () => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
-                    showWatchPopup(msg.data);
+                    // Firebase 경유 → 페이지의 _showWatchAlert 트리거 (페이지에서 설정에 따라 상단/하단 처리)
+                    const nowW = Date.now();
+                    const rowsW = (msg.data.itemRows || []);
+                    firePush('/imi_watch_alerts', {
+                        tids:     rowsW.map(r => r.tid || '').filter(Boolean),
+                        itemRows: rowsW.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
+                        label:    msg.data.label   || msg.data.ruleName    || '',
+                        keyword:  msg.data.keyword || msg.data.ruleKeyword || '',
+                        count:    msg.data.itemCount || msg.data.count || 0,
+                        at:       nowW,
+                        seen:     false
+                    }).catch(() => {});
                 } else {
-                    const fraudPopupOn = await store.get('imi_notif_popup');
-                    if (fraudPopupOn !== false) showFraudPopup(msg.data);
+                    // OS 토스트 알림 (사기글만)
                     showOsNotif('fraud', msg.data);
                 }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
@@ -660,53 +670,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 });
 
-// ── 팝업 스택 관리 ──
-// 새 팝업이 뜰 때 기존 팝업들을 위로 밀고 새 것은 아래에 배치
-const POPUP_W = 460, POPUP_H = 320, POPUP_GAP = 8, POPUP_MARGIN_BOTTOM = 70;
-
-let _fraudWinIds = [];
-let _watchWinIds = [];
-
-function _registerPopupClose(winId, arr) {
-    const handler = (id) => {
-        if (id !== winId) return;
-        const idx = arr.indexOf(winId);
-        if (idx !== -1) arr.splice(idx, 1);
-        chrome.windows.onRemoved.removeListener(handler);
-    };
-    chrome.windows.onRemoved.addListener(handler);
-}
-
-async function _stackPopup(url, storageKey, data, arr, alignRight) {
-    await chrome.storage.local.set({ [storageKey]: data });
-    const sw = screen.width, sh = screen.height;
-    const baseTop  = sh - POPUP_H - POPUP_MARGIN_BOTTOM;
-    const baseLeft = alignRight ? (sw - POPUP_W - 20) : 20;
-
-    // 기존 창들 위로 밀기
-    const shift = POPUP_H + POPUP_GAP;
-    await Promise.all(arr.map(wid =>
-        chrome.windows.get(wid).then(w =>
-            chrome.windows.update(wid, { top: Math.max(0, (w.top || baseTop) - shift) })
-        ).catch(() => {})
-    ));
-
-    // 새 창을 맨 아래에 열기
-    const win = await chrome.windows.create({
-        url: chrome.runtime.getURL(url),
-        type: 'popup',
-        width: POPUP_W,
-        height: POPUP_H,
-        top:  baseTop,
-        left: baseLeft
-    }).catch(() => null);
-
-    if (win) {
-        arr.push(win.id);
-        _registerPopupClose(win.id, arr);
-    }
-}
-
 // 윈도우 OS 토스트 알림 (chrome.notifications)
 function showOsNotif(type, data) {
     const id = 'imi_' + type;
@@ -734,42 +697,6 @@ chrome.notifications.onClicked.addListener(function(notifId) {
     chrome.notifications.clear(notifId);
 });
 
-// 사기글 감지 팝업 (우측 하단, 빨간 테마) — popup 토글 ON일 때
-async function showFraudPopup(data) {
-    await _stackPopup('alert_popup.html', 'imi_alert_popup_data', data, _fraudWinIds, true);
-}
-
-// 비거래 감지 팝업 (좌측 하단, 초록 테마)
-let _lastWatchAt = 0;
-
-async function showWatchPopup(data) {
-    const watchPopupOn = await store.get('imi_notif_watchPopup');
-
-    const now = Date.now();
-    if (now - _lastWatchAt < 5000) return;
-    _lastWatchAt = now;
-
-    if (watchPopupOn === true) {
-        // 팝업창 모드: 좌측 하단 스택 쌓기
-        await _stackPopup('watch_popup.html', 'imi_watch_popup_data', data, _watchWinIds, false);
-        return;
-    }
-
-    // 드롭다운 모드: Firebase 경유 → 상단 watchDropPanel
-    try {
-        const itemRows = (data.itemRows || []);
-        const tids = itemRows.map(r => r.tid || '').filter(Boolean);
-        await firePush('/imi_watch_alerts', {
-            tids:     tids,
-            itemRows: itemRows.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
-            label:    data.label   || data.ruleName || '',
-            keyword:  data.keyword || data.ruleKeyword || '',
-            count:    data.itemCount || data.count || 0,
-            at:       now,
-            seen:     false
-        });
-    } catch(e) {}
-}
 
 // 거래번호 감시 체크 간격 동기화 (imi_rule_sync 때마다 실행)
 // tid_watch_interval 단위: 초 (60~3600). Chrome alarm은 분 단위이므로 변환.

@@ -8563,6 +8563,12 @@
     })();
 
     function _watchPanelToggle(){
+        // watchPopup 모드면 하단 토스트 컨테이너 토글
+        if(_notifPrefs && _notifPrefs.watchPopup) {
+            var toasts = document.getElementById('_imi_watch_toasts');
+            if(toasts) toasts.style.display = (toasts.style.display === 'none') ? '' : 'none';
+            return;
+        }
         var panel = document.getElementById('watchDropPanel');
         var tab   = document.getElementById('watchHeaderTab');
         if(!panel) return;
@@ -8587,6 +8593,12 @@
     }
 
     function _fraudPanelToggle(){
+        // popup 모드면 하단 토스트 컨테이너 토글
+        if(_notifPrefs && _notifPrefs.popup) {
+            var toasts = document.getElementById('_imi_fraud_toasts');
+            if(toasts) toasts.style.display = (toasts.style.display === 'none') ? '' : 'none';
+            return;
+        }
         var panel = document.getElementById('fraudDropPanel');
         if(!panel) return;
         if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
@@ -8598,8 +8610,19 @@
     }
 
     function _showWatchAlert(data, alertKey){
-        // watchPopup ON → 크롬 팝업창 모드이므로 드롭패널 스킵
-        if(_notifPrefs && _notifPrefs.watchPopup) return;
+        // watchPopup ON → 하단 팝업만 표시
+        if(_notifPrefs && _notifPrefs.watchPopup){
+            if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',itemCount:data.count||0,itemRows:data.itemRows||[]});
+            if(typeof _startTabBlink==='function') _startTabBlink('비거래',data.count||0,'watch');
+            // 상단바 탭 배지 표시
+            var wTab = document.getElementById('watchHeaderTab');
+            if(wTab) {
+                wTab.style.display = 'flex'; _updateWatchFraudRow();
+                wTab._popupCount = data.count || 0;
+                wTab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+wTab._popupCount+'</span>';
+            }
+            return;
+        }
         var panel = document.getElementById('watchDropPanel');
         var tab   = document.getElementById('watchHeaderTab');
         if(!panel || !tab) return;

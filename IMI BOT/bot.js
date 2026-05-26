@@ -22,6 +22,32 @@
     function _clearLoggedKeys() { sessionStorage.removeItem('_imi_logged_keys'); }
     function _itemKey(it) { return it.tid ? ('tid_' + it.tid) : (it.t.substring(0, 20) + '_' + it.p); }
 
+    // 키워드 간 사기글 TID 중복 감지 방지 (chrome.storage.local 공유, 30분 TTL)
+    const _FRAUD_SEEN_KEY = '_imi_fraud_seen_tids';
+    const _FRAUD_SEEN_TTL = 30 * 60 * 1000;
+    function _getFraudSeenTids() {
+        return new Promise(resolve => {
+            chrome.storage.local.get(_FRAUD_SEEN_KEY, res => {
+                const raw = (res && res[_FRAUD_SEEN_KEY]) || {};
+                const now = Date.now();
+                const fresh = {};
+                for (const [tid, at] of Object.entries(raw)) {
+                    if (now - at < _FRAUD_SEEN_TTL) fresh[tid] = at;
+                }
+                resolve(fresh);
+            });
+        });
+    }
+    function _markFraudSeenTids(tids) {
+        if (!tids.length) return;
+        chrome.storage.local.get(_FRAUD_SEEN_KEY, res => {
+            const data = (res && res[_FRAUD_SEEN_KEY]) || {};
+            const now = Date.now();
+            tids.forEach(tid => { data[tid] = now; });
+            chrome.storage.local.set({ [_FRAUD_SEEN_KEY]: data });
+        });
+    }
+
     // --- 메시지 핸들러 ---
     chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (msg.type === 'UPDATE_GLOBAL_TODAY_ONLY') {
@@ -401,6 +427,54 @@
     }
 
     // --- 메인 스캔 루프 ---
+    const _P1_ITEMS_KEY = '_imi_page1_items';
+
+    async function _fireAlert(combined, intervalMs) {
+        // 사기글: 키워드 간 TID 중복 제거 (이미 다른 키워드에서 알린 TID는 스킵)
+        if (rule.type !== 'watch') {
+            const seenTids = await _getFraudSeenTids();
+            const deduped = combined.filter(it => !it.tid || !seenTids[it.tid]);
+            if (deduped.length === 0) {
+                setStatus('⏭️ 타 키워드 기감지 — 재검색 대기...', '#64748b');
+                document.getElementById('_imi_items').innerHTML = '';
+                setTimeout(() => {
+                    if (!isRunning) return;
+                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
+                    setStatus('1분 대기 후 재검색...', '#94a3b8');
+                    submitSearch();
+                }, 60000);
+                return;
+            }
+            // 새로 감지된 TID를 공유 저장소에 기록
+            _markFraudSeenTids(deduped.filter(it => it.tid).map(it => it.tid));
+            combined = deduped;
+        }
+
+        const prevKeys = _getLoggedKeys();
+        const newItems = combined.filter(it => !prevKeys.has(_itemKey(it)));
+        _saveLoggedKeys(new Set(combined.map(_itemKey)));
+        setStatus(`🚨 ${combined.length}개 감지! 알림 전송`, '#ef4444');
+        document.getElementById('_imi_box').style.borderColor = '#ef4444';
+        renderAlertItems(combined);
+        sendAlert(combined, newItems.length > 0 ? newItems : null);
+        if (rule.type === 'watch') {
+            _clearLoggedKeys();
+            document.getElementById('_imi_items').innerHTML = '';
+            const t = new Date().toLocaleTimeString('ko-KR');
+            setStatus(`감지 완료 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#22c55e');
+            document.getElementById('_imi_box').style.borderColor = '#3abff8';
+            setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+        } else {
+            setTimeout(() => {
+                if (!isRunning) return;
+                document.getElementById('_imi_box').style.borderColor = '#3abff8';
+                document.getElementById('_imi_items').innerHTML = '';
+                setStatus('1분 대기 후 재검색...', '#94a3b8');
+                submitSearch();
+            }, 60000);
+        }
+    }
+
     async function doCheck() {
         if (!isRunning || !rule) return;
 
@@ -412,47 +486,60 @@
             setTimeout(() => { if (isRunning) submitSearch(); }, 60000);
             return;
         }
+
         const onPage2 = sessionStorage.getItem('_imi_page2_scan') === '1';
         setStatus('🔍 스캔 중...' + (onPage2 ? ' (2p)' : ' (1p)'), '#3abff8');
 
         const items = scanPage();
         const intervalMs = (rule.scanInterval || 5) * 1000;
 
-        if (items.length > 0) {
-            // 이전에 이미 기록된 키와 비교해 신규 항목만 추출
-            const prevKeys = _getLoggedKeys();
-            const newItems = items.filter(it => !prevKeys.has(_itemKey(it)));
-            // 현재 감지된 키 전체를 저장 (페이지 리로드 후에도 유지)
-            _saveLoggedKeys(new Set(items.map(_itemKey)));
-
-            setStatus(`🚨 ${items.length}개 감지! 알림 전송`, '#ef4444');
-            document.getElementById('_imi_box').style.borderColor = '#ef4444';
-            renderAlertItems(items);
-            // newItems가 없으면 null → background.js가 history 기록 스킵
-            sendAlert(items, newItems.length > 0 ? newItems : null);
+        if (onPage2) {
+            // 2페이지 스캔 완료 — 저장된 1페이지 결과와 합산
+            let p1Items = [];
+            try {
+                const raw = sessionStorage.getItem(_P1_ITEMS_KEY);
+                if (raw) p1Items = JSON.parse(raw);
+            } catch(e) {}
+            sessionStorage.removeItem(_P1_ITEMS_KEY);
             sessionStorage.removeItem('_imi_page2_scan');
-            if (rule.type === 'watch') {
-                // 비거래: 한 번 감지 후 키 초기화 → 전체 인터벌 대기 (30초 재감지 없음)
-                _clearLoggedKeys();
-                document.getElementById('_imi_items').innerHTML = '';
-                const t = new Date().toLocaleTimeString('ko-KR');
-                setStatus(`감지 완료 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#22c55e');
-                document.getElementById('_imi_box').style.borderColor = '#3abff8';
-                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+
+            // 1페이지와 중복되는 항목 제거
+            const p1Keys = new Set(p1Items.map(_itemKey));
+            const combined = [...p1Items, ...items.filter(it => !p1Keys.has(_itemKey(it)))];
+
+            if (combined.length > 0) {
+                _fireAlert(combined, intervalMs);
             } else {
+                _clearLoggedKeys();
+                const t = new Date().toLocaleTimeString('ko-KR');
+                setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
+                document.getElementById('_imi_items').innerHTML = '';
+                setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+            }
+            return;
+        }
+
+        // 1페이지 스캔
+        if (items.length > 0) {
+            if (findPage2Link()) {
+                // 2페이지가 있으면 1페이지 결과를 저장하고 2페이지도 스캔 (_el 제외 직렬화)
+                sessionStorage.setItem(_P1_ITEMS_KEY, JSON.stringify(
+                    items.map(it => ({ t: it.t, p: it.p, u: it.u, key: it.key, tid: it.tid, listTime: it.listTime || '' }))
+                ));
+                sessionStorage.setItem('_imi_page2_scan', '1');
+                setStatus(`1p ${items.length}개 — 2p 추가 스캔 중...`, '#f59e0b');
                 setTimeout(() => {
                     if (!isRunning) return;
-                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
-                    document.getElementById('_imi_items').innerHTML = '';
-                    setStatus('1분 대기 후 재검색...', '#94a3b8');
-                    submitSearch();
-                }, 60000);
+                    goToPage2();
+                    setTimeout(() => { if (!isRunning) return; doCheck(); }, 1500);
+                }, 400);
+            } else {
+                // 2페이지 없음 → 바로 알림
+                _fireAlert(items, intervalMs);
             }
-        } else if (!onPage2) {
-            // 1페이지 완료 → 2페이지 링크 있을 때만 이동
+        } else {
+            // 1페이지 결과 없음
             if (!findPage2Link()) {
-                // 2페이지 없음(1페이지짜리 검색결과) → 감지 없음이므로 키 리셋
-                sessionStorage.removeItem('_imi_page2_scan');
                 _clearLoggedKeys();
                 const t = new Date().toLocaleTimeString('ko-KR');
                 setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
@@ -465,18 +552,8 @@
             setTimeout(() => {
                 if (!isRunning) return;
                 goToPage2();
-                // AJAX 방식 페이지 전환 대비: 리로드 없으면 doCheck가 자동 호출 안 됨
-                // 리로드 방식이면 구 컨텍스트가 소멸되므로 이 타이머는 무시됨
                 setTimeout(() => { if (!isRunning) return; doCheck(); }, 1500);
             }, 400);
-        } else {
-            // 2페이지도 없음 → 감지 없음이므로 키 리셋
-            sessionStorage.removeItem('_imi_page2_scan');
-            _clearLoggedKeys();
-            const t = new Date().toLocaleTimeString('ko-KR');
-            setStatus(`없음 — ${rule.scanInterval || 5}초 후 재검색 (${t})`, '#94a3b8');
-            document.getElementById('_imi_items').innerHTML = '';
-            setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
         }
     }
 

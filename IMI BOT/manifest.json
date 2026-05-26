@@ -3,7 +3,7 @@
   "name": "IMI 물리 검색봇",
   "version": "2.0",
   "description": "아이템매니아 다중 카테고리 자동 모니터링",
-  "permissions": ["storage", "tabs", "alarms", "scripting", "declarativeNetRequest", "system.display", "notifications"],
+  "permissions": ["storage", "tabs", "alarms", "scripting", "declarativeNetRequest", "notifications"],
   "host_permissions": [
     "*://*.itemmania.com/*",
     "https://manual-9a47c-default-rtdb.firebaseio.com/*",
