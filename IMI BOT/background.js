@@ -652,7 +652,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             });
             if (t) {
                 chrome.tabs.update(t.id, { active: true }, function() {
-                    chrome.windows.update(t.windowId, { focused: true });
+                    chrome.windows.update(t.windowId, { focused: true, state: 'normal' });
                 });
             }
         });
@@ -727,7 +727,7 @@ chrome.notifications.onClicked.addListener(function(notifId) {
         });
         if (t) {
             chrome.tabs.update(t.id, { active: true }, function() {
-                chrome.windows.update(t.windowId, { focused: true });
+                chrome.windows.update(t.windowId, { focused: true, state: 'normal' });
             });
         }
     });
