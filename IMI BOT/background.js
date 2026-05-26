@@ -403,7 +403,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     showWatchPopup(msg.data);
                 } else {
                     const fraudPopupOn = await store.get('imi_notif_popup');
-                    if (fraudPopupOn === true) showFraudPopup(msg.data);
+                    if (fraudPopupOn !== false) showFraudPopup(msg.data);
                     showOsNotif('fraud', msg.data);
                 }
                 // logItemRows가 null이면 재감지 → history 기록 스킵 (중복 로그 방지)
