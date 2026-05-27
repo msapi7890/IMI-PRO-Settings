@@ -217,6 +217,8 @@ async function syncStatus() {
         maxPrice: r.maxPrice || 0,
         scanInterval: r.scanInterval || 5,
         excludeKeyword: r.excludeKeyword || '',
+        photoMinPrice: r.photoMinPrice || 0,
+        noPhotoMinPrice: r.noPhotoMinPrice || 0,
         photoOnly: !!r.photoOnly,
         noPhotoOnly: !!r.noPhotoOnly,
         type: r.type || 'fraud',

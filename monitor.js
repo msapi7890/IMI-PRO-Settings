@@ -193,6 +193,8 @@ function _renderBotStatus() {
             + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
@@ -1725,6 +1727,8 @@ function _renderBotRuleList() {
             + (r.maxPrice       ? '<span class="mon-tag">💰 ' + Number(r.maxPrice).toLocaleString() + '원↓</span>' : '')
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
+            + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
@@ -1763,9 +1767,8 @@ function startEditBotRule(id) {
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
     document.getElementById('brExclude').value  = r.excludeKeyword || '';
-    var pf = r.noPhotoOnly ? 'nophoto' : r.photoOnly ? 'photo' : 'all';
-    var pfEl = document.querySelector('input[name="brPhotoFilter"][value="'+pf+'"]');
-    if (pfEl) pfEl.checked = true;
+    document.getElementById('brPhotoMinPrice').value   = r.photoMinPrice   || '';
+    document.getElementById('brNoPhotoMinPrice').value = r.noPhotoMinPrice || '';
     var brTypeEl = document.querySelector('input[name="brType"][value="'+(r.type||'fraud')+'"]');
     if (brTypeEl) brTypeEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✏️ 수정 완료';
@@ -1777,12 +1780,10 @@ function startEditBotRule(id) {
 
 function _cancelBotRuleEdit() {
     _botRuleEditingId = null;
-    ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
+    ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude','brPhotoMinPrice','brNoPhotoMinPrice'].forEach(function(id) {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
-    var allEl = document.querySelector('input[name="brPhotoFilter"][value="all"]');
-    if (allEl) allEl.checked = true;
     var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✅ 규칙 등록';
     document.getElementById('brAddBtn').style.background = '';
@@ -1799,12 +1800,10 @@ function addBotRule() {
     var minPrice       = parseInt(document.getElementById('brMin').value)      || 0;
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
-    var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
-    var photoFilterEl  = document.querySelector('input[name="brPhotoFilter"]:checked');
-    var photoFilterVal = photoFilterEl ? photoFilterEl.value : 'all';
-    var photoOnly      = photoFilterVal === 'photo';
-    var noPhotoOnly    = photoFilterVal === 'nophoto';
-    var typeEl         = document.querySelector('input[name="brType"]:checked');
+    var excludeKeyword  = (document.getElementById('brExclude').value || '').trim();
+    var photoMinPrice   = parseInt(document.getElementById('brPhotoMinPrice').value)   || 0;
+    var noPhotoMinPrice = parseInt(document.getElementById('brNoPhotoMinPrice').value) || 0;
+    var typeEl          = document.querySelector('input[name="brType"]:checked');
     var ruleType       = typeEl ? typeEl.value : 'fraud';
 
     if (!name) { alert('규칙 이름을 입력하세요.'); return; }
@@ -1814,7 +1813,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoMinPrice: photoMinPrice, noPhotoMinPrice: noPhotoMinPrice, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1825,15 +1824,13 @@ function addBotRule() {
             name: name, url: url, keyword: keyword, subKeyword: subKeyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
-            photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType, enabled: true, createdAt: Date.now()
+            photoMinPrice: photoMinPrice, noPhotoMinPrice: noPhotoMinPrice, type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
         ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
             document.getElementById(id).value = '';
         });
         document.getElementById('brInterval').value = '300';
-        var allEl2 = document.querySelector('input[name="brPhotoFilter"][value="all"]');
-        if (allEl2) allEl2.checked = true;
         var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
         alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
     }

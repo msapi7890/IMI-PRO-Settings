@@ -218,8 +218,11 @@
         const kws    = (rule.keyword || '').split(',').map(k => k.trim()).filter(Boolean);
         const subKws = (rule.subKeyword || '').split(',').map(k => k.trim()).filter(Boolean);
         const exKws  = (rule.excludeKeyword || '').split(',').map(k => k.trim()).filter(Boolean);
-        const minPrice = rule.minPrice || 0;
-        const maxPrice = rule.maxPrice || 0;
+        const minPrice      = rule.minPrice      || 0;
+        const maxPrice      = rule.maxPrice      || 0;
+        const photoMinPrice = rule.photoMinPrice || 0;
+        const noPhotoMinPrice = rule.noPhotoMinPrice || 0;
+        const usePerTypePrice = photoMinPrice > 0 || noPhotoMinPrice > 0;
 
         const seen  = new Set();
         const items = [];
@@ -253,14 +256,24 @@
             if (exKws.length && exKws.some(k => normText.includes(_norm(k)))) return;
 
             const price = extractMaxPrice(text);
-            if (minPrice > 0 && price < minPrice) return;
-            if (maxPrice > 0 && price > maxPrice) return;
+            const hasPhoto = !!el.querySelector('.hasScreenshot');
 
-            if (rule.photoOnly) {
-                if (!el.querySelector('.hasScreenshot')) return;
-            }
-            if (rule.noPhotoOnly) {
-                if (el.querySelector('.hasScreenshot')) return;
+            if (usePerTypePrice) {
+                // 사진/글전용 가격 분리 모드
+                if (hasPhoto) {
+                    if (photoMinPrice <= 0) return;
+                    if (price < photoMinPrice) return;
+                } else {
+                    if (noPhotoMinPrice <= 0) return;
+                    if (price < noPhotoMinPrice) return;
+                }
+                if (maxPrice > 0 && price > maxPrice) return;
+            } else {
+                // 기존 모드
+                if (minPrice > 0 && price < minPrice) return;
+                if (maxPrice > 0 && price > maxPrice) return;
+                if (rule.photoOnly && !hasPhoto) return;
+                if (rule.noPhotoOnly && hasPhoto) return;
             }
 
             const candidates = el.tagName === 'A'
