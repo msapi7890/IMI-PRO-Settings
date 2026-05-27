@@ -194,7 +194,7 @@ function _renderBotStatus() {
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
-            + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.noPhotoMinPrice ? '<span class="mon-tag">📝 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
             + '</div>'
             + '</div>';
     }).join('');
@@ -1726,7 +1726,7 @@ function _renderBotRuleList() {
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
-            + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
+            + (r.noPhotoMinPrice ? '<span class="mon-tag">📝 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
             + '</div>'
             + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
             + '</div>';
