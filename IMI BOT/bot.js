@@ -428,7 +428,6 @@
         if (fh && fh.enabled && fh.from && fh.to) return _inTimeRange(fh.from, fh.to);
         const gh = await new Promise(r => chrome.storage.local.get('imi_global_hours', d => r(d.imi_global_hours || null)));
         if (gh && gh.enabled && gh.from && gh.to) return _inTimeRange(gh.from, gh.to);
-        if (rule && rule.activeFrom && rule.activeTo) return _inTimeRange(rule.activeFrom, rule.activeTo);
         return true;
     }
 
