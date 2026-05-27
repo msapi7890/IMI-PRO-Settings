@@ -872,9 +872,9 @@
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;">
                     <span style="font-size:11px;font-weight:700;white-space:nowrap;">⏰ 작동시간</span>
-                    <input type="time" id="brActiveFrom" style="flex:1;background:transparent;border:none;color:var(--text-main);font-size:11px;font-weight:700;outline:none;cursor:pointer;">
+                    <input type="text" id="brActiveFrom" placeholder="09:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="flex:1;background:transparent;border:none;color:var(--text-main);font-size:11px;font-weight:700;outline:none;text-align:center;">
                     <span style="font-size:11px;opacity:0.45;">~</span>
-                    <input type="time" id="brActiveTo" style="flex:1;background:transparent;border:none;color:var(--text-main);font-size:11px;font-weight:700;outline:none;cursor:pointer;">
+                    <input type="text" id="brActiveTo" placeholder="22:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="flex:1;background:transparent;border:none;color:var(--text-main);font-size:11px;font-weight:700;outline:none;text-align:center;">
                     <button onclick="document.getElementById('brActiveFrom').value='';document.getElementById('brActiveTo').value='';" style="font-size:10px;opacity:0.45;background:none;border:none;cursor:pointer;padding:0 2px;color:var(--text-main);">✕</button>
                 </div>
                 <div style="width:100%;display:flex;gap:6px;">
