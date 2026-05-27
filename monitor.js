@@ -195,8 +195,6 @@ function _renderBotStatus() {
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
             + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
-            + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
-            + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
             + '</div>';
     }).join('');
@@ -1729,8 +1727,6 @@ function _renderBotRuleList() {
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoMinPrice   ? '<span class="mon-tag">📸 ' + Number(r.photoMinPrice).toLocaleString() + '원↑</span>' : '')
             + (r.noPhotoMinPrice ? '<span class="mon-tag">📷 ' + Number(r.noPhotoMinPrice).toLocaleString() + '원↑</span>' : '')
-            + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
-            + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
             + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
             + '</div>';
@@ -1813,7 +1809,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoMinPrice: photoMinPrice, noPhotoMinPrice: noPhotoMinPrice, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoMinPrice: photoMinPrice, noPhotoMinPrice: noPhotoMinPrice, photoOnly: false, noPhotoOnly: false, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
