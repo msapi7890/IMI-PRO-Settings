@@ -195,6 +195,7 @@ function _renderBotStatus() {
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
+            + (r.activeFrom && r.activeTo ? '<span class="mon-tag">⏰ ' + r.activeFrom + '~' + r.activeTo + '</span>' : '')
             + '</div>'
             + '</div>';
     }).join('');
@@ -1727,6 +1728,7 @@ function _renderBotRuleList() {
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
             + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
+            + (r.activeFrom && r.activeTo ? '<span class="mon-tag">⏰ ' + r.activeFrom + '~' + r.activeTo + '</span>' : '')
             + '</div>'
             + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
             + '</div>';
@@ -1763,6 +1765,8 @@ function startEditBotRule(id) {
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
     document.getElementById('brExclude').value  = r.excludeKeyword || '';
+    document.getElementById('brActiveFrom').value = r.activeFrom || '';
+    document.getElementById('brActiveTo').value   = r.activeTo   || '';
     var pf = r.noPhotoOnly ? 'nophoto' : r.photoOnly ? 'photo' : 'all';
     var pfEl = document.querySelector('input[name="brPhotoFilter"][value="'+pf+'"]');
     if (pfEl) pfEl.checked = true;
@@ -1777,7 +1781,7 @@ function startEditBotRule(id) {
 
 function _cancelBotRuleEdit() {
     _botRuleEditingId = null;
-    ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
+    ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude','brActiveFrom','brActiveTo'].forEach(function(id) {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
@@ -1800,6 +1804,8 @@ function addBotRule() {
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
     var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
+    var activeFrom     = (document.getElementById('brActiveFrom').value || '').trim();
+    var activeTo       = (document.getElementById('brActiveTo').value   || '').trim();
     var photoFilterEl  = document.querySelector('input[name="brPhotoFilter"]:checked');
     var photoFilterVal = photoFilterEl ? photoFilterEl.value : 'all';
     var photoOnly      = photoFilterVal === 'photo';
@@ -1814,7 +1820,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, activeFrom: activeFrom, activeTo: activeTo, photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1825,7 +1831,7 @@ function addBotRule() {
             name: name, url: url, keyword: keyword, subKeyword: subKeyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
-            photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType, enabled: true, createdAt: Date.now()
+            activeFrom: activeFrom, activeTo: activeTo, photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
         ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
