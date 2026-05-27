@@ -842,6 +842,26 @@
         </div>
         <!-- 탭2: 사기글 규칙 관리 -->
         <div id="monTabContent2" class="mon-body" style="display:none;">
+            <!-- 사기글 활성 시간 설정 -->
+            <div style="padding:12px 14px;background:var(--bg-body);border-radius:10px;border:1.5px solid var(--border-ui);margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <div style="flex:1;">
+                        <div style="font-size:13px;font-weight:900;">⏰ 사기글 활성 시간</div>
+                        <div style="font-size:11px;opacity:0.5;margin-top:2px;">비활성 시간엔 사기글 봇이 자동 대기합니다</div>
+                    </div>
+                    <button id="tog-fraud-hours" onclick="toggleFraudHours()" style="width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;flex-shrink:0;background:#475569;transition:background 0.2s;">
+                        <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
+                    </button>
+                </div>
+                <div id="fraudHoursRange" style="opacity:0.4;pointer-events:none;">
+                    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:8px;">
+                        <input id="fraudHoursFrom" type="text" placeholder="09:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);outline:none;text-align:center;width:100%;">
+                        <span style="font-size:12px;opacity:0.6;text-align:center;">~</span>
+                        <input id="fraudHoursTo" type="text" placeholder="00:00:00" maxlength="8" oninput="_fmtTimeInput(this)" style="background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text-main);outline:none;text-align:center;width:100%;">
+                    </div>
+                    <button onclick="saveFraudHours()" style="width:100%;padding:7px;border-radius:7px;background:#ef4444;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;">저장</button>
+                </div>
+            </div>
             <div id="botRuleFormWrap" style="display:none;background:var(--bg-body);border:2px dashed #ef444455;border-radius:10px;padding:12px;margin-bottom:10px;">
                 <div id="brFormTitle" style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:9px;">➕ 새 사기글 규칙 추가</div>
                 <input id="brName" placeholder="규칙 이름 (예: 린클 내용 감시)" style="width:100%;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;margin-bottom:6px;">
@@ -3960,6 +3980,7 @@
         if(n===3) _applyNotifPrefs();
         if(n===2) {
             _renderBotRuleList();
+            _loadFraudHours();
             var fw = document.getElementById('botRuleFormWrap');
             if(fw) fw.style.display = _isBotPrivileged() ? '' : 'none';
         }
@@ -4015,6 +4036,46 @@
             db.ref('/imi_watch_hours').set(wh, function(){
                 _loadWatchHours();
                 var btn = document.querySelector('[onclick="saveWatchHours()"]');
+                if(btn){ var orig=btn.textContent; btn.textContent='✓'; setTimeout(function(){ btn.textContent=orig; }, 1200); }
+            });
+        });
+    }
+    function _loadFraudHours(){
+        db.ref('/imi_fraud_hours').once('value', function(snap){
+            var fh = snap.val() || { enabled:false, from:'09:00:00', to:'00:00:00' };
+            var tog = document.getElementById('tog-fraud-hours');
+            var range = document.getElementById('fraudHoursRange');
+            var fromEl = document.getElementById('fraudHoursFrom');
+            var toEl   = document.getElementById('fraudHoursTo');
+            if(fromEl) fromEl.value = fh.from || '09:00:00';
+            if(toEl)   toEl.value   = fh.to   || '00:00:00';
+            if(tog){
+                tog.style.background = fh.enabled ? '#ef4444' : '#475569';
+                var dot = tog.querySelector('.sw-dot');
+                if(dot) dot.style.transform = fh.enabled ? 'translateX(20px)' : 'translateX(0)';
+            }
+            if(range){
+                range.style.opacity = fh.enabled ? '1' : '0.4';
+                range.style.pointerEvents = fh.enabled ? '' : 'none';
+            }
+        });
+    }
+    function toggleFraudHours(){
+        db.ref('/imi_fraud_hours').once('value', function(snap){
+            var fh = snap.val() || { enabled:false, from:'09:00:00', to:'00:00:00' };
+            fh.enabled = !fh.enabled;
+            db.ref('/imi_fraud_hours').set(fh, _loadFraudHours);
+        });
+    }
+    function saveFraudHours(){
+        var from = (document.getElementById('fraudHoursFrom')||{}).value || '09:00:00';
+        var to   = (document.getElementById('fraudHoursTo')||{}).value   || '00:00:00';
+        db.ref('/imi_fraud_hours').once('value', function(snap){
+            var fh = snap.val() || { enabled:false };
+            fh.from = from; fh.to = to;
+            db.ref('/imi_fraud_hours').set(fh, function(){
+                _loadFraudHours();
+                var btn = document.querySelector('[onclick="saveFraudHours()"]');
                 if(btn){ var orig=btn.textContent; btn.textContent='✓'; setTimeout(function(){ btn.textContent=orig; }, 1200); }
             });
         });

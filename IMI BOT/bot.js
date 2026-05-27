@@ -418,12 +418,14 @@
         return f <= t ? (cur >= f && cur < t) : (cur >= f || cur < t);
     }
     async function _isInActiveHours() {
-        // 비거래 규칙은 전용 활성 시간 설정 우선 (사기글 글로벌 시간과 독립)
         if (rule && rule.type === 'watch') {
             const wh = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_WATCH_HOURS' }, r));
             if (wh && wh.enabled && wh.from && wh.to) return _inTimeRange(wh.from, wh.to);
             return true;
         }
+        // 사기글: Firebase 통합 시간 우선 → chrome.storage 글로벌 → 규칙별 시간
+        const fh = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_FRAUD_HOURS' }, r));
+        if (fh && fh.enabled && fh.from && fh.to) return _inTimeRange(fh.from, fh.to);
         const gh = await new Promise(r => chrome.storage.local.get('imi_global_hours', d => r(d.imi_global_hours || null)));
         if (gh && gh.enabled && gh.from && gh.to) return _inTimeRange(gh.from, gh.to);
         if (rule && rule.activeFrom && rule.activeTo) return _inTimeRange(rule.activeFrom, rule.activeTo);
