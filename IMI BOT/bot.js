@@ -23,6 +23,8 @@
     function _itemKey(it) { return it.tid ? ('tid_' + it.tid) : (it.t.substring(0, 20) + '_' + it.p); }
 
     // 키워드 간 사기글 TID 중복 감지 방지 (chrome.storage.local 공유, 30분 TTL)
+    // 저장 구조: { tid: { at: timestamp, by: ruleId } }
+    // 같은 rule이 재감지하는 경우는 필터링하지 않음 (삭제 전까지 계속 알림)
     const _FRAUD_SEEN_KEY = '_imi_fraud_seen_tids';
     const _FRAUD_SEEN_TTL = 30 * 60 * 1000;
     function _getFraudSeenTids() {
@@ -31,8 +33,9 @@
                 const raw = (res && res[_FRAUD_SEEN_KEY]) || {};
                 const now = Date.now();
                 const fresh = {};
-                for (const [tid, at] of Object.entries(raw)) {
-                    if (now - at < _FRAUD_SEEN_TTL) fresh[tid] = at;
+                for (const [tid, entry] of Object.entries(raw)) {
+                    const at = typeof entry === 'object' ? entry.at : entry;
+                    if (now - at < _FRAUD_SEEN_TTL) fresh[tid] = typeof entry === 'object' ? entry : { at: entry, by: null };
                 }
                 resolve(fresh);
             });
@@ -43,7 +46,7 @@
         chrome.storage.local.get(_FRAUD_SEEN_KEY, res => {
             const data = (res && res[_FRAUD_SEEN_KEY]) || {};
             const now = Date.now();
-            tids.forEach(tid => { data[tid] = now; });
+            tids.forEach(tid => { data[tid] = { at: now, by: rule && rule.id }; });
             chrome.storage.local.set({ [_FRAUD_SEEN_KEY]: data });
         });
     }
@@ -433,7 +436,13 @@
         // 사기글: 키워드 간 TID 중복 제거 (이미 다른 키워드에서 알린 TID는 스킵)
         if (rule.type !== 'watch') {
             const seenTids = await _getFraudSeenTids();
-            const deduped = combined.filter(it => !it.tid || !seenTids[it.tid]);
+            // 다른 rule이 먼저 감지한 TID만 제외 (같은 rule의 재감지는 통과)
+            const deduped = combined.filter(it => {
+                if (!it.tid) return true;
+                const entry = seenTids[it.tid];
+                if (!entry) return true;
+                return entry.by === (rule && rule.id); // 내 rule이 기록한 건 통과
+            });
             if (deduped.length === 0) {
                 setStatus('⏭️ 타 키워드 기감지 — 재검색 대기...', '#64748b');
                 document.getElementById('_imi_items').innerHTML = '';
