@@ -259,6 +259,9 @@
             if (rule.photoOnly) {
                 if (!el.querySelector('.hasScreenshot')) return;
             }
+            if (rule.noPhotoOnly) {
+                if (el.querySelector('.hasScreenshot')) return;
+            }
 
             const candidates = el.tagName === 'A'
                 ? [el, ...Array.from(el.querySelectorAll('a'))]

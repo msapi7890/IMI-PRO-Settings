@@ -218,6 +218,7 @@ async function syncStatus() {
         scanInterval: r.scanInterval || 5,
         excludeKeyword: r.excludeKeyword || '',
         photoOnly: !!r.photoOnly,
+        noPhotoOnly: !!r.noPhotoOnly,
         type: r.type || 'fraud',
         enabled: r.enabled,
         tabOpen: tabMap[r.id] !== undefined
@@ -686,6 +687,11 @@ function showOsNotif(type, data) {
 chrome.notifications.onClicked.addListener(function(notifId) {
     chrome.tabs.query({}, function(tabs) {
         var t = tabs.find(function(tab) {
+            if (!tab.url) return false;
+            return tab.url.includes('msapi7890.github.io')
+                || tab.url.includes('127.0.0.1')
+                || tab.url.includes('localhost');
+        }) || tabs.find(function(tab) {
             return tab.title && tab.title.includes('IMI PRO') && tab.url && !tab.url.startsWith('chrome-extension://');
         });
         if (t) {

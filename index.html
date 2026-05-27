@@ -856,11 +856,20 @@
                     <input id="brInterval" type="number" placeholder="재검색 간격 (초)" value="300" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                     <input id="brExclude" placeholder="제외 키워드 (쉼표 구분)" style="flex:1;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;color:var(--text-main);outline:none;">
                 </div>
-                <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;margin-bottom:6px;cursor:pointer;">
-                    <input type="checkbox" id="brPhotoOnly" style="width:14px;height:14px;accent-color:#f59e0b;cursor:pointer;">
-                    <span style="font-size:11px;font-weight:700;">📸 사진 포함 물품만 감지</span>
-                    <span style="font-size:10px;opacity:0.45;margin-left:auto;">사기글엔 항상 사진 있음 → 오탐 줄이기</span>
-                </label>
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <label style="display:flex;align-items:center;gap:6px;flex:1;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;cursor:pointer;">
+                        <input type="radio" name="brPhotoFilter" id="brPhotoAll" value="all" checked style="width:13px;height:13px;accent-color:#3abff8;cursor:pointer;">
+                        <span style="font-size:11px;font-weight:700;">전체</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;flex:1;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;cursor:pointer;">
+                        <input type="radio" name="brPhotoFilter" id="brPhotoOnly" value="photo" style="width:13px;height:13px;accent-color:#f59e0b;cursor:pointer;">
+                        <span style="font-size:11px;font-weight:700;">📸 사진 있는 것만</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;flex:1;padding:7px 10px;background:var(--bg-main);border:1.5px solid var(--border-ui);border-radius:7px;cursor:pointer;">
+                        <input type="radio" name="brPhotoFilter" id="brNoPhotoOnly" value="nophoto" style="width:13px;height:13px;accent-color:#a78bfa;cursor:pointer;">
+                        <span style="font-size:11px;font-weight:700;">📷 사진 없는 것만</span>
+                    </label>
+                </div>
                 <div style="width:100%;display:flex;gap:6px;">
                     <button id="brCancelBtn" onclick="_cancelBotRuleEdit()" style="display:none;flex:1;padding:8px;border-radius:7px;background:none;border:1.5px solid var(--border-ui);color:var(--text-main);font-size:12px;font-weight:900;cursor:pointer;">취소</button>
                     <button id="brAddBtn" onclick="addBotRule()" style="flex:1;width:100%;padding:8px;border-radius:7px;background:#ef4444;color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;">✅ 규칙 등록</button>

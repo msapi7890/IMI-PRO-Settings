@@ -194,6 +194,7 @@ function _renderBotStatus() {
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
+            + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
             + '</div>';
     }).join('');
@@ -1725,6 +1726,7 @@ function _renderBotRuleList() {
             + '<span class="mon-tag">⏱ ' + (r.scanInterval || 5) + '초</span>'
             + (r.excludeKeyword ? '<span class="mon-tag">🚫 ' + _esc(r.excludeKeyword) + '</span>' : '')
             + (r.photoOnly      ? '<span class="mon-tag">📸 사진만</span>' : '')
+            + (r.noPhotoOnly    ? '<span class="mon-tag">📷 사진없는것만</span>' : '')
             + '</div>'
             + '<div style="font-size:9.5px;opacity:0.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.url || '') + '</div>'
             + '</div>';
@@ -1761,7 +1763,9 @@ function startEditBotRule(id) {
     document.getElementById('brMax').value      = r.maxPrice || '';
     document.getElementById('brInterval').value = r.scanInterval || 300;
     document.getElementById('brExclude').value  = r.excludeKeyword || '';
-    document.getElementById('brPhotoOnly').checked = !!r.photoOnly;
+    var pf = r.noPhotoOnly ? 'nophoto' : r.photoOnly ? 'photo' : 'all';
+    var pfEl = document.querySelector('input[name="brPhotoFilter"][value="'+pf+'"]');
+    if (pfEl) pfEl.checked = true;
     var brTypeEl = document.querySelector('input[name="brType"][value="'+(r.type||'fraud')+'"]');
     if (brTypeEl) brTypeEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✏️ 수정 완료';
@@ -1777,7 +1781,8 @@ function _cancelBotRuleEdit() {
         document.getElementById(id).value = '';
     });
     document.getElementById('brInterval').value = '300';
-    document.getElementById('brPhotoOnly').checked = false;
+    var allEl = document.querySelector('input[name="brPhotoFilter"][value="all"]');
+    if (allEl) allEl.checked = true;
     var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
     document.getElementById('brAddBtn').textContent   = '✅ 규칙 등록';
     document.getElementById('brAddBtn').style.background = '';
@@ -1795,7 +1800,10 @@ function addBotRule() {
     var maxPrice       = parseInt(document.getElementById('brMax').value)      || 0;
     var scanInterval   = parseInt(document.getElementById('brInterval').value) || 300;
     var excludeKeyword = (document.getElementById('brExclude').value || '').trim();
-    var photoOnly      = document.getElementById('brPhotoOnly').checked;
+    var photoFilterEl  = document.querySelector('input[name="brPhotoFilter"]:checked');
+    var photoFilterVal = photoFilterEl ? photoFilterEl.value : 'all';
+    var photoOnly      = photoFilterVal === 'photo';
+    var noPhotoOnly    = photoFilterVal === 'nophoto';
     var typeEl         = document.querySelector('input[name="brType"]:checked');
     var ruleType       = typeEl ? typeEl.value : 'fraud';
 
@@ -1806,7 +1814,7 @@ function addBotRule() {
     if (_botRuleEditingId) {
         _saveBotRules(_botRules.map(function(r) {
             return r.id === _botRuleEditingId
-                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, type: ruleType })
+                ? Object.assign({}, r, { name: name, url: url, keyword: keyword, subKeyword: subKeyword, minPrice: minPrice, maxPrice: maxPrice, scanInterval: scanInterval, excludeKeyword: excludeKeyword, photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType })
                 : r;
         }));
         _cancelBotRuleEdit();
@@ -1817,14 +1825,15 @@ function addBotRule() {
             name: name, url: url, keyword: keyword, subKeyword: subKeyword,
             minPrice: minPrice, maxPrice: maxPrice,
             scanInterval: scanInterval, excludeKeyword: excludeKeyword,
-            photoOnly: photoOnly, type: ruleType, enabled: true, createdAt: Date.now()
+            photoOnly: photoOnly, noPhotoOnly: noPhotoOnly, type: ruleType, enabled: true, createdAt: Date.now()
         };
         _saveBotRules(_botRules.concat([newRule]));
         ['brName','brUrl','brKw','brSubKw','brMin','brMax','brExclude'].forEach(function(id) {
             document.getElementById(id).value = '';
         });
         document.getElementById('brInterval').value = '300';
-        document.getElementById('brPhotoOnly').checked = false;
+        var allEl2 = document.querySelector('input[name="brPhotoFilter"][value="all"]');
+        if (allEl2) allEl2.checked = true;
         var fraudEl = document.getElementById('brTypeFraud'); if (fraudEl) fraudEl.checked = true;
         alert('✅ 규칙이 등록됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
     }
