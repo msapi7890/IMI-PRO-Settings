@@ -25,7 +25,7 @@
     // 사기글 로그 크로스 키워드 TID 중복 방지 (chrome.storage.local 공유, 30분 TTL)
     // 알림은 모든 키워드에서 독립 발송, 로그만 최초 감지 키워드 기록 유지
     const _FRAUD_SEEN_KEY = '_imi_fraud_seen_tids';
-    const _FRAUD_SEEN_TTL = 30 * 60 * 1000;
+    const _FRAUD_SEEN_TTL = 5 * 60 * 1000;
     function _getFraudSeenTids() {
         return new Promise(resolve => {
             chrome.storage.local.get(_FRAUD_SEEN_KEY, res => {
