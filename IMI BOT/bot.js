@@ -22,9 +22,8 @@
     function _clearLoggedKeys() { sessionStorage.removeItem('_imi_logged_keys'); }
     function _itemKey(it) { return it.tid ? ('tid_' + it.tid) : (it.t.substring(0, 20) + '_' + it.p); }
 
-    // 키워드 간 사기글 TID 중복 감지 방지 (chrome.storage.local 공유, 30분 TTL)
-    // 저장 구조: { tid: { at: timestamp, by: ruleId } }
-    // 같은 rule이 재감지하는 경우는 필터링하지 않음 (삭제 전까지 계속 알림)
+    // 사기글 로그 크로스 키워드 TID 중복 방지 (chrome.storage.local 공유, 30분 TTL)
+    // 알림은 모든 키워드에서 독립 발송, 로그만 최초 감지 키워드 기록 유지
     const _FRAUD_SEEN_KEY = '_imi_fraud_seen_tids';
     const _FRAUD_SEEN_TTL = 30 * 60 * 1000;
     function _getFraudSeenTids() {
@@ -33,9 +32,8 @@
                 const raw = (res && res[_FRAUD_SEEN_KEY]) || {};
                 const now = Date.now();
                 const fresh = {};
-                for (const [tid, entry] of Object.entries(raw)) {
-                    const at = typeof entry === 'object' ? entry.at : entry;
-                    if (now - at < _FRAUD_SEEN_TTL) fresh[tid] = typeof entry === 'object' ? entry : { at: entry, by: null };
+                for (const [tid, at] of Object.entries(raw)) {
+                    if (now - at < _FRAUD_SEEN_TTL) fresh[tid] = at;
                 }
                 resolve(fresh);
             });
@@ -46,7 +44,7 @@
         chrome.storage.local.get(_FRAUD_SEEN_KEY, res => {
             const data = (res && res[_FRAUD_SEEN_KEY]) || {};
             const now = Date.now();
-            tids.forEach(tid => { data[tid] = { at: now, by: rule && rule.id }; });
+            tids.forEach(tid => { data[tid] = now; });
             chrome.storage.local.set({ [_FRAUD_SEEN_KEY]: data });
         });
     }
@@ -433,39 +431,23 @@
     const _P1_ITEMS_KEY = '_imi_page1_items';
 
     async function _fireAlert(combined, intervalMs) {
-        // 사기글: 키워드 간 TID 중복 제거 (이미 다른 키워드에서 알린 TID는 스킵)
-        if (rule.type !== 'watch') {
-            const seenTids = await _getFraudSeenTids();
-            // 다른 rule이 먼저 감지한 TID만 제외 (같은 rule의 재감지는 통과)
-            const deduped = combined.filter(it => {
-                if (!it.tid) return true;
-                const entry = seenTids[it.tid];
-                if (!entry) return true;
-                return entry.by === (rule && rule.id); // 내 rule이 기록한 건 통과
-            });
-            if (deduped.length === 0) {
-                setStatus('⏭️ 타 키워드 기감지 — 재검색 대기...', '#64748b');
-                document.getElementById('_imi_items').innerHTML = '';
-                setTimeout(() => {
-                    if (!isRunning) return;
-                    document.getElementById('_imi_box').style.borderColor = '#3abff8';
-                    setStatus('1분 대기 후 재검색...', '#94a3b8');
-                    submitSearch();
-                }, 60000);
-                return;
-            }
-            // 새로 감지된 TID를 공유 저장소에 기록
-            _markFraudSeenTids(deduped.filter(it => it.tid).map(it => it.tid));
-            combined = deduped;
-        }
-
         const prevKeys = _getLoggedKeys();
         const newItems = combined.filter(it => !prevKeys.has(_itemKey(it)));
         _saveLoggedKeys(new Set(combined.map(_itemKey)));
         setStatus(`🚨 ${combined.length}개 감지! 알림 전송`, '#ef4444');
         document.getElementById('_imi_box').style.borderColor = '#ef4444';
         renderAlertItems(combined);
-        sendAlert(combined, newItems.length > 0 ? newItems : null);
+
+        // 로그: 사기글만 크로스 키워드 TID 중복 제거 (알림은 모두 발송, 로그만 최초 감지분만 기록)
+        let logRows = newItems.length > 0 ? newItems : null;
+        if (rule.type !== 'watch' && newItems.length > 0) {
+            const seenTids = await _getFraudSeenTids();
+            const toLog = newItems.filter(it => !it.tid || !seenTids[it.tid]);
+            _markFraudSeenTids(toLog.filter(it => it.tid).map(it => it.tid));
+            logRows = toLog.length > 0 ? toLog : null;
+        }
+
+        sendAlert(combined, logRows);
         if (rule.type === 'watch') {
             _clearLoggedKeys();
             document.getElementById('_imi_items').innerHTML = '';
