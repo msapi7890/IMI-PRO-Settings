@@ -1376,13 +1376,13 @@
         return _map;
     })();
 
-    var FIREBASE_CONFIG = {apiKey:"AIzaSyCkk6YIZoh0gLChbvHAEsbgWdR4yA5wmJI",authDomain:"imirpotest.firebaseapp.com",databaseURL:"https://imirpotest-default-rtdb.firebaseio.com",storageBucket:"imirpotest.firebasestorage.app"};
+    var FIREBASE_CONFIG = {apiKey:"AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
     var _fbRestToken = null;
     var _fbAuthPromise = fetch(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCkk6YIZoh0gLChbvHAEsbgWdR4yA5wmJI',
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk',
         {method:'POST',headers:{'Content-Type':'application/json'},
          body:JSON.stringify({email:'imiprobot@gmail.com',password:'mania3001!',returnSecureToken:true})}
     ).then(function(r){return r.json();}).then(function(d){
@@ -1442,7 +1442,7 @@
     function cycleTheme(){ themeIdx=(themeIdx+1)%themes.length; applyTheme(themes[themeIdx]); }
 
     // ===== 다중 사용자 인증 시스템 =====
-    var _AUTH_DB = 'https://imirpotest-default-rtdb.firebaseio.com';
+    var _AUTH_DB = 'https://manual-9a47c-default-rtdb.firebaseio.com';
     var _currentUser = null;  // {name, role}
 
     async function _sha256(s){
