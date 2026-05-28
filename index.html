@@ -1376,19 +1376,22 @@
         return _map;
     })();
 
-    var FIREBASE_CONFIG = {apiKey:"AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
+    var FIREBASE_CONFIG = {apiKey:"AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
-    // Firebase 로그인 — 보안 규칙 auth != null 대응 (봇 계정으로 인증)
-    var _fbAnonPromise = new Promise(function(resolve){
-        try {
-            firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!')
-                .then(function(){ resolve(); })
-                .catch(function(e){ console.warn('Firebase auth failed:', e.message); resolve(); });
-        } catch(e){ console.warn('Firebase auth() unavailable:', e.message); resolve(); }
-        setTimeout(resolve, 8000);
-    });
+    // Firebase 인증 — REST API로 직접 토큰 취득 (auth != null 규칙 대응)
+    var _fbRestToken = null;
+    var _fbAnonPromise = fetch(
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk',
+        {method:'POST', headers:{'Content-Type':'application/json'},
+         body: JSON.stringify({email:'imiprobot@gmail.com', password:'mania3001!', returnSecureToken:true})}
+    ).then(function(r){ return r.json(); }).then(function(d){
+        if(d.idToken){
+            _fbRestToken = d.idToken;
+            try { firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!'); } catch(e){}
+        } else { console.warn('Firebase REST auth: no token', d); }
+    }).catch(function(e){ console.warn('Firebase REST auth failed:', e); });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
@@ -1459,9 +1462,8 @@
     var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
-            var token = '';
-            var user = firebase.auth().currentUser;
-            if(user){ try{ token = await user.getIdToken(); }catch(e){} }
+            var token = _fbRestToken || '';
+            if(!token){ var user = firebase.auth().currentUser; if(user){ try{ token = await user.getIdToken(); }catch(e){} } }
             var authParam = token ? ('&auth='+token) : '';
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
