@@ -7,7 +7,9 @@
   "host_permissions": [
     "*://*.itemmania.com/*",
     "https://manual-9a47c-default-rtdb.firebaseio.com/*",
-    "https://msapi7890.github.io/*"
+    "https://msapi7890.github.io/*",
+    "https://identitytoolkit.googleapis.com/*",
+    "https://securetoken.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"
