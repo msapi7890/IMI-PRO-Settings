@@ -705,7 +705,7 @@ function _getNotifPrefs(){
                 +(it.p?'<div style="color:'+priceClr+';font-weight:900;font-size:11px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
                 +'</div>'
                 +'<div style="display:flex;gap:6px;padding:6px 0 2px;">'
-                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'"'+(isWatch?' data-bktype="watch"':'')+' style="flex:1;font-size:11px;font-weight:800;padding:5px 0;border-radius:5px;border:1px solid '+btnClr+';color:'+btnClr+';background:none;cursor:pointer;">필터제외</button>'
+                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" data-price="'+(it.p||0)+'"'+(isWatch?' data-bktype="watch"':'')+' style="flex:1;font-size:11px;font-weight:800;padding:5px 0;border-radius:5px;border:1px solid '+btnClr+';color:'+btnClr+';background:none;cursor:pointer;">필터제외</button>'
                 +(isWatch?'<button class="_imi_toast_done" data-tid="'+_esc(it.tid||'')+'" style="flex:1;font-size:11px;font-weight:800;padding:5px 0;border-radius:5px;border:none;color:#052e16;background:#22c55e;cursor:pointer;">✅ 처리완료</button>':'')
                 +'</div>';
             itemList.appendChild(row);
@@ -869,7 +869,7 @@ function _showMonitorFlash(s) {
                 +(it.p?'<div style="color:#ef4444;font-weight:900;font-size:11px;flex-shrink:0;">'+Number(it.p).toLocaleString()+'원</div>':'')
                 +'</div>'
                 +'<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">'
-                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
+                +'<button data-bk="'+k+'" data-title="'+_esc(it.t||'')+'" data-tid="'+_esc(it.tid||'')+'" data-price="'+(it.p||0)+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>'
                 +'<span style="font-size:9px;color:#94a3b8;">정상 물품일 경우</span>'
                 +'</div>';
             itemList.appendChild(row);
@@ -1049,6 +1049,7 @@ document.addEventListener('click', function(e) {
     var key   = btn.getAttribute('data-bk');
     var title = btn.getAttribute('data-title') || '';
     var tid   = btn.getAttribute('data-tid') || '';
+    var price = parseInt(btn.getAttribute('data-price') || 0) || 0;
     var blockType = btn.getAttribute('data-bktype') || 'fraud';
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
@@ -1056,7 +1057,7 @@ document.addEventListener('click', function(e) {
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now(), type: blockType });
+            list.push({ key: key, title: title, tid: tid, price: price, addedBy: addedBy, addedAt: Date.now(), type: blockType });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -1089,13 +1090,14 @@ function _handleLogBkClick(e) {
     var key   = btn.getAttribute('data-logbk');
     var title = btn.getAttribute('data-logtitle') || '';
     var tid   = btn.getAttribute('data-logtid') || '';
+    var price = parseInt(btn.getAttribute('data-logprice') || 0) || 0;
     db.ref('/imi_blocked').once('value', function(snap) {
         var list = snap.val() || [];
         if (!Array.isArray(list)) list = [];
         var keys = list.map(function(i) { return typeof i === 'object' ? i.key : i; });
         if (!keys.includes(key)) {
             var addedBy = (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.name) ? _currentUser.name : '';
-            list.push({ key: key, title: title, tid: tid, addedBy: addedBy, addedAt: Date.now(), type: 'fraud' });
+            list.push({ key: key, title: title, tid: tid, price: price, addedBy: addedBy, addedAt: Date.now(), type: 'fraud' });
             db.ref('/imi_blocked').set(list);
         }
         btn.disabled = true;
@@ -1257,8 +1259,8 @@ function _loadLogByType(fullDay, isWatch) {
                     var listTime = it.listTime || '';
                     var btnHtml = bk
                         ? (isBlocked
-                            ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
-                            : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                            ? '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" data-logprice="' + (it.p||0) + '" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                            : '<button data-logbk="' + bk + '" data-logtitle="' + titleAttr + '" data-logtid="' + tidAttr + '" data-logprice="' + (it.p||0) + '" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                         : '';
                     var doneHtml = '';
                     if (entryIsWatch && it.tid) {
@@ -1345,8 +1347,8 @@ function _loadLogByType(fullDay, isWatch) {
                         var listTime  = it.listTime || '';
                         var btnHtml = bk
                             ? (isBlocked
-                                ? '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
-                                : '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
+                                ? '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" data-logprice="'+(it.p||0)+'" disabled style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;flex-shrink:0;opacity:0.4;cursor:default;">제외됨</button>'
+                                : '<button data-logbk="'+bk+'" data-logtitle="'+titleAttr+'" data-logtid="'+tidAttr+'" data-logprice="'+(it.p||0)+'" style="font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;">필터제외</button>')
                             : '';
                         return '<div style="display:flex;flex-direction:column;gap:2px;padding:7px 10px;background:var(--bg-body);border-radius:7px;border:1px solid var(--border-ui);">'
                             + (it.tid ? '<div style="display:flex;align-items:center;gap:6px;font-size:20px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+_fmtTid(it.tid)
@@ -1407,12 +1409,16 @@ function _renderBlockedByType(type, containerId, emptyId) {
             var key     = typeof item === 'object' ? (item.key   || '') : item;
             var title   = typeof item === 'object' ? (item.title || '') : '';
             var tid     = typeof item === 'object' ? (item.tid   || '') : '';
+            var price   = typeof item === 'object' ? (item.price || 0) : 0;
             var addedBy = typeof item === 'object' ? (item.addedBy || '') : '';
             var addedAt = typeof item === 'object' && item.addedAt ? new Date(item.addedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
             var subText = tid ? ('#' + tid) : key;
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border-ui);border-radius:8px;margin-bottom:6px;">'
                 + '<div style="flex:1;min-width:0;">'
-                + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>' : '')
+                + '<div style="display:flex;align-items:center;gap:6px;">'
+                + (title ? '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + _esc(title) + '</div>' : '')
+                + (price ? '<div style="font-size:11px;font-weight:900;color:#ef4444;flex-shrink:0;">' + Number(price).toLocaleString() + '원</div>' : '')
+                + '</div>'
                 + '<div style="font-size:10px;opacity:0.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(subText) + '</div>'
                 + (addedBy ? '<div style="font-size:10px;opacity:0.45;margin-top:2px;">✍️ ' + _esc(addedBy) + (addedAt ? ' · ' + addedAt : '') + '</div>' : '')
                 + '</div>'

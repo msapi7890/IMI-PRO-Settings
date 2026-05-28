@@ -231,8 +231,8 @@
             let text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
             if (text.length < 15) return;
             if (text.includes('물품제목') && text.includes('등록일시')) return;
-            // 비거래 스캔: 거래종료·거래중 물품 제외 → 일반 등록 물품만 감지
-            if (rule.type === 'watch' && (text.includes('거래종료') || text.includes('거래중'))) return;
+            // 거래종료·거래중 물품 제외 → 사기글/비거래 모두 적용
+            if (text.includes('거래종료') || text.includes('거래중')) return;
 
             // 제목 요소 먼저 추출 → 키워드는 제목에서만 매칭 (가격·날짜 칼럼 오탐 방지)
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
