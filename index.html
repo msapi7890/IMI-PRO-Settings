@@ -1380,12 +1380,14 @@
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
-    // 익명 로그인 — Firebase 보안 규칙 auth != null 대응
+    // Firebase 로그인 — 보안 규칙 auth != null 대응 (봇 계정으로 인증)
     var _fbAnonPromise = new Promise(function(resolve){
-        firebase.auth().signInAnonymously()
-            .then(function(){ resolve(); })
-            .catch(function(e){ console.warn('Firebase anon auth failed:', e.message); resolve(); });
-        setTimeout(resolve, 8000); // 최대 8초 대기 후 진행
+        try {
+            firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!')
+                .then(function(){ resolve(); })
+                .catch(function(e){ console.warn('Firebase auth failed:', e.message); resolve(); });
+        } catch(e){ console.warn('Firebase auth() unavailable:', e.message); resolve(); }
+        setTimeout(resolve, 8000);
     });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
