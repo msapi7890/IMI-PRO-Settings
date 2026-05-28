@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -1376,22 +1375,10 @@
         return _map;
     })();
 
-    var FIREBASE_CONFIG = {apiKey:"AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
+    var FIREBASE_CONFIG = {databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
-    // Firebase 인증 — REST API로 직접 토큰 취득 (auth != null 규칙 대응)
-    var _fbRestToken = null;
-    var _fbAnonPromise = fetch(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk',
-        {method:'POST', headers:{'Content-Type':'application/json'},
-         body: JSON.stringify({email:'imiprobot@gmail.com', password:'mania3001!', returnSecureToken:true})}
-    ).then(function(r){ return r.json(); }).then(function(d){
-        if(d.idToken){
-            _fbRestToken = d.idToken;
-            try { firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!'); } catch(e){}
-        } else { console.warn('Firebase REST auth: no token', d); }
-    }).catch(function(e){ console.warn('Firebase REST auth failed:', e); });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
@@ -1462,12 +1449,9 @@
     var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
-            var token = _fbRestToken || '';
-            if(!token){ var user = firebase.auth().currentUser; if(user){ try{ token = await user.getIdToken(); }catch(e){} } }
-            var authParam = token ? ('&auth='+token) : '';
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
-            var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+            var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now(), opts);
             if(r.status===401||r.status===403){ _authFetchBlocked=true; return null; }
             _authFetchBlocked = false;
             return r.ok ? (await r.json()) : null;
@@ -1516,7 +1500,6 @@
     // 초기화
     async function _authInit(){
         _showLockView('lockLoadingView');
-        await _fbAnonPromise; // 익명 로그인 완료 후 Firebase 요청 시작
         var saved = _authLoadLocal();
         if(saved && saved.name && saved.hash){
             var user = await _authFetch('imi_users/'+_ukey(saved.name)+'.json');
