@@ -1381,8 +1381,12 @@
     var db = firebase.database();
     var storage = firebase.storage();
     // 익명 로그인 — Firebase 보안 규칙 auth != null 대응
-    var _fbAnonReady = false;
-    firebase.auth().signInAnonymously().then(function(){ _fbAnonReady = true; }).catch(function(e){ console.warn('Firebase anon auth failed:', e.message); });
+    var _fbAnonPromise = new Promise(function(resolve){
+        firebase.auth().signInAnonymously()
+            .then(function(){ resolve(); })
+            .catch(function(e){ console.warn('Firebase anon auth failed:', e.message); resolve(); });
+        setTimeout(resolve, 8000); // 최대 8초 대기 후 진행
+    });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
@@ -1453,13 +1457,6 @@
     var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
-            // 익명 로그인 완료 대기 (최대 6초)
-            if(!firebase.auth().currentUser){
-                await new Promise(function(resolve){
-                    var unsub = firebase.auth().onAuthStateChanged(function(u){ if(u){ unsub(); resolve(); } });
-                    setTimeout(function(){ unsub(); resolve(); }, 6000);
-                });
-            }
             var token = '';
             var user = firebase.auth().currentUser;
             if(user){ try{ token = await user.getIdToken(); }catch(e){} }
@@ -1515,6 +1512,7 @@
     // 초기화
     async function _authInit(){
         _showLockView('lockLoadingView');
+        await _fbAnonPromise; // 익명 로그인 완료 후 Firebase 요청 시작
         var saved = _authLoadLocal();
         if(saved && saved.name && saved.hash){
             var user = await _authFetch('imi_users/'+_ukey(saved.name)+'.json');
