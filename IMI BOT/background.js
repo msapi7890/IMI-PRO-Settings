@@ -1,5 +1,5 @@
 const DB_URL = "https://manual-9a47c-default-rtdb.firebaseio.com";
-const FB_API_KEY = "AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk";
+const FB_API_KEY = "AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI";
 const BOT_EMAIL = "imiprobot@gmail.com";
 const BOT_PASS  = "mania3001!";
 
