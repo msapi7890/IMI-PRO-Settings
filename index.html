@@ -1453,6 +1453,13 @@
     var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
+            // 익명 로그인 완료 대기 (최대 6초)
+            if(!firebase.auth().currentUser){
+                await new Promise(function(resolve){
+                    var unsub = firebase.auth().onAuthStateChanged(function(u){ if(u){ unsub(); resolve(); } });
+                    setTimeout(function(){ unsub(); resolve(); }, 6000);
+                });
+            }
             var token = '';
             var user = firebase.auth().currentUser;
             if(user){ try{ token = await user.getIdToken(); }catch(e){} }
