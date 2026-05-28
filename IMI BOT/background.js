@@ -1,11 +1,71 @@
 const DB_URL = "https://manual-9a47c-default-rtdb.firebaseio.com";
+const FB_API_KEY = "AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk";
+const BOT_EMAIL = "imiprobot@gmail.com";
+const BOT_PASS  = "mania3001!";
+
+// --- Firebase Auth 토큰 관리 ---
+let _fbToken = null;
+let _fbTokenExpiry = 0;
+let _fbRefreshToken = null;
+let _fbAuthReady = false;
+let _fbAuthPromise = null;
+
+async function _firebaseSignIn() {
+    try {
+        const res = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_API_KEY}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: BOT_EMAIL, password: BOT_PASS, returnSecureToken: true }) }
+        );
+        const d = await res.json();
+        if (d.idToken) {
+            _fbToken = d.idToken;
+            _fbRefreshToken = d.refreshToken;
+            _fbTokenExpiry = Date.now() + (parseInt(d.expiresIn) - 60) * 1000;
+            _fbAuthReady = true;
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+
+async function _firebaseRefreshToken() {
+    try {
+        const res = await fetch(
+            `https://securetoken.googleapis.com/v1/token?key=${FB_API_KEY}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: _fbRefreshToken }) }
+        );
+        const d = await res.json();
+        if (d.id_token) {
+            _fbToken = d.id_token;
+            _fbRefreshToken = d.refresh_token;
+            _fbTokenExpiry = Date.now() + (parseInt(d.expires_in) - 60) * 1000;
+            return true;
+        }
+    } catch(e) {}
+    return false;
+}
+
+async function _getToken() {
+    if (!_fbAuthReady) {
+        if (!_fbAuthPromise) _fbAuthPromise = _firebaseSignIn().finally(() => { _fbAuthPromise = null; });
+        await _fbAuthPromise;
+    }
+    if (_fbToken && Date.now() > _fbTokenExpiry) await _firebaseRefreshToken();
+    return _fbToken ? `?auth=${_fbToken}` : '';
+}
+
+// 시작 시 즉시 로그인
+_firebaseSignIn();
 
 // --- Firebase REST (5초 타임아웃 적용) ---
 async function fireGet(path) {
+    const auth = await _getToken();
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-        const res = await fetch(DB_URL + path + '.json', { signal: ctrl.signal });
+        const res = await fetch(DB_URL + path + '.json' + auth, { signal: ctrl.signal });
         if (res.ok) return await res.json();
     } catch(e) {}
     finally { clearTimeout(t); }
@@ -13,61 +73,59 @@ async function fireGet(path) {
 }
 
 async function fireSet(path, data) {
+    const auth = await _getToken();
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-        await fetch(DB_URL + path + '.json', {
+        await fetch(DB_URL + path + '.json' + auth, {
             method: 'PUT', body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' },
             signal: ctrl.signal
         });
-    } catch(e) {
-        // 타임아웃 또는 네트워크 차단 — 무시
-    } finally {
-        clearTimeout(t);
-    }
+    } catch(e) {} finally { clearTimeout(t); }
 }
+
 async function fireUpdate(path, data) {
+    const auth = await _getToken();
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-        await fetch(DB_URL + path + '.json', {
+        await fetch(DB_URL + path + '.json' + auth, {
             method: 'PATCH', body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' },
             signal: ctrl.signal
         });
     } catch(e) {} finally { clearTimeout(t); }
 }
+
 async function firePush(path, data) {
+    const auth = await _getToken();
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-        await fetch(DB_URL + path + '.json', {
+        await fetch(DB_URL + path + '.json' + auth, {
             method: 'POST', body: JSON.stringify(data),
             headers: { 'Content-Type': 'application/json' },
             signal: ctrl.signal
         });
-    } catch(e) {
-        // 타임아웃 또는 네트워크 차단 — 무시
-    } finally {
-        clearTimeout(t);
-    }
+    } catch(e) {} finally { clearTimeout(t); }
 }
 
 // Firebase 빈 배열 저장 시 null 반환 문제 전용 처리
 // fireGet은 null=에러, fireGetBlocked는 null=정상 빈 목록으로 구분
 async function fireGetBlocked() {
+    const auth = await _getToken();
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-        const res = await fetch(DB_URL + '/imi_blocked.json', { signal: ctrl.signal });
+        const res = await fetch(DB_URL + '/imi_blocked.json' + auth, { signal: ctrl.signal });
         if (res.ok) {
             const data = await res.json();
-            return Array.isArray(data) ? data : [];  // null(빈 목록) → []
+            return Array.isArray(data) ? data : [];
         }
     } catch(e) {}
     finally { clearTimeout(t); }
-    return null;  // null = 네트워크 에러(폴백 필요)
+    return null;
 }
 
 // --- Storage helpers ---

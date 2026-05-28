@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -1375,10 +1376,13 @@
         return _map;
     })();
 
-    var FIREBASE_CONFIG = {databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
+    var FIREBASE_CONFIG = {apiKey:"AIzaSyCD_jmQpX-uPktBoBfB4t1MQLVZAzoa9tk",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
+    // 익명 로그인 — Firebase 보안 규칙 auth != null 대응
+    var _fbAnonReady = false;
+    firebase.auth().signInAnonymously().then(function(){ _fbAnonReady = true; }).catch(function(e){ console.warn('Firebase anon auth failed:', e.message); });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
@@ -1449,9 +1453,13 @@
     var _authFetchBlocked = false; // 권한 차단 감지 플래그
     async function _authFetch(path, method, data){
         try{
+            var token = '';
+            var user = firebase.auth().currentUser;
+            if(user){ try{ token = await user.getIdToken(); }catch(e){} }
+            var authParam = token ? ('&auth='+token) : '';
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
-            var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now(), opts);
+            var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
             if(r.status===401||r.status===403){ _authFetchBlocked=true; return null; }
             _authFetchBlocked = false;
             return r.ok ? (await r.json()) : null;
