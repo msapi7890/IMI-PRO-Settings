@@ -1387,8 +1387,8 @@
          body:JSON.stringify({email:'imiprobot@gmail.com',password:'mania3001!',returnSecureToken:true})}
     ).then(function(r){return r.json();}).then(function(d){
         if(d.idToken){ _fbRestToken=d.idToken; try{firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!');}catch(e){} }
-        else { var msg='[FB auth] 실패: '+(d.error&&d.error.message||JSON.stringify(d)); console.warn(msg); alert(msg); }
-    }).catch(function(e){ var msg='[FB auth] 오류: '+e.message; console.warn(msg); alert(msg); });
+        else console.warn('[FB auth] 실패:', d.error&&d.error.message);
+    }).catch(function(e){ console.warn('[FB auth] 오류:', e.message); });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
