@@ -1476,7 +1476,7 @@ function clearAllBlockedWatch() {
 function clearAllBlocked() { clearAllBlockedFraud(); }
 
 // ===== 감지 통계 =====
-var _statsType = 'watch';
+var _statsType = 'fraud';
 
 function loadStatsTab() {
     var today = new Date();

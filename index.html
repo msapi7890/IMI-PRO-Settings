@@ -248,8 +248,8 @@
         @keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444;box-shadow:0 4px 16px rgba(239,68,68,0.7)} 50%{border-color:rgba(239,68,68,0.15);box-shadow:none} }
         .watch-panel-blink { animation:_watchPanelBlink 0.85s ease-in-out infinite !important; }
         .fraud-panel-blink  { animation:_fraudPanelBlink 0.75s ease-in-out infinite !important; }
-        #hdrWatchLine { display:none;position:fixed;top:var(--header-h);left:0;width:50%;height:3px;background:#22c55e;z-index:9999;transition:opacity 0.15s; }
-        #hdrFraudLine { display:none;position:fixed;top:var(--header-h);right:0;width:50%;height:3px;background:#ef4444;z-index:9999;transition:opacity 0.15s; }
+        #hdrWatchLine { display:none; }
+        #hdrFraudLine { display:none; }
         @keyframes _watchLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #22c55e,0 0 16px rgba(34,197,94,0.6)} 50%{opacity:0.15;box-shadow:none} }
         @keyframes _fraudLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #ef4444,0 0 16px rgba(239,68,68,0.6)} 50%{opacity:0.15;box-shadow:none} }
         #hdrWatchLine.blink { animation:_watchLineBlink 0.85s ease-in-out infinite; }
@@ -1052,8 +1052,8 @@
         <!-- 탭5: 감지 통계 -->
         <div id="logTabContent5" class="log-body" style="display:none;">
             <div style="display:flex;gap:6px;margin-bottom:10px;flex-shrink:0;">
-                <button id="statsTypeWatch" onclick="_switchStatsType('watch')" style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border-radius:6px;border:1px solid #22c55e;background:#22c55e;color:#000;cursor:pointer;">📦 비거래</button>
                 <button id="statsTypeFraud" onclick="_switchStatsType('fraud')" style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border-radius:6px;border:1px solid #334155;background:none;color:#94a3b8;cursor:pointer;">🚨 사기글</button>
+                <button id="statsTypeWatch" onclick="_switchStatsType('watch')" style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border-radius:6px;border:1px solid #22c55e;background:#22c55e;color:#000;cursor:pointer;">📦 비거래</button>
             </div>
             <div style="flex-shrink:0;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -2176,6 +2176,78 @@
     var _mfUploadDone   = false;// 업로드 완료 후 배지 표시용
     var _mfImgUploadState = null; // {current, total, pct, text, done, failed}
 
+    // ── Realtime DB 이미지 저장/조회 헬퍼 (Firebase Storage 대체) ──
+    function _b64PadPage(num){ return String(num).padStart(3,'0'); }
+
+    async function _savePageToDb(mode, pageNum, blob){
+        return new Promise(function(resolve, reject){
+            var reader = new FileReader();
+            reader.onload = async function(e){
+                try{
+                    var b64 = e.target.result.split(',')[1];
+                    await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json','PUT',b64);
+                    resolve('data:image/jpeg;base64,'+b64);
+                }catch(err){ reject(err); }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function _getPageDataUrl(mode, pageNum){
+        try{
+            var b64 = await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json');
+            if(b64 && typeof b64==='string') return 'data:image/jpeg;base64,'+b64;
+        }catch(e){}
+        // Storage 폴백 (마이그레이션 전 호환)
+        try{ return await storage.ref('manual_pages/'+mode+'/page-'+_b64PadPage(pageNum)+'.jpg').getDownloadURL(); }
+        catch(e2){}
+        return null;
+    }
+
+    async function _listDbPages(mode){
+        try{
+            var data = await _authFetch('manual_pages_b64/'+mode+'.json');
+            if(data && typeof data==='object'){
+                return Object.keys(data)
+                    .map(function(k){ return parseInt(k.replace('p',''),10); })
+                    .filter(function(n){ return !isNaN(n); })
+                    .sort(function(a,b){ return a-b; });
+            }
+        }catch(e){}
+        return [];
+    }
+
+    async function _deleteAllPagesFromDb(mode){
+        try{ await _authFetch('manual_pages_b64/'+mode+'.json','DELETE'); }catch(e){}
+    }
+
+    async function _migrateStorageToDb(mode, onProgress){
+        try{
+            var result = await storage.ref('manual_pages/'+mode+'/').listAll();
+            var items = result.items.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+            if(!items.length){ if(onProgress) onProgress('이미지 없음',0,0); return 0; }
+            var done = 0;
+            for(var i=0;i<items.length;i++){
+                var ref = items[i];
+                var m = ref.name.match(/page-(\d+)\.jpg$/i);
+                if(!m) continue;
+                var pageNum = parseInt(m[1],10);
+                var existing = await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json');
+                if(existing && typeof existing==='string'){ done++; if(onProgress) onProgress('건너뜀 p.'+pageNum,done,items.length); continue; }
+                try{
+                    var url = await ref.getDownloadURL();
+                    var resp = await fetch(url);
+                    var blob = await resp.blob();
+                    await _savePageToDb(mode, pageNum, blob);
+                    done++;
+                    if(onProgress) onProgress('완료 p.'+pageNum,done,items.length);
+                }catch(e2){ console.warn('마이그레이션 실패 p.'+pageNum, e2); }
+            }
+            return done;
+        }catch(e){ console.error('마이그레이션 오류:',e); return 0; }
+    }
+
     function _renderManualMgmt(){
         var wrap = document.getElementById('mfContent');
         if(!wrap) return;
@@ -2237,6 +2309,7 @@
         h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">';
         h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;flex:1;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
         h += '<button onclick="_mfLoadStorageThumbs()" id="mfLoadThumbsBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #334155;background:none;color:#64748b;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">📷 저장된 이미지 불러오기</button>';
+        h += '<button onclick="_mfRunMigrate()" id="mfMigrateBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #7c3aed;background:none;color:#a78bfa;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">☁ Storage→DB 마이그레이션</button>';
         h += '</div>';
         h += '<div id="mfThumbResumeBanner" style="display:none;margin-bottom:8px;padding:8px 12px;border-radius:8px;background:#0f2e1a;border:1.5px solid #166534;font-size:11px;color:#4ade80;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>';
         h += '<div id="mfPageThumbs" style="display:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:8px;margin-bottom:10px;background:#0a1120;"></div>';
@@ -2487,13 +2560,10 @@
         var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
         if(raw) Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
 
-        // Storage 실제 업로드 파일 기준 — 중단된 업로드 후 DB 미반영 케이스 커버
+        // DB 실제 저장 파일 기준 — 중단된 업로드 후 DB 미반영 케이스 커버
         try{
-            var listResult = await storage.ref('manual_pages/'+mode+'/').listAll();
-            listResult.items.forEach(function(ref){
-                var m = ref.name.match(/page-(\d+)\.jpg$/i);
-                if(m) max = Math.max(max, parseInt(m[1], 10));
-            });
+            var dbPages = await _listDbPages(mode);
+            if(dbPages.length) max = Math.max(max, dbPages[dbPages.length-1]);
         }catch(e){}
         return max;
     }
@@ -2543,14 +2613,11 @@
         if(progBar)  progBar.style.width  = '0%';
         await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
-        // Storage 기존 업로드 목록 한 번에 조회 → 중복 건너뜀에 사용
+        // DB 기존 저장 목록 한 번에 조회 → 중복 건너뜀에 사용
         var existingPages = new Set();
         try{
-            var listResult = await storage.ref('manual_pages/'+mode+'/').listAll();
-            listResult.items.forEach(function(ref){
-                var m = ref.name.match(/page-(\d+)\.jpg$/i);
-                if(m) existingPages.add(parseInt(m[1], 10));
-            });
+            var dbExisting = await _listDbPages(mode);
+            dbExisting.forEach(function(n){ existingPages.add(n); });
         }catch(e){ console.warn('기존 목록 조회 실패, 전체 업로드로 진행:', e); }
 
         var uploaded = 0, failed = 0, skipped = 0;
@@ -2574,7 +2641,7 @@
             }
 
             try{
-                await storage.ref(storagePath).put(files[i]);
+                await _savePageToDb(mode, pageNum, files[i]);
                 uploaded++;
                 if(pageNum > lastUploadedPage) lastUploadedPage = pageNum;
             }catch(e){
@@ -2975,42 +3042,50 @@
         });
     }
 
+    async function _mfRunMigrate(){
+        var btn = document.getElementById('mfMigrateBtn');
+        if(btn){ btn.disabled=true; btn.textContent='마이그레이션 중...'; }
+        var mode = _mfMgmtMode;
+        var done = await _migrateStorageToDb(mode, function(msg, cur, total){
+            if(btn) btn.textContent = '☁ '+cur+'/'+total+' '+msg;
+        });
+        if(btn){ btn.disabled=false; btn.textContent='✅ 완료 '+done+'장 이전됨'; }
+        alert('['+mode+'] 마이그레이션 완료! '+done+'장이 DB에 저장됐습니다.');
+    }
+
     async function _mfLoadStorageThumbs(newlyUploaded, skippedCount){
         var btn = document.getElementById('mfLoadThumbsBtn');
         if(btn){ btn.disabled=true; btn.textContent='불러오는 중...'; }
         var mode = _mfMgmtMode;
         try{
-            var result = await storage.ref('manual_pages/'+mode+'/').listAll();
-            if(!result.items.length){ alert('저장된 이미지가 없습니다. PDF를 먼저 업로드해주세요.'); return; }
-            var sorted = result.items.slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+            var pageNums = await _listDbPages(mode);
+            if(!pageNums.length){ alert('저장된 이미지가 없습니다. PDF를 먼저 업로드해주세요.'); return; }
             window._mfPageUrls = [];
-            if(btn) btn.textContent = '로딩 중... 0/'+sorted.length;
-            for(var i=0;i<sorted.length;i++){
+            if(btn) btn.textContent = '로딩 중... 0/'+pageNums.length;
+            for(var i=0;i<pageNums.length;i++){
                 try{
-                    var url = await sorted[i].getDownloadURL();
-                    var pageNum = parseInt(sorted[i].name.replace('page-','').replace('.jpg',''));
-                    window._mfPageUrls.push({page:pageNum, url:url});
+                    var url = await _getPageDataUrl(mode, pageNums[i]);
+                    if(url) window._mfPageUrls.push({page:pageNums[i], url:url});
                 }catch(e2){}
-                if(btn && i%10===9) btn.textContent = '로딩 중... '+(i+1)+'/'+sorted.length;
+                if(btn && i%10===9) btn.textContent = '로딩 중... '+(i+1)+'/'+pageNums.length;
             }
             _mfRenderPageThumbs();
             var total = window._mfPageUrls.length;
             if(btn){
                 if(typeof newlyUploaded === 'number'){
                     var skipTxt = skippedCount ? ' ('+skippedCount+'장 건너뜀)' : '';
-                    btn.textContent = '✅ '+newlyUploaded+'장 업로드됨'+skipTxt+' — Storage 총 '+total+'장';
+                    btn.textContent = '✅ '+newlyUploaded+'장 업로드됨'+skipTxt+' — DB 총 '+total+'장';
                 } else {
                     btn.textContent = '✅ '+total+'장 불러옴';
                 }
             }
-            // Storage에서 로드한 실제 페이지 범위로 _mfRendered 갱신 — 스테일 PDF 렌더 데이터로 인한 오범위 경고 방지
             if(window._mfPageUrls.length){
                 var _pages = window._mfPageUrls.map(function(p){ return p.page; });
                 var _minP  = Math.min.apply(null, _pages);
                 var _maxP  = Math.max.apply(null, _pages);
-                _mfRendered = {mode: mode, startFrom: _minP, numPages: _maxP - _minP + 1, fileName: 'Storage 불러오기', storePath: '', downloadURL: ''};
+                _mfRendered = {mode: mode, startFrom: _minP, numPages: _maxP - _minP + 1, fileName: 'DB 불러오기', storePath: '', downloadURL: ''};
             }
-            _mfLoadRanges(_mfMgmtMode); // 등록된 범위 로드 → 썸네일에 ✓ 표시
+            _mfLoadRanges(_mfMgmtMode);
         }catch(e){
             alert('이미지 불러오기 실패: '+e.message);
         }finally{
@@ -3026,8 +3101,9 @@
         if(cached){ imgUrl = cached.url; }
         else {
             var pageNum = String(e.from).padStart(3,'0');
-            try{ imgUrl = await storage.ref('manual_pages/'+_mfMgmtMode+'/page-'+pageNum+'.jpg').getDownloadURL(); }
-            catch(err){ alert('이미지를 불러올 수 없습니다. PDF 렌더링이 완료된 후 사용해주세요.'); return; }
+            try{ imgUrl = await _getPageDataUrl(_mfMgmtMode, pageNum); }
+            catch(err){}
+            if(!imgUrl){ alert('이미지를 불러올 수 없습니다. PDF 렌더링이 완료된 후 사용해주세요.'); return; }
         }
         window._currentCropData = {
             dbPath: '', imgUrl: imgUrl,
@@ -3116,9 +3192,9 @@
         var previewImg  = document.getElementById('mfEditPreviewImg');
         if(previewImg && previewWrap && raw.start){
             try{
-                var url = await storage.ref('manual_pages/'+_mfMgmtMode+'/page-'+raw.start+'.jpg').getDownloadURL();
-                previewImg.src = url;
-                previewWrap.style.display = '';
+                var url = await _getPageDataUrl(_mfMgmtMode, raw.start);
+                if(url){ previewImg.src = url; previewWrap.style.display = ''; }
+                else previewWrap.style.display='none';
             }catch(e){ previewWrap.style.display='none'; }
         }
 
@@ -3238,9 +3314,8 @@
         for(var i=0; i<files.length; i++){
             var pageNum = startPage + i;
             var padded  = String(pageNum).padStart(3,'0');
-            var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
             try{
-                await storage.ref(storagePath).put(files[i]);
+                await _savePageToDb(mode, pageNum, files[i]);
                 uploaded++;
             }catch(e){
                 failed++;
@@ -3259,11 +3334,11 @@
 
         // 미리보기 이미지 갱신
         try{
-            var url = await storage.ref('manual_pages/'+mode+'/page-'+String(startPage).padStart(3,'0')+'.jpg').getDownloadURL();
+            var url = await _getPageDataUrl(mode, startPage);
             var previewImg = document.getElementById('mfEditPreviewImg');
-            if(previewImg){ previewImg.src = url+'&_t='+Date.now(); }
+            if(previewImg && url){ previewImg.src = url; }
             var previewWrap = document.getElementById('mfEditPreviewWrap');
-            if(previewWrap) previewWrap.style.display='';
+            if(previewWrap && url) previewWrap.style.display='';
         }catch(e){}
 
         _mfLoadRanges(mode);
@@ -3424,12 +3499,14 @@
         await new Promise(function(res){ db.ref('manual_meta/'+mode).set(null, res); });
         _mfTotalPdfPages = 0; _mfSavedPageCnt = 0;
 
-        // Storage 이미지 삭제
+        // DB 이미지 삭제
+        await _deleteAllPagesFromDb(mode);
+        // Storage 이미지도 정리 (있으면)
         try{
             var result = await storage.ref('manual_pages/'+mode+'/').listAll();
             var dels = result.items.map(function(ref){ return ref.delete().catch(function(){}); });
             await Promise.all(dels);
-        } catch(e){ console.warn('Storage 삭제 중 오류:', e); }
+        } catch(e){}
 
         if(btn){ btn.disabled=false; btn.textContent='🗑 매뉴얼 전체 초기화 (DB + 이미지)'; }
         alert('['+label+'] 매뉴얼 전체 삭제 완료!');
@@ -3478,10 +3555,8 @@
                     await page.render({canvasContext:ctx,viewport:viewport}).promise;
                     var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.80); });
                     var pageNum   = String(i).padStart(3,'0'); // i가 곧 시스템 페이지 번호
-                    var storePath = 'manual_pages/'+mode+'/page-'+pageNum+'.jpg';
-                    var ref = storage.ref(storePath);
-                    await ref.put(blob,{contentType:'image/jpeg'});
-                    try{ var dlUrl = await ref.getDownloadURL(); window._mfPageUrls.push({page:i, url:dlUrl}); }catch(e2){}
+                    var dlUrl = await _savePageToDb(mode, i, blob);
+                    window._mfPageUrls.push({page:i, url:dlUrl});
                     // 캔버스 메모리 해제
                     ctx.clearRect(0,0,canvas.width,canvas.height);
                     blob = null;
@@ -5784,16 +5859,14 @@
             var promises=[];
             for(var p=start;p<=end;p++){
                 (function(pg){
-                    var pageStr=String(pg).padStart(3,'0');
-                    var storagePath = currentMode==='bay' ? 'manual_pages/bay/' : 'manual_pages/mania/';
+                    var curMode=currentMode;
                     promises.push(
-                        storage.ref(storagePath+'page-'+pageStr+'.jpg')
-                        .getDownloadURL().then(function(url){return{page:pg,url:url};})
+                        _getPageDataUrl(curMode,pg).then(function(url){ return url?{page:pg,url:url}:null; })
                     );
                 })(p);
             }
             Promise.allSettled(promises).then(function(results){
-                var succeeded=results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
+                var succeeded=results.filter(function(r){return r.status==='fulfilled'&&r.value;}).map(function(r){return r.value;});
                 succeeded.sort(function(a,b){return a.page-b.page;});
                 var urls=succeeded.map(function(r){return r.url;});
                 if(!urls.length){
