@@ -726,8 +726,9 @@ function _getNotifPrefs(){
         if (isWatch) { container.innerHTML = ''; }
         container.appendChild(wrap);
 
+        var _autoCloseTimer = null;
+
         function remove() {
-            // 상단바 탭 카운트 감소
             var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
             if(hdrTab && hdrTab._popupCount) {
                 hdrTab._popupCount = Math.max(0, hdrTab._popupCount - (data.itemCount || 0));
@@ -737,7 +738,6 @@ function _getNotifPrefs(){
                     hdrTab.classList.remove('hdr-tab-blink');
                     if(typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
                     if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
-                    if (!isWatch) _removeChatBorderFlash();
                 } else {
                     var badge = isWatch
                         ? '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+hdrTab._popupCount+'</span>'
@@ -745,17 +745,29 @@ function _getNotifPrefs(){
                     hdrTab.innerHTML = badge;
                 }
             }
+            // 사기글: 팝업 닫힐 때 무조건 flash 제거 (조건 분기 밖에서 처리)
+            if (!isWatch) _removeChatBorderFlash();
             wrap.style.cssText += 'opacity:0;transform:translateX('+(isWatch?'-':'')+'20px);transition:all 0.2s ease;';
             setTimeout(function() {
                 if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-                if (!isWatch) {
-                    var cont = document.getElementById('_imi_fraud_toasts');
-                    if (!cont || cont.childElementCount === 0) _removeChatBorderFlash();
-                }
             }, 220);
         }
 
-        closeX.addEventListener('click', function(e) { e.stopPropagation(); remove(); });
+        // X 버튼: 최소화 (헤더탭 유지, flash/blink 중지, 자동닫기 취소)
+        closeX.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (_autoCloseTimer) { clearTimeout(_autoCloseTimer); _autoCloseTimer = null; }
+            wrap.style.cssText += 'opacity:0;transform:translateX('+(isWatch?'-':'')+'20px);transition:all 0.2s ease;';
+            setTimeout(function() {
+                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
+                if (cont && cont.childElementCount === 0) cont.style.display = 'none';
+            }, 220);
+            if (!isWatch) _removeChatBorderFlash();
+            if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
+            var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
+            if (hdrTab) hdrTab.classList.remove('hdr-tab-blink');
+        });
 
         // 처리완료 버튼 (비거래)
         itemList.addEventListener('click', function(e) {
@@ -780,7 +792,7 @@ function _getNotifPrefs(){
 
         // 사기글: 30초 자동 닫기
         if (!isWatch) {
-            setTimeout(remove, 30000);
+            _autoCloseTimer = setTimeout(remove, 30000);
         }
     };
 }());
@@ -802,20 +814,22 @@ function _applyChatBorderFlash() {
     var el = document.getElementById('chatSection');
     if (!el) return;
     var rect = el.getBoundingClientRect();
+    // body zoom 보정: body의 CSS 레이아웃 너비 vs 실제 viewport 너비 비율
+    var bodyW = document.body.getBoundingClientRect().width;
+    var zoom = bodyW > 0 ? window.innerWidth / bodyW : 1;
     var ov = document.getElementById('_imi_chat_border_flash');
+    if (ov && ov.parentNode !== document.body) { ov.parentNode.removeChild(ov); ov = null; }
     if (!ov) {
         ov = document.createElement('div');
         ov.id = '_imi_chat_border_flash';
-        // border-left 제외: 왼쪽 비거래 팝업(left:20px)과 겹치지 않도록
-        // z-index 1500: 일반 콘텐츠 위, 모달(최저 3500) 아래
         ov.style.cssText = 'position:fixed;pointer-events:none;z-index:1500;box-sizing:border-box;'
             + 'border-top:6px solid #ef4444;border-right:6px solid #ef4444;border-bottom:6px solid #ef4444;border-left:none;';
         document.body.appendChild(ov);
     }
-    ov.style.top = rect.top + 'px';
-    ov.style.left = rect.left + 'px';
-    ov.style.width = rect.width + 'px';
-    ov.style.height = rect.height + 'px';
+    ov.style.top    = (rect.top    * zoom) + 'px';
+    ov.style.left   = (rect.left   * zoom) + 'px';
+    ov.style.width  = (rect.width  * zoom) + 'px';
+    ov.style.height = (rect.height * zoom) + 'px';
     ov.style.animation = 'chatRedFlash 0.5s ease-in-out infinite';
     ov.style.display = '';
 }
@@ -901,12 +915,22 @@ function _showMonitorFlash(s) {
         closeCardBtn.onmouseover = function(){ this.style.opacity=1; };
         closeCardBtn.onmouseout  = function(){ this.style.opacity=0.45; };
         closeCardBtn.onclick = function(){
+            // X 버튼: 패널 최소화 (카드 제거 + 패널 닫기, 헤더탭 유지)
             if(card._autoTimer) clearTimeout(card._autoTimer);
             card.remove();
             fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
             var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
-            if(remaining === 0) _hideMonitorFlashLocal();
-            else fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
+            _removeChatBorderFlash();
+            if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
+            if(fraudTab) fraudTab.classList.remove('hdr-tab-blink'); // 최소화 — 깜빡임 중지, 탭 유지
+            if(remaining === 0) {
+                fraudPanel.style.maxHeight = '0px';
+                fraudPanel.classList.remove('fraud-panel-blink');
+            } else {
+                fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
+                fraudPanel.style.maxHeight = '4px';
+                fraudPanel.classList.remove('fraud-panel-blink');
+            }
         };
         cardHdr.appendChild(closeCardBtn);
         card.appendChild(cardHdr);
@@ -1026,15 +1050,16 @@ function _startTabBlink(ruleName, itemCount, id) {
 function _stopTabBlink(id) {
     if (id !== undefined) {
         window._tabBlinkQueue = (window._tabBlinkQueue || []).filter(function(e) { return e.id !== id; });
+        // fraud 종료 시 다른 항목(watch 등)이 큐에 남아 있어도 border flash는 즉시 제거
+        if (id === 'fraud') _removeChatBorderFlash();
         if (window._tabBlinkQueue.length > 0) return;
     } else {
         window._tabBlinkQueue = [];
+        _removeChatBorderFlash();
     }
     if (window._tabBlinkInterval) { clearInterval(window._tabBlinkInterval); window._tabBlinkInterval = null; }
     if (window._tabBlinkOrigTitle) { document.title = window._tabBlinkOrigTitle; window._tabBlinkOrigTitle = null; }
     window._tabBlinkTick = 0;
-    // fraud 탭 깜빡임이 완전히 끝나면 border flash도 함께 제거
-    if (id === 'fraud' || id === undefined) _removeChatBorderFlash();
 }
 
 function _hideMonitorFlashLocal() {

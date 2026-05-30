@@ -248,12 +248,6 @@
         @keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444;box-shadow:0 4px 16px rgba(239,68,68,0.7)} 50%{border-color:rgba(239,68,68,0.15);box-shadow:none} }
         .watch-panel-blink { animation:_watchPanelBlink 0.85s ease-in-out infinite !important; }
         .fraud-panel-blink  { animation:_fraudPanelBlink 0.75s ease-in-out infinite !important; }
-        #hdrWatchLine { display:none; position:fixed; top:var(--header-h); left:0; width:500px; height:4px; background:#22c55e; z-index:4999; }
-        #hdrFraudLine { display:none; position:fixed; top:var(--header-h); right:0; width:500px; height:4px; background:#ef4444; z-index:4999; }
-        @keyframes _watchLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #22c55e,0 0 16px rgba(34,197,94,0.6)} 50%{opacity:0.15;box-shadow:none} }
-        @keyframes _fraudLineBlink { 0%,100%{opacity:1;box-shadow:0 0 8px #ef4444,0 0 16px rgba(239,68,68,0.6)} 50%{opacity:0.15;box-shadow:none} }
-        #hdrWatchLine.blink { animation:_watchLineBlink 0.85s ease-in-out infinite; }
-        #hdrFraudLine.blink { animation:_fraudLineBlink 0.75s ease-in-out infinite; }
         .hdr-drop-panel { position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:12px; }
         #logPanel { position:fixed; inset:0; z-index:9800; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; }
         #logPanel.hidden { display:none!important; }
@@ -1250,9 +1244,7 @@
     </div>
 </header>
 
-<!-- 헤더 상단 알림 라인 (버튼과 동기화 깜빡임) -->
-<div id="hdrWatchLine"></div>
-<div id="hdrFraudLine"></div>
+
 
 <!-- 비거래/사기글 드롭패널 — 헤더 아래 fixed, 원래 팝업 크기(500px) -->
 <div id="watchDropPanel" style="position:fixed;top:var(--header-h);left:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:#0a1f10;border:2px solid #22c55e;margin-top:2px;"></div>
@@ -8763,30 +8755,6 @@
         row.style.display = (wVis || fVis) ? '' : 'none';
     }
 
-    // 헤더 탭 상태(style/class) 변화 → 상단 라인 자동 동기화
-    (function(){
-        function _syncLine(tab, lineId){
-            var line = document.getElementById(lineId);
-            if(!line || !tab) return;
-            var visible = tab.style.display === 'flex';
-            line.style.display = visible ? 'block' : 'none';
-            if(visible && tab.classList.contains('hdr-tab-blink')){
-                line.classList.add('blink');
-            } else {
-                line.classList.remove('blink');
-            }
-        }
-        function _initLineObservers(){
-            var wTab = document.getElementById('watchHeaderTab');
-            var fTab = document.getElementById('fraudHeaderTab');
-            if(wTab) new MutationObserver(function(){ _syncLine(wTab,'hdrWatchLine'); })
-                .observe(wTab, {attributes:true, attributeFilter:['style','class']});
-            if(fTab) new MutationObserver(function(){ _syncLine(fTab,'hdrFraudLine'); })
-                .observe(fTab, {attributes:true, attributeFilter:['style','class']});
-        }
-        if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _initLineObservers);
-        else _initLineObservers();
-    })();
 
     function _watchPanelToggle(){
         // watchPopup 모드면 하단 토스트 컨테이너 토글
