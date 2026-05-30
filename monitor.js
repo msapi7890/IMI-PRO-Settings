@@ -754,7 +754,7 @@ function _getNotifPrefs(){
             }, 220);
         }
 
-        // X 버튼: 최소화 (헤더탭 유지, flash/blink 중지, 자동닫기 취소)
+        // X 버튼: 닫기 (사기글은 탭+바 정리, 비거래는 최소화 유지)
         closeX.addEventListener('click', function(e) {
             e.stopPropagation();
             if (_autoCloseTimer) { clearTimeout(_autoCloseTimer); _autoCloseTimer = null; }
@@ -762,7 +762,15 @@ function _getNotifPrefs(){
             setTimeout(function() {
                 if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
                 var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
-                if (cont && cont.childElementCount === 0) cont.style.display = 'none';
+                if (cont && cont.childElementCount === 0) {
+                    cont.style.display = 'none';
+                    // 사기글: 마지막 팝업 닫히면 탭도 숨기고 바 제거
+                    if (!isWatch) {
+                        var fTab = document.getElementById('fraudHeaderTab');
+                        if (fTab) { fTab._popupCount = 0; fTab.style.display = 'none'; fTab.classList.remove('hdr-tab-blink'); if (typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow(); }
+                        _removeChatBorderFlash();
+                    }
+                }
             }, 220);
             if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
             var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
@@ -875,7 +883,7 @@ function _showMonitorFlash(s) {
             if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
             fTab._popupCount = (fTab._popupCount || 0) + (s.itemCount || 0);
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
-            if (_np.flash) _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
+            _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
         }
         _fireOsNotif(s);
         return;
@@ -888,7 +896,7 @@ function _showMonitorFlash(s) {
         fraudTab.style.display = 'flex';
         if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
         fraudTab.classList.add('hdr-tab-blink');
-        if (_np.flash) _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
+        _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
 
         // 전체 스크롤 컨테이너 (없으면 생성)
         var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
