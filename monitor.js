@@ -740,11 +740,22 @@ function _getNotifPrefs(){
                     hdrTab.innerHTML = badge;
                 }
             }
-            // 사기글: 팝업 닫힐 때 무조건 flash 제거 (조건 분기 밖에서 처리)
             if (!isWatch) _removeChatBorderFlash();
             wrap.style.cssText += 'opacity:0;transform:translateX('+(isWatch?'-':'')+'20px);transition:all 0.2s ease;';
             setTimeout(function() {
                 if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                // 팝업 제거 후 컨테이너 비었으면 탭 강제 숨기기 (_popupCount 오차 방어)
+                var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
+                if (cont && cont.childElementCount === 0) {
+                    var t = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
+                    if (t && t.style.display !== 'none') {
+                        t.style.display = 'none';
+                        t.classList.remove('hdr-tab-blink');
+                        if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
+                        if (typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
+                        if (!isWatch) _removeChatBorderFlash();
+                    }
+                }
             }, 220);
         }
 
@@ -798,14 +809,11 @@ function _applyChatBorderFlash() {
 function _removeChatBorderFlash() {
     var bar = document.getElementById('fraudTopBar');
     if (bar) bar.classList.remove('active');
-    // fraudDropPanel border 강제 초기화 (카드 없으면 border 투명하게)
+    // fraudDropPanel border + maxHeight 강제 초기화
     var fraudPanel = document.getElementById('fraudDropPanel');
     if (fraudPanel) {
-        var hasCards = fraudPanel.querySelectorAll('[data-fraud-card]').length > 0;
-        if (!hasCards) {
-            fraudPanel.style.maxHeight = '0px';
-            fraudPanel.style.borderColor = 'transparent';
-        }
+        fraudPanel.style.borderColor = 'transparent';
+        fraudPanel.style.maxHeight = '0px';
     }
     // 구버전 잔재 정리
     var hdr = document.querySelector('header');
