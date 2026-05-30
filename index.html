@@ -1327,6 +1327,7 @@
 
         <!-- 채팅방 1: 매뉴얼 채팅 -->
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+            <div id="apiKeyWarningBar" onclick="checkAppStatus()" style="display:none;cursor:pointer;padding:8px 14px;background:#7f1d1d;border-bottom:2px solid #ef4444;font-size:11px;font-weight:900;color:#fca5a5;text-align:center;flex-shrink:0;">⚠ Claude API 키가 설정되지 않았습니다 — 클릭하여 설정</div>
             <div id="chatBox"></div>
             <div class="chat-input-area">
                 <input type="text" id="userInput" class="bordered-input shadow-sm" placeholder="질문을 입력하세요...">
@@ -1408,9 +1409,20 @@
 
     function updateStatusBadge(){
         var badge = document.getElementById('syncStatusBadge');
-        badge.style.borderColor = 'var(--'+currentMode+'-color)';
-        badge.style.color = 'var(--'+currentMode+'-color)';
-        badge.innerText = CLAUDE_API_KEY ? "CLAUDE LIVE" : "\u26A0 API KEY \uD544\uC694";
+        var bar = document.getElementById('apiKeyWarningBar');
+        if(CLAUDE_API_KEY){
+            badge.style.display = 'inline-block';
+            badge.style.borderColor = 'var(--'+currentMode+'-color)';
+            badge.style.color = 'var(--'+currentMode+'-color)';
+            badge.innerText = 'CLAUDE LIVE';
+            if(bar) bar.style.display = 'none';
+        } else {
+            badge.style.display = 'inline-block';
+            badge.style.borderColor = '#ef4444';
+            badge.style.color = '#ef4444';
+            badge.innerText = '\u26A0 API KEY \uD544\uC694';
+            if(bar) bar.style.display = 'block';
+        }
     }
 
     function checkAppStatus(){
