@@ -1483,11 +1483,28 @@
         try{
             await _fbAuthPromise;
             var token = _fbRestToken || '';
+            try {
+                var cu = firebase.auth().currentUser;
+                if(cu) token = await cu.getIdToken(); // 항상 최신 토큰 (SDK가 자동 갱신)
+            } catch(e2) {}
             var authParam = token ? ('&auth='+token) : '';
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
             var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
-            if(r.status===401||r.status===403){ _authFetchBlocked=true; return null; }
+            if(r.status===401||r.status===403){
+                _authFetchBlocked=true;
+                // 토큰 강제 갱신 후 1회 재시도
+                try {
+                    var cu2 = firebase.auth().currentUser;
+                    if(cu2){
+                        token = await cu2.getIdToken(true);
+                        authParam = '&auth='+token;
+                        r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+                        if(r.ok){ _authFetchBlocked=false; return await r.json(); }
+                    }
+                } catch(e3) {}
+                return null;
+            }
             _authFetchBlocked = false;
             return r.ok ? (await r.json()) : null;
         }catch(e){ return null; }
@@ -3286,10 +3303,12 @@
         if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
         var mode = _mfMgmtMode;
         var idx  = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+        var _saveFailed = [];
         for(var i=0;i<_mfPending.length;i++){
             var e   = _mfPending[i];
             var key = e.name.replace(/[.#$\[\]\/]/g,'_');
-            await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','PUT',{start:e.from,end:e.to,title:e.name,category:e.cat,keywords:e.keywords||'',cropTop:e.cropTop||0,cropBottom:(e.cropBottom!==undefined?e.cropBottom:100)});
+            var _saveResult = await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json','PUT',{start:e.from,end:e.to,title:e.name,category:e.cat,keywords:e.keywords||'',cropTop:e.cropTop||0,cropBottom:(e.cropBottom!==undefined?e.cropBottom:100)});
+            if(_saveResult === null){ _saveFailed.push(e.name); continue; }
             if(!idx[e.name]){ await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(e.name)+'.json','PUT',e.name); idx[e.name]=''; }
             // 키워드를 검색 시스템(keywords/ 경로)에도 동기화
             if(e.keywords){
@@ -3298,7 +3317,14 @@
             }
         }
         var prog = document.getElementById('mfNewProgress');
-        if(prog) prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!';
+        if(_saveFailed.length){
+            if(prog) prog.style.color='#ef4444';
+            if(prog) prog.textContent = '❌ 저장 실패 ('+_saveFailed.length+'개): '+_saveFailed.join(', ')+' — 페이지 새로고침 후 다시 시도해주세요.';
+            if(btn){ btn.disabled=false; btn.textContent='💾 전체 저장'; }
+            alert('❌ 저장에 실패했습니다.\n\n실패 항목: '+_saveFailed.join('\n')+'\n\n페이지를 새로고침하면 자동으로 토큰이 갱신됩니다.\n새로고침 후 다시 등록해주세요.');
+            return;
+        }
+        if(prog){ prog.style.color=''; prog.textContent = '✅ '+_mfPending.length+'개 항목 저장 완료!'; }
         _mfPending = [];
         _mfRenderPendingList();
         _mfUpdateNavBadge();
