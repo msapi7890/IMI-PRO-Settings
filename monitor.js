@@ -812,6 +812,11 @@ function _removeChatBorderFlash() {
 setInterval(function() {
     var fraudTab = document.getElementById('fraudHeaderTab');
     if (!fraudTab || fraudTab.style.display !== 'flex') _removeChatBorderFlash();
+    var watchTab = document.getElementById('watchHeaderTab');
+    if (!watchTab || watchTab.style.display !== 'flex') {
+        var watchPanel = document.getElementById('watchDropPanel');
+        if (watchPanel) { watchPanel.style.borderColor = 'transparent'; watchPanel.style.maxHeight = '0px'; }
+    }
 }, 200);
 function _fireOsNotif(s) {
     if (s.ruleType === 'watch' || !('Notification' in window)) return;
