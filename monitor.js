@@ -811,6 +811,8 @@ function _playAlertBeep(){
     }catch(e){}
 }
 function _applyChatBorderFlash() {
+    var fraudTab = document.getElementById('fraudHeaderTab');
+    if (!fraudTab || fraudTab.style.display !== 'flex') return; // 버튼 없으면 바도 없음
     var ov = document.getElementById('_imi_chat_border_flash');
     if (!ov) {
         ov = document.createElement('div');
@@ -825,6 +827,11 @@ function _removeChatBorderFlash() {
     var ov = document.getElementById('_imi_chat_border_flash');
     if (ov) { ov.style.display = 'none'; ov.style.animation = 'none'; }
 }
+// 2초마다 버튼-바 동기화 — 어떤 경로로든 버튼 없으면 바 자동 제거
+setInterval(function() {
+    var fraudTab = document.getElementById('fraudHeaderTab');
+    if (!fraudTab || fraudTab.style.display !== 'flex') _removeChatBorderFlash();
+}, 2000);
 function _fireOsNotif(s) {
     if (s.ruleType === 'watch' || !('Notification' in window)) return;
     var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
