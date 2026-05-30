@@ -1386,8 +1386,10 @@
         {method:'POST',headers:{'Content-Type':'application/json'},
          body:JSON.stringify({email:'imiprobot@gmail.com',password:'mania3001!',returnSecureToken:true})}
     ).then(function(r){return r.json();}).then(function(d){
-        if(d.idToken){ _fbRestToken=d.idToken; try{firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!');}catch(e){} }
-        else console.warn('[FB auth] 실패:', d.error&&d.error.message);
+        if(d.idToken){
+            _fbRestToken=d.idToken;
+            return firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!').catch(function(e){ console.warn('[FB SDK auth] 실패:', e.message); });
+        } else console.warn('[FB auth] 실패:', d.error&&d.error.message);
     }).catch(function(e){ console.warn('[FB auth] 오류:', e.message); });
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
@@ -8617,18 +8619,20 @@
                 cb.scrollTop += e.deltaY > 0 ? 90 : -90;
             }, { passive: false });
         })();
-        var _apiKeyFirstLoad = true;
-        db.ref('config/claude_api_key').on('value', function(snap){
-            CLAUDE_API_KEY = snap.val() || '';
-            updateStatusBadge();
-            if(_apiKeyFirstLoad){
-                _apiKeyFirstLoad = false;
-                if(!CLAUDE_API_KEY){
-                    setTimeout(function(){
-                        addMsg('👋 안녕하세요! IMI PRO v49.0입니다.<br><br><strong>상단 배지를 클릭</strong>하여 Claude API 키를 입력해주세요.','bot');
-                    },300);
+        _fbAuthPromise.then(function(){
+            var _apiKeyFirstLoad = true;
+            db.ref('config/claude_api_key').on('value', function(snap){
+                CLAUDE_API_KEY = snap.val() || '';
+                updateStatusBadge();
+                if(_apiKeyFirstLoad){
+                    _apiKeyFirstLoad = false;
+                    if(!CLAUDE_API_KEY){
+                        setTimeout(function(){
+                            addMsg('👋 안녕하세요! IMI PRO v49.0입니다.<br><br><strong>상단 배지를 클릭</strong>하여 Claude API 키를 입력해주세요.','bot');
+                        },300);
+                    }
                 }
-            }
+            });
         });
 
         // 비거래 감지 인페이지 알림 — Firebase imi_watch_alerts 리스너
