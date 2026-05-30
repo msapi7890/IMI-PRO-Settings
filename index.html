@@ -1421,7 +1421,7 @@
             badge.style.borderColor = '#ef4444';
             badge.style.color = '#ef4444';
             badge.innerText = '\u26A0 API KEY \uD544\uC694';
-            if(bar) bar.style.display = 'block';
+            if(bar) bar.style.display = (_currentUser && _currentUser.role==='admin') ? 'block' : 'none';
         }
     }
 
