@@ -676,12 +676,6 @@ function _getNotifPrefs(){
             + (kw ? '&nbsp;<span style="color:'+btnClr+';font-size:10px;">· "'+_esc(kw)+'"</span>' : '')
             + '</span>'
             + '<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;">'+(data.itemCount||0)+'개</span>';
-        var closeX = document.createElement('span');
-        closeX.textContent = '×';
-        closeX.style.cssText = 'cursor:pointer;opacity:0.45;font-size:16px;line-height:1;flex-shrink:0;padding:0 2px;color:#cbd5e1;margin-left:4px;';
-        closeX.onmouseover = function(){ this.style.opacity=1; };
-        closeX.onmouseout  = function(){ this.style.opacity=0.45; };
-        cardHdr.appendChild(closeX);
         wrap.appendChild(cardHdr);
 
         // 아이템 목록
@@ -754,29 +748,6 @@ function _getNotifPrefs(){
             }, 220);
         }
 
-        // X 버튼: 닫기 (사기글은 탭+바 정리, 비거래는 최소화 유지)
-        closeX.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (_autoCloseTimer) { clearTimeout(_autoCloseTimer); _autoCloseTimer = null; }
-            wrap.style.cssText += 'opacity:0;transform:translateX('+(isWatch?'-':'')+'20px);transition:all 0.2s ease;';
-            setTimeout(function() {
-                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-                var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
-                if (cont && cont.childElementCount === 0) {
-                    cont.style.display = 'none';
-                    // 사기글: 마지막 팝업 닫히면 탭도 숨기고 바 제거
-                    if (!isWatch) {
-                        var fTab = document.getElementById('fraudHeaderTab');
-                        if (fTab) { fTab._popupCount = 0; fTab.style.display = 'none'; fTab.classList.remove('hdr-tab-blink'); if (typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow(); }
-                        _removeChatBorderFlash();
-                    }
-                }
-            }, 220);
-            if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
-            var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
-            if (hdrTab) hdrTab.classList.remove('hdr-tab-blink');
-        });
-
         // 처리완료 버튼 (비거래)
         itemList.addEventListener('click', function(e) {
             var doneBtn = e.target.closest('._imi_toast_done');
@@ -836,7 +807,7 @@ function _removeChatBorderFlash() {
 setInterval(function() {
     var fraudTab = document.getElementById('fraudHeaderTab');
     if (!fraudTab || fraudTab.style.display !== 'flex') _removeChatBorderFlash();
-}, 2000);
+}, 200);
 function _fireOsNotif(s) {
     if (s.ruleType === 'watch' || !('Notification' in window)) return;
     var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
@@ -919,31 +890,6 @@ function _showMonitorFlash(s) {
             +(s.ruleKeyword?'&nbsp;<span style="color:#f87171;font-size:10px;">· "'+_esc(s.ruleKeyword)+'"</span>':'')
             +'</span>'
             +'<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;">'+(s.itemCount||0)+'개</span>';
-        var closeCardBtn = document.createElement('span');
-        closeCardBtn.textContent = '×';
-        closeCardBtn.style.cssText = 'cursor:pointer;opacity:0.45;font-size:16px;line-height:1;flex-shrink:0;padding:0 2px;color:var(--text-main,#cbd5e1);';
-        closeCardBtn.onmouseover = function(){ this.style.opacity=1; };
-        closeCardBtn.onmouseout  = function(){ this.style.opacity=0.45; };
-        closeCardBtn.onclick = function(){
-            // X 버튼: 패널 최소화 (카드 제거 + 패널 닫기, 헤더탭 유지)
-            if(card._autoTimer) clearTimeout(card._autoTimer);
-            card.remove();
-            fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
-            var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
-            if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
-            if(fraudTab) fraudTab.classList.remove('hdr-tab-blink');
-            if(remaining === 0) {
-                fraudPanel.style.maxHeight = '0px';
-                fraudPanel.style.borderColor = 'transparent';
-                fraudPanel.classList.remove('fraud-panel-blink');
-            } else {
-                fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
-                fraudPanel.style.maxHeight = '4px';
-                fraudPanel.style.borderColor = '#ef4444';
-                fraudPanel.classList.remove('fraud-panel-blink');
-            }
-        };
-        cardHdr.appendChild(closeCardBtn);
         card.appendChild(cardHdr);
         card.setAttribute('data-fraud-card','1');
 
