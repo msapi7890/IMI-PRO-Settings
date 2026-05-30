@@ -244,8 +244,8 @@
         @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);border-color:#fca5a5} }
         .hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
         .hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
-        @keyframes _watchPanelBlink { 0%,100%{border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,0.7)} 50%{border-color:rgba(34,197,94,0.15);box-shadow:none} }
-        @keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444;box-shadow:0 4px 16px rgba(239,68,68,0.7)} 50%{border-color:rgba(239,68,68,0.15);box-shadow:none} }
+        @keyframes _watchPanelBlink { 0%,100%{border-color:#22c55e} 50%{border-color:rgba(34,197,94,0.15)} }
+        @keyframes _fraudPanelBlink { 0%,100%{border-color:#ef4444} 50%{border-color:rgba(239,68,68,0.15)} }
         .watch-panel-blink { animation:_watchPanelBlink 0.85s ease-in-out infinite !important; }
         .fraud-panel-blink  { animation:_fraudPanelBlink 0.75s ease-in-out infinite !important; }
         .hdr-drop-panel { position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%); width:500px; max-height:0; overflow:hidden; z-index:5000; transition:max-height 0.28s ease; border-radius:12px; }
@@ -9060,6 +9060,6 @@
     db.ref('tmpl_bay').on('value',function(s){allTemplates.bay=s.val()||{};});
 
 </script>
-<script src="./monitor.js?v=3000867"></script>
+<script src="./monitor.js?v=3000868"></script>
 </body>
 </html>

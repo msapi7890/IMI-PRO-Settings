@@ -811,11 +811,15 @@ function _removeChatBorderFlash() {
 }
 setInterval(function() {
     var fraudTab = document.getElementById('fraudHeaderTab');
-    if (!fraudTab || fraudTab.style.display !== 'flex') _removeChatBorderFlash();
+    if (!fraudTab || fraudTab.style.display !== 'flex') {
+        _removeChatBorderFlash();
+        var fp = document.getElementById('fraudDropPanel');
+        if (fp) { fp.classList.remove('fraud-panel-blink'); fp.style.boxShadow = 'none'; }
+    }
     var watchTab = document.getElementById('watchHeaderTab');
     if (!watchTab || watchTab.style.display !== 'flex') {
-        var watchPanel = document.getElementById('watchDropPanel');
-        if (watchPanel) { watchPanel.style.borderColor = 'transparent'; watchPanel.style.maxHeight = '0px'; }
+        var wp = document.getElementById('watchDropPanel');
+        if (wp) { wp.style.borderColor = 'transparent'; wp.style.maxHeight = '0px'; wp.classList.remove('watch-panel-blink'); wp.style.boxShadow = 'none'; }
     }
 }, 200);
 function _fireOsNotif(s) {
