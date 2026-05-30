@@ -798,6 +798,15 @@ function _applyChatBorderFlash() {
 function _removeChatBorderFlash() {
     var bar = document.getElementById('fraudTopBar');
     if (bar) bar.classList.remove('active');
+    // fraudDropPanel border 강제 초기화 (카드 없으면 border 투명하게)
+    var fraudPanel = document.getElementById('fraudDropPanel');
+    if (fraudPanel) {
+        var hasCards = fraudPanel.querySelectorAll('[data-fraud-card]').length > 0;
+        if (!hasCards) {
+            fraudPanel.style.maxHeight = '0px';
+            fraudPanel.style.borderColor = 'transparent';
+        }
+    }
     // 구버전 잔재 정리
     var hdr = document.querySelector('header');
     if (hdr) hdr.classList.remove('fraud-flash');
