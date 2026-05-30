@@ -1248,8 +1248,8 @@
 
 
 <!-- 비거래/사기글 드롭패널 — 헤더 아래 fixed, 원래 팝업 크기(500px) -->
-<div id="watchDropPanel" style="position:fixed;top:var(--header-h);left:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:#0a1f10;border:2px solid #22c55e;margin-top:2px;"></div>
-<div id="fraudDropPanel" style="position:fixed;top:var(--header-h);right:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid #ef4444;margin-top:2px;"></div>
+<div id="watchDropPanel" style="position:fixed;top:var(--header-h);left:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:#0a1f10;border:2px solid transparent;margin-top:2px;"></div>
+<div id="fraudDropPanel" style="position:fixed;top:var(--header-h);right:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid transparent;margin-top:2px;"></div>
 
 <main class="flex flex-1 overflow-hidden">
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
@@ -8780,15 +8780,18 @@
             var hasItems = panel.querySelectorAll('[data-tid]').length > 0;
             if(hasItems){
                 panel.style.maxHeight = '4px';
+                panel.style.borderColor = '#22c55e';
                 panel.classList.add('watch-panel-blink');
                 _watchAlertMinimized = true;
                 if(tab) tab.classList.add('hdr-tab-blink');
             } else {
                 panel.style.maxHeight = '0px';
+                panel.style.borderColor = 'transparent';
                 panel.classList.remove('watch-panel-blink');
             }
         } else {
             panel.style.maxHeight = '75vh';
+            panel.style.borderColor = '#22c55e';
             panel.classList.remove('watch-panel-blink');
             _watchAlertMinimized = false;
             if(tab) tab.classList.remove('hdr-tab-blink');
@@ -8815,14 +8818,17 @@
             var hasItems = panel.querySelectorAll('[data-tid]').length > 0;
             if(hasItems){
                 panel.style.maxHeight = '4px';
+                panel.style.borderColor = '#ef4444';
                 panel.classList.add('fraud-panel-blink');
                 if(tab) tab.classList.add('hdr-tab-blink');
             } else {
                 panel.style.maxHeight = '0px';
+                panel.style.borderColor = 'transparent';
                 panel.classList.remove('fraud-panel-blink');
             }
         } else {
             panel.style.maxHeight = '75vh';
+            panel.style.borderColor = '#ef4444';
             panel.classList.remove('fraud-panel-blink');
         }
     }
@@ -8895,6 +8901,7 @@
                 tab.style.display = 'none'; _updateWatchFraudRow();
                 tab.innerHTML = '';
                 panel.style.maxHeight = '0px';
+                panel.style.borderColor = 'transparent';
                 panel.innerHTML = '';
                 if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
             } else {
@@ -9020,6 +9027,7 @@
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
                 tab.style.display = 'none';
                 panel.style.maxHeight = '0px';
+                panel.style.borderColor = 'transparent';
                 panel.innerHTML = '';
             };
             tidContainer.appendChild(doneBtn2);
@@ -9028,6 +9036,7 @@
         // 패널 열기 (최소화 상태면 탭만 표시)
         if(!_watchAlertMinimized){
             panel.style.maxHeight = '75vh';
+            panel.style.borderColor = '#22c55e';
         }
     }
 

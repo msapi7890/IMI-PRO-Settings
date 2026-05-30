@@ -924,10 +924,12 @@ function _showMonitorFlash(s) {
             if(fraudTab) fraudTab.classList.remove('hdr-tab-blink');
             if(remaining === 0) {
                 fraudPanel.style.maxHeight = '0px';
+                fraudPanel.style.borderColor = 'transparent';
                 fraudPanel.classList.remove('fraud-panel-blink');
             } else {
                 fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+(fraudPanel._totalCount||0)+'</span>';
                 fraudPanel.style.maxHeight = '4px';
+                fraudPanel.style.borderColor = '#ef4444';
                 fraudPanel.classList.remove('fraud-panel-blink');
             }
         };
@@ -963,6 +965,7 @@ function _showMonitorFlash(s) {
         fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
 
         fraudPanel.style.maxHeight = '75vh';
+        fraudPanel.style.borderColor = '#ef4444';
         fraudPanel.classList.add('fraud-panel-blink');
 
         // 카드별 30초 자동 제거
@@ -1069,7 +1072,7 @@ function _hideMonitorFlashLocal() {
     var fraudTab   = document.getElementById('fraudHeaderTab');
     var fraudPanel = document.getElementById('fraudDropPanel');
     if(fraudTab){ fraudTab.style.display = 'none'; fraudTab.innerHTML = ''; fraudTab.classList.remove('hdr-tab-blink'); if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow(); }
-    if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
+    if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.style.borderColor = 'transparent'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
 }
 
 var _lastFlashAt = 0;
