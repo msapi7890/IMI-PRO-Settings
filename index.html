@@ -1493,7 +1493,7 @@
             var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
             if(r.status===401||r.status===403){
                 _authFetchBlocked=true;
-                // 토큰 강제 갱신 후 1회 재시도
+                // 재시도 1: SDK 토큰 강제갱신 (GitHub Pages 등 SDK 인증 가능한 환경)
                 try {
                     var cu2 = firebase.auth().currentUser;
                     if(cu2){
@@ -1503,6 +1503,20 @@
                         if(r.ok){ _authFetchBlocked=false; return await r.json(); }
                     }
                 } catch(e3) {}
+                // 재시도 2: REST API 재로그인 (localhost 등 SDK 도메인 제한 환경)
+                try {
+                    var rd = await fetch(
+                        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI',
+                        {method:'POST',headers:{'Content-Type':'application/json'},
+                         body:JSON.stringify({email:'imiprobot@gmail.com',password:'mania3001!',returnSecureToken:true})}
+                    ).then(function(rr){return rr.json();});
+                    if(rd && rd.idToken){
+                        _fbRestToken = rd.idToken;
+                        authParam = '&auth='+rd.idToken;
+                        r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+                        if(r.ok){ _authFetchBlocked=false; return await r.json(); }
+                    }
+                } catch(e4) {}
                 return null;
             }
             _authFetchBlocked = false;
