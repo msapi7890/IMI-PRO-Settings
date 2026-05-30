@@ -8718,18 +8718,19 @@
             });
         })();
 
-        // 거래번호 감시 배너 — wsr_ 접두사(비거래 스캔) 제외, 거래번호 감시 항목만 표시
-        db.ref('imi_watch_banner').on('value', function(snap){
-            var data = snap.val() || {};
-            var active = Object.entries(data)
-                .filter(function(e){ return e[1] && e[1].active && !e[0].startsWith('wsr_'); })
-                .map(function(e){ return e[1]; });
+        // 거래번호 감시 배너 — 비거래 버튼(watchHeaderTab)이 보일 때만 표시
+        var _watchBannerActive = [];
+        function _syncWatchBanner() {
             var banner = document.getElementById('watchBanner');
+            var watchTab = document.getElementById('watchHeaderTab');
             if(!banner) return;
-            if(!active.length){ banner.style.display='none'; banner.innerHTML=''; return; }
+            var tabVis = watchTab && watchTab.style.display === 'flex';
+            if(!_watchBannerActive.length || !tabVis) {
+                banner.style.display = 'none'; banner.innerHTML = ''; return;
+            }
             banner.style.display = 'flex';
             var parts = ['<span style="white-space:nowrap;flex-shrink:0;">📦 비거래 노출 감지 —</span>'];
-            active.forEach(function(v, i){
+            _watchBannerActive.forEach(function(v, i){
                 var label = escHtml(v.label || '');
                 var tid = escHtml(v.tid || '');
                 var inner = v.url
@@ -8740,6 +8741,13 @@
                 parts.push('<span style="white-space:nowrap;">'+inner+'</span>');
             });
             banner.innerHTML = parts.join('');
+        }
+        db.ref('imi_watch_banner').on('value', function(snap){
+            var data = snap.val() || {};
+            _watchBannerActive = Object.entries(data)
+                .filter(function(e){ return e[1] && e[1].active && !e[0].startsWith('wsr_'); })
+                .map(function(e){ return e[1]; });
+            _syncWatchBanner();
         });
     };
 
@@ -8815,7 +8823,6 @@
         } else {
             panel.style.maxHeight = '75vh';
             panel.classList.remove('fraud-panel-blink');
-            if(typeof _removeChatBorderFlash === 'function') _removeChatBorderFlash();
         }
     }
 
@@ -8830,6 +8837,7 @@
                 wTab.style.display = 'flex'; _updateWatchFraudRow();
                 wTab._popupCount = data.count || 0;
                 wTab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+wTab._popupCount+'</span>';
+                _syncWatchBanner();
             }
             return;
         }

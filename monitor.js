@@ -738,6 +738,7 @@ function _getNotifPrefs(){
                     hdrTab.classList.remove('hdr-tab-blink');
                     if(typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
                     if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
+                    if(isWatch && typeof _syncWatchBanner === 'function') _syncWatchBanner();
                 } else {
                     var badge = isWatch
                         ? '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+hdrTab._popupCount+'</span>'
@@ -763,7 +764,6 @@ function _getNotifPrefs(){
                 var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
                 if (cont && cont.childElementCount === 0) cont.style.display = 'none';
             }, 220);
-            if (!isWatch) _applyChatBorderFlash(); // 최소화 — 상단 바 깜빡임 시작
             if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
             var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
             if (hdrTab) hdrTab.classList.remove('hdr-tab-blink');
@@ -871,8 +871,9 @@ function _showMonitorFlash(s) {
             if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
             fTab._popupCount = (fTab._popupCount || 0) + (s.itemCount || 0);
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
+            if (_np.flash) _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
         }
-        _fireOsNotif(s); // OS 알림은 popup/드롭다운 모두 동일하게 발생
+        _fireOsNotif(s);
         return;
     }
 
@@ -883,6 +884,7 @@ function _showMonitorFlash(s) {
         fraudTab.style.display = 'flex';
         if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
         fraudTab.classList.add('hdr-tab-blink');
+        if (_np.flash) _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
 
         // 전체 스크롤 컨테이너 (없으면 생성)
         var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
@@ -916,9 +918,8 @@ function _showMonitorFlash(s) {
             card.remove();
             fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
             var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
-            _applyChatBorderFlash(); // 최소화 — 상단 바 깜빡임 시작
             if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
-            if(fraudTab) fraudTab.classList.remove('hdr-tab-blink'); // 최소화 — 깜빡임 중지, 탭 유지
+            if(fraudTab) fraudTab.classList.remove('hdr-tab-blink');
             if(remaining === 0) {
                 fraudPanel.style.maxHeight = '0px';
                 fraudPanel.classList.remove('fraud-panel-blink');
