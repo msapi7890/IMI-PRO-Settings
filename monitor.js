@@ -883,7 +883,7 @@ function _showMonitorFlash(s) {
             if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
             fTab._popupCount = (fTab._popupCount || 0) + (s.itemCount || 0);
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
-            _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
+            if (_np.flash) _applyChatBorderFlash(); // 빨간불깜빡임 ON일 때만 상단 바 표시
         }
         _fireOsNotif(s);
         return;
@@ -896,7 +896,7 @@ function _showMonitorFlash(s) {
         fraudTab.style.display = 'flex';
         if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
         fraudTab.classList.add('hdr-tab-blink');
-        _applyChatBorderFlash(); // 버튼 나오면 빨간 바 시작
+        if (_np.flash) _applyChatBorderFlash(); // 빨간불깜빡임 ON일 때만 상단 바 표시
 
         // 전체 스크롤 컨테이너 (없으면 생성)
         var scrollBox = fraudPanel.querySelector('[data-fraud-scroll]');
