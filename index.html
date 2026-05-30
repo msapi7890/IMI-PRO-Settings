@@ -1327,7 +1327,7 @@
 
         <!-- 채팅방 1: 매뉴얼 채팅 -->
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
-            <div id="apiKeyWarningBar" onclick="checkAppStatus()" style="display:none;cursor:pointer;padding:8px 14px;background:#7f1d1d;border-bottom:2px solid #ef4444;font-size:11px;font-weight:900;color:#fca5a5;text-align:center;flex-shrink:0;">⚠ Claude API 키가 설정되지 않았습니다 — 클릭하여 설정</div>
+            <div id="apiKeyWarningBar" style="display:none;padding:8px 14px;background:#7f1d1d;border-bottom:2px solid #ef4444;font-size:11px;font-weight:900;color:#fca5a5;text-align:center;flex-shrink:0;">⚠ AI 기능이 현재 비활성 상태입니다 — 관리자에게 문의해주세요</div>
             <div id="chatBox"></div>
             <div class="chat-input-area">
                 <input type="text" id="userInput" class="bordered-input shadow-sm" placeholder="질문을 입력하세요...">
@@ -1421,7 +1421,18 @@
             badge.style.borderColor = '#ef4444';
             badge.style.color = '#ef4444';
             badge.innerText = '\u26A0 API KEY \uD544\uC694';
-            if(bar) bar.style.display = (_currentUser && _currentUser.role==='admin') ? 'block' : 'none';
+            if(bar){
+                bar.style.display = 'block';
+                if(_currentUser && _currentUser.role==='admin'){
+                    bar.style.cursor='pointer';
+                    bar.onclick=checkAppStatus;
+                    bar.textContent='⚠ AI 기능이 현재 비활성 상태입니다 — 클릭하여 API 키 설정';
+                } else {
+                    bar.style.cursor='default';
+                    bar.onclick=null;
+                    bar.textContent='⚠ AI 기능이 현재 비활성 상태입니다 — 관리자에게 문의해주세요';
+                }
+            }
         }
     }
 
