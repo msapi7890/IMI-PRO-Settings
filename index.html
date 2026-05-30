@@ -5566,6 +5566,7 @@
         var q=inp.value.trim(); if(!q) return;
         var _now=Date.now(); if(_now-_lastAskTime<500){return;} _lastAskTime=_now;
         addMsg(q,'user'); inp.value=""; inp.focus(); updateAssistPanel(q);
+        window._lastManualSearchQ = q;
         var lid="L"+_now;
         addMsg("\uB9E4\uB274\uC5BC\uC744 \uAC80\uC0C9 \uC911\uC785\uB2C8\uB2E4...","bot",lid);
         var botD=document.getElementById(lid).querySelector('.bubble');
@@ -8125,6 +8126,11 @@
         db.ref(key).once('value', function(snap) {
             var tags = snap.val() || [];
             renderKeywordTags(title, tags);
+            var eid = encodeURIComponent(title);
+            var inputEl = document.getElementById('kwInput_' + eid);
+            if(inputEl && !inputEl.value && window._lastManualSearchQ && window._lastManualSearchQ !== title) {
+                inputEl.value = window._lastManualSearchQ;
+            }
         });
     }
 
