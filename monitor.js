@@ -734,6 +734,8 @@ function _getNotifPrefs(){
                 if(hdrTab._popupCount <= 0) {
                     hdrTab._popupCount = 0;
                     hdrTab.style.display = 'none';
+                    hdrTab.classList.remove('hdr-tab-blink');
+                    if(typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
                     if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
                 } else {
                     var badge = isWatch
