@@ -821,15 +821,6 @@
                 <div id="monBotBadge" style="font-size:10px;font-weight:900;padding:4px 10px;border-radius:6px;background:#334155;color:#94a3b8;">연결 대기</div>
                 <button id="monBotToggleBtn" onclick="toggleBotFromWeb()" style="font-size:11px;font-weight:900;padding:6px 14px;border-radius:7px;border:none;cursor:pointer;background:#334155;color:#94a3b8;white-space:nowrap;transition:0.15s;">봇 상태 로딩...</button>
             </div>
-            <!-- 오늘만 감지 글로벌 토글 -->
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:var(--bg-body);border:1.5px solid var(--border-ui);">
-                <span style="font-size:13px;">📅</span>
-                <div style="flex:1;font-size:12px;font-weight:900;">오늘 등록 물품만 감지</div>
-                <span style="font-size:10px;opacity:0.45;font-weight:700;">켜면 전체 규칙에 적용</span>
-                <button id="tog-global-today" onclick="toggleGlobalTodayOnly()" style="width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s;background:#475569;">
-                    <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
-                </button>
-            </div>
             <!-- 규칙 목록 -->
             <div>
                 <div style="font-size:11px;font-weight:900;opacity:0.5;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;">📋 IMI BOT 감시 규칙</div>
@@ -843,6 +834,15 @@
         </div>
         <!-- 탭2: 사기글 규칙 관리 -->
         <div id="monTabContent2" class="mon-body" style="display:none;">
+            <!-- 오늘만 감지 토글 -->
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:var(--bg-body);border:1.5px solid var(--border-ui);margin-bottom:10px;">
+                <span style="font-size:13px;">📅</span>
+                <div style="flex:1;font-size:12px;font-weight:900;">오늘 등록 물품만 감지</div>
+                <span style="font-size:10px;opacity:0.45;font-weight:700;">비거래 제외, 사기글 규칙에만 적용</span>
+                <button id="tog-global-today" onclick="toggleGlobalTodayOnly()" style="width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s;background:#475569;">
+                    <span class="sw-dot" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform 0.2s;display:block;"></span>
+                </button>
+            </div>
             <!-- 사기글 활성 시간 설정 -->
             <div style="padding:12px 14px;background:var(--bg-body);border-radius:10px;border:1.5px solid var(--border-ui);margin-bottom:10px;">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
