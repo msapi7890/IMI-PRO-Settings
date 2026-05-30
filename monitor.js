@@ -737,7 +737,7 @@ function _getNotifPrefs(){
                     hdrTab.classList.remove('hdr-tab-blink');
                     if(typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
                     if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
-                    if (!isWatch) document.getElementById('chatSection').classList.remove('monitor-border-flash');
+                    if (!isWatch) _removeChatBorderFlash();
                 } else {
                     var badge = isWatch
                         ? '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+hdrTab._popupCount+'</span>'
@@ -746,7 +746,13 @@ function _getNotifPrefs(){
                 }
             }
             wrap.style.cssText += 'opacity:0;transform:translateX('+(isWatch?'-':'')+'20px);transition:all 0.2s ease;';
-            setTimeout(function() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 220);
+            setTimeout(function() {
+                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                if (!isWatch) {
+                    var cont = document.getElementById('_imi_fraud_toasts');
+                    if (!cont || cont.childElementCount === 0) _removeChatBorderFlash();
+                }
+            }, 220);
         }
 
         closeX.addEventListener('click', function(e) { e.stopPropagation(); remove(); });
@@ -792,6 +798,28 @@ function _playAlertBeep(){
         });
     }catch(e){}
 }
+function _applyChatBorderFlash() {
+    var el = document.getElementById('chatSection');
+    if (!el) return;
+    var rect = el.getBoundingClientRect();
+    var ov = document.getElementById('_imi_chat_border_flash');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = '_imi_chat_border_flash';
+        ov.style.cssText = 'position:fixed;pointer-events:none;z-index:9998;box-sizing:border-box;border:6px solid #ef4444;';
+        document.body.appendChild(ov);
+    }
+    ov.style.top = rect.top + 'px';
+    ov.style.left = rect.left + 'px';
+    ov.style.width = rect.width + 'px';
+    ov.style.height = rect.height + 'px';
+    ov.style.animation = 'chatRedFlash 0.5s ease-in-out infinite';
+    ov.style.display = '';
+}
+function _removeChatBorderFlash() {
+    var ov = document.getElementById('_imi_chat_border_flash');
+    if (ov) { ov.style.display = 'none'; ov.style.animation = 'none'; }
+}
 function _fireOsNotif(s) {
     if (s.ruleType === 'watch' || !('Notification' in window)) return;
     var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
@@ -818,7 +846,7 @@ function _showMonitorFlash(s) {
 
     // popup ON → 하단 팝업만 표시
     if (_np.popup) {
-        if (_np.flash) { document.getElementById('chatSection').classList.add('monitor-border-flash'); _triggerFullscreenFlash(); }
+        if (_np.flash) { _applyChatBorderFlash(); _triggerFullscreenFlash(); }
         if (_np.sound) _playAlertBeep();
         _startTabBlink(s.ruleName, s.itemCount, 'fraud');
         _showInPagePopup('fraud', s);
@@ -926,7 +954,7 @@ function _showMonitorFlash(s) {
     }
 
     if (_np.flash) {
-        document.getElementById('chatSection').classList.add('monitor-border-flash');
+        _applyChatBorderFlash();
         _triggerFullscreenFlash();
     }
 
@@ -1005,7 +1033,7 @@ function _stopTabBlink(id) {
 }
 
 function _hideMonitorFlashLocal() {
-    document.getElementById('chatSection').classList.remove('monitor-border-flash');
+    _removeChatBorderFlash();
     if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
     if (window._overlayFlashInterval) { clearInterval(window._overlayFlashInterval); window._overlayFlashInterval = null; }
     var overlay = document.getElementById('monFullscreenOverlay');
