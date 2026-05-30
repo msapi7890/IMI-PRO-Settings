@@ -737,6 +737,7 @@ function _getNotifPrefs(){
                     hdrTab.classList.remove('hdr-tab-blink');
                     if(typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
                     if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
+                    if (!isWatch) document.getElementById('chatSection').classList.remove('monitor-border-flash');
                 } else {
                     var badge = isWatch
                         ? '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+hdrTab._popupCount+'</span>'
