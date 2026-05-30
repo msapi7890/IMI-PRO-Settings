@@ -1411,10 +1411,7 @@
         var badge = document.getElementById('syncStatusBadge');
         var bar = document.getElementById('apiKeyWarningBar');
         if(CLAUDE_API_KEY){
-            badge.style.display = 'inline-block';
-            badge.style.borderColor = 'var(--'+currentMode+'-color)';
-            badge.style.color = 'var(--'+currentMode+'-color)';
-            badge.innerText = 'CLAUDE LIVE';
+            badge.style.display = 'none';
             if(bar) bar.style.display = 'none';
         } else {
             badge.style.display = 'inline-block';
