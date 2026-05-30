@@ -813,13 +813,15 @@ function _playAlertBeep(){
 function _applyChatBorderFlash() {
     var fraudTab = document.getElementById('fraudHeaderTab');
     if (!fraudTab || fraudTab.style.display !== 'flex') return;
-    var hdr = document.querySelector('header');
-    if (hdr) hdr.classList.add('fraud-flash');
+    var bar = document.getElementById('fraudTopBar');
+    if (bar) bar.classList.add('active');
 }
 function _removeChatBorderFlash() {
+    var bar = document.getElementById('fraudTopBar');
+    if (bar) bar.classList.remove('active');
+    // 구버전 잔재 정리
     var hdr = document.querySelector('header');
     if (hdr) hdr.classList.remove('fraud-flash');
-    // 혹시 남아있는 구버전 엘리먼트도 제거
     var old = document.getElementById('_imi_chat_border_flash');
     if (old && old.parentNode) old.parentNode.removeChild(old);
 }

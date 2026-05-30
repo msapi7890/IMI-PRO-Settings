@@ -261,16 +261,20 @@
         .log-item-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-ui); }
         .log-item-row:last-child { border-bottom:none; }
         #monitorAlertFlash.hidden { display:none!important; }
-        @keyframes fraudHeaderFlash {
-            0%,100% { border-bottom-color:#ef4444; box-shadow:0 3px 10px rgba(239,68,68,0.7); }
-            50%      { border-bottom-color:rgba(239,68,68,0.15); box-shadow:none; }
+        #fraudTopBar { position:fixed; top:0; left:0; right:0; height:3px; z-index:9999; pointer-events:none; display:none; }
+        @keyframes fraudTopBarAnim {
+            0%,100% { background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.9),0 0 20px rgba(239,68,68,0.4); }
+            50%      { background:rgba(239,68,68,0.15); box-shadow:none; }
         }
-        header.fraud-flash { animation:fraudHeaderFlash 0.75s ease-in-out infinite; border-bottom-width:3px !important; }
+        #fraudTopBar.active { display:block; animation:fraudTopBarAnim 0.75s ease-in-out infinite; }
     </style>
     <script src="terms.js"></script>
 </head>
 
 <body class="light-mode" id="mainBody">
+
+<!-- 사기글 감지 상단 빨간 바 -->
+<div id="fraudTopBar"></div>
 
 <!-- ===== 락 화면 ===== -->
 <div id="lockScreen" style="position:fixed;inset:0;z-index:99999;background:#0f172a;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
