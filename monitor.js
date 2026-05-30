@@ -806,7 +806,10 @@ function _applyChatBorderFlash() {
     if (!ov) {
         ov = document.createElement('div');
         ov.id = '_imi_chat_border_flash';
-        ov.style.cssText = 'position:fixed;pointer-events:none;z-index:9998;box-sizing:border-box;border:6px solid #ef4444;';
+        // border-left 제외: 왼쪽 비거래 팝업(left:20px)과 겹치지 않도록
+        // z-index 1500: 일반 콘텐츠 위, 모달(최저 3500) 아래
+        ov.style.cssText = 'position:fixed;pointer-events:none;z-index:1500;box-sizing:border-box;'
+            + 'border-top:6px solid #ef4444;border-right:6px solid #ef4444;border-bottom:6px solid #ef4444;border-left:none;';
         document.body.appendChild(ov);
     }
     ov.style.top = rect.top + 'px';
@@ -1030,6 +1033,8 @@ function _stopTabBlink(id) {
     if (window._tabBlinkInterval) { clearInterval(window._tabBlinkInterval); window._tabBlinkInterval = null; }
     if (window._tabBlinkOrigTitle) { document.title = window._tabBlinkOrigTitle; window._tabBlinkOrigTitle = null; }
     window._tabBlinkTick = 0;
+    // fraud 탭 깜빡임이 완전히 끝나면 border flash도 함께 제거
+    if (id === 'fraud' || id === undefined) _removeChatBorderFlash();
 }
 
 function _hideMonitorFlashLocal() {
@@ -1051,9 +1056,7 @@ var _notifSentTids = new Set(); // 이미 알림 보낸 TID — 여러 규칙 �
 db.ref('monitor_flash_state').on('value', function(snap) {
     var s = snap.val();
     if (!s) return;
-    // at이 15초 이내 + 이전에 처리한 at과 다를 때만 표시
-    // (90초 → 15초로 단축: 오래된 감지가 뒤늦게 재울리는 현상 방지)
-    if (s.active && s.at && (Date.now() - s.at) < 15000 && s.at !== _lastFlashAt) {
+    if (s.active && s.at && (Date.now() - s.at) < 60000 && s.at !== _lastFlashAt) {
         _lastFlashAt = s.at;
         _showMonitorFlash(s);
         var panel = document.getElementById('logPanel');
