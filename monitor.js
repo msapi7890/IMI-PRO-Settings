@@ -789,6 +789,26 @@ function _playAlertBeep(){
         });
     }catch(e){}
 }
+function _fireOsNotif(s) {
+    if (s.ruleType === 'watch' || !('Notification' in window)) return;
+    var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
+    var newTids = allTids.filter(function(t){ return !_notifSentTids.has(t); });
+    var shouldNotif = allTids.length === 0 || newTids.length > 0;
+    newTids.forEach(function(t){ _notifSentTids.add(t); });
+    if (!shouldNotif) return;
+    var notifCount = allTids.length === 0 ? (s.itemCount||0) : newTids.length;
+    var _fn = function() {
+        var _n = new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
+            body: notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
+            icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+            tag: 'imi-pro-alert'
+        });
+        _n.onclick = function() { window.focus(); };
+    };
+    if (Notification.permission === 'granted') { _fn(); }
+    else if (Notification.permission === 'default') { Notification.requestPermission().then(function(p){ if(p==='granted') _fn(); }); }
+}
+
 function _showMonitorFlash(s) {
     if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
     var _np=_getNotifPrefs();
@@ -808,6 +828,7 @@ function _showMonitorFlash(s) {
             fTab._popupCount = (fTab._popupCount || 0) + (s.itemCount || 0);
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
         }
+        _fireOsNotif(s); // OS 알림은 popup/드롭다운 모두 동일하게 발생
         return;
     }
 
@@ -912,33 +933,7 @@ function _showMonitorFlash(s) {
     // 경고음
     if (_np.sound) _playAlertBeep();
 
-    // OS 브라우저 알림 — 비거래(watch) 타입은 스킵
-    if (s.ruleType !== 'watch' && 'Notification' in window) {
-        // 이미 알림 보낸 TID는 제외 — 여러 규칙에서 같은 TID 감지 시 첫 번째만 알림
-        var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
-        var newTids = allTids.filter(function(t){ return !_notifSentTids.has(t); });
-        // TID 없는 감지(tid 없는 항목만 있는 경우)는 그냥 1회 허용
-        var shouldNotif = allTids.length === 0 || newTids.length > 0;
-        newTids.forEach(function(t){ _notifSentTids.add(t); });
-        var notifCount = allTids.length === 0 ? (s.itemCount||0) : newTids.length;
-        if (shouldNotif) {
-            var _fireNotif = function() {
-                var _n = new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
-                    body: notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
-                    icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
-                    tag: 'imi-pro-alert'
-                });
-                _n.onclick = function() { window.focus(); };
-            };
-            if (Notification.permission === 'granted') {
-                _fireNotif();
-            } else if (Notification.permission === 'default') {
-                Notification.requestPermission().then(function(perm) {
-                    if (perm === 'granted') _fireNotif();
-                });
-            }
-        }
-    }
+    _fireOsNotif(s); // OS 브라우저 알림
 
     // 전역 타이머 제거 — 카드별 30초 타이머로 대체
     if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
