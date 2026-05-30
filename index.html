@@ -261,10 +261,11 @@
         .log-item-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-ui); }
         .log-item-row:last-child { border-bottom:none; }
         #monitorAlertFlash.hidden { display:none!important; }
-        @keyframes chatRedFlash {
-            0%,100% { background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.9); }
-            50%      { background:rgba(239,68,68,0.15); box-shadow:none; }
+        @keyframes fraudHeaderFlash {
+            0%,100% { border-bottom-color:#ef4444; box-shadow:0 3px 10px rgba(239,68,68,0.7); }
+            50%      { border-bottom-color:rgba(239,68,68,0.15); box-shadow:none; }
         }
+        header.fraud-flash { animation:fraudHeaderFlash 0.75s ease-in-out infinite; border-bottom-width:3px !important; }
     </style>
     <script src="terms.js"></script>
 </head>

@@ -812,22 +812,17 @@ function _playAlertBeep(){
 }
 function _applyChatBorderFlash() {
     var fraudTab = document.getElementById('fraudHeaderTab');
-    if (!fraudTab || fraudTab.style.display !== 'flex') return; // 버튼 없으면 바도 없음
-    var ov = document.getElementById('_imi_chat_border_flash');
-    if (!ov) {
-        ov = document.createElement('div');
-        ov.id = '_imi_chat_border_flash';
-        ov.style.cssText = 'position:fixed;top:0;left:0;right:0;height:5px;pointer-events:none;z-index:99999;';
-        document.body.appendChild(ov);
-    }
-    ov.style.animation = 'chatRedFlash 0.5s ease-in-out infinite';
-    ov.style.display = '';
+    if (!fraudTab || fraudTab.style.display !== 'flex') return;
+    var hdr = document.querySelector('header');
+    if (hdr) hdr.classList.add('fraud-flash');
 }
 function _removeChatBorderFlash() {
-    var ov = document.getElementById('_imi_chat_border_flash');
-    if (ov) { ov.style.display = 'none'; ov.style.animation = 'none'; }
+    var hdr = document.querySelector('header');
+    if (hdr) hdr.classList.remove('fraud-flash');
+    // 혹시 남아있는 구버전 엘리먼트도 제거
+    var old = document.getElementById('_imi_chat_border_flash');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
 }
-// 2초마다 버튼-바 동기화 — 어떤 경로로든 버튼 없으면 바 자동 제거
 setInterval(function() {
     var fraudTab = document.getElementById('fraudHeaderTab');
     if (!fraudTab || fraudTab.style.display !== 'flex') _removeChatBorderFlash();
