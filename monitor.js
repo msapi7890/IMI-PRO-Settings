@@ -168,8 +168,10 @@ function _renderBotStatus() {
     });
     var canCtrl = _isBotPrivileged();
     ruleList.innerHTML = rules.map(function(r) {
-        var runColor = (r.enabled && r.tabOpen) ? '#22c55e' : (r.enabled ? '#f59e0b' : '#94a3b8');
-        var runLabel = (r.enabled && r.tabOpen) ? '● 감시중' : (r.enabled ? '○ 대기' : '■ 비활성');
+        var liveRule = _botRules.find(function(br) { return br.id === r.id; });
+        var isEnabled = liveRule !== undefined ? liveRule.enabled : r.enabled;
+        var runColor = (isEnabled && r.tabOpen) ? '#22c55e' : (isEnabled ? '#f59e0b' : '#94a3b8');
+        var runLabel = (isEnabled && r.tabOpen) ? '● 감시중' : (isEnabled ? '○ 대기' : '■ 비활성');
         var chkId = 'ruleChk_' + r.id;
         var chkDisabled = canCtrl ? '' : 'disabled';
         var isWatch = r.type === 'watch';
@@ -180,7 +182,7 @@ function _renderBotStatus() {
         return '<div style="border:1.5px solid var(--border-ui);border-left:3px solid '+(isWatch?'#22c55e':'#ef4444')+';border-radius:10px;padding:10px 13px;margin-bottom:6px;background:var(--bg-body);">'
             + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
             + '<label style="display:flex;align-items:center;gap:6px;cursor:'+(canCtrl?'pointer':'default')+';flex:1;min-width:0;">'
-            + '<input type="checkbox" id="' + chkId + '" ' + (r.enabled ? 'checked' : '') + ' ' + chkDisabled + ' onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
+            + '<input type="checkbox" id="' + chkId + '" ' + (isEnabled ? 'checked' : '') + ' ' + chkDisabled + ' onchange="toggleBotRuleEnabled(\'' + _esc(r.id) + '\',this.checked)" style="width:15px;height:15px;cursor:'+(canCtrl?'pointer':'default')+';accent-color:var(--active-focus-color);">'
             + '<span style="font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.name) + '</span>'
             + '</label>'
             + typeTag
