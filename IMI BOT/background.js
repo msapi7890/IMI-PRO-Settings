@@ -721,16 +721,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true });
     }
     if (msg.type === 'FOCUS_MAIN_WINDOW') {
-        chrome.tabs.query({}, function(tabs) {
-            var t = tabs.find(function(t) {
-                return t.title && t.title.includes('IMI PRO') && t.url && !t.url.startsWith('chrome-extension://');
-            });
-            if (t) {
-                chrome.tabs.update(t.id, { active: true }, function() {
-                    chrome.windows.update(t.windowId, { focused: true, state: 'normal' });
-                });
-            }
-        });
+        _focusImiProTab();
         sendResponse({ ok: true });
     }
 });
@@ -748,7 +739,7 @@ function showOsNotif(type, data) {
     });
 }
 
-chrome.notifications.onClicked.addListener(function(notifId) {
+function _focusImiProTab() {
     chrome.tabs.query({}, function(tabs) {
         var t = tabs.find(function(tab) {
             if (!tab.url) return false;
@@ -759,11 +750,17 @@ chrome.notifications.onClicked.addListener(function(notifId) {
             return tab.title && tab.title.includes('IMI PRO') && tab.url && !tab.url.startsWith('chrome-extension://');
         });
         if (t) {
-            chrome.tabs.update(t.id, { active: true }, function() {
-                chrome.windows.update(t.windowId, { focused: true, state: 'normal' });
+            // 창 포커스 먼저, 그 다음 탭 활성화
+            chrome.windows.update(t.windowId, { focused: true, drawAttention: true }, function() {
+                chrome.tabs.update(t.id, { active: true });
             });
         }
     });
+}
+
+chrome.notifications.onClicked.addListener(function(notifId) {
+    if (!notifId.startsWith('imi_')) return;
+    _focusImiProTab();
     chrome.notifications.clear(notifId);
 });
 
