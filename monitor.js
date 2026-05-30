@@ -800,26 +800,14 @@ function _playAlertBeep(){
         });
     }catch(e){}
 }
-function _applyChatBorderFlash() {
-    var fraudTab = document.getElementById('fraudHeaderTab');
-    if (!fraudTab || fraudTab.style.display !== 'flex') return;
-    var bar = document.getElementById('fraudTopBar');
-    if (bar) bar.classList.add('active');
-}
+function _applyChatBorderFlash() {}
 function _removeChatBorderFlash() {
-    var bar = document.getElementById('fraudTopBar');
-    if (bar) bar.classList.remove('active');
     // fraudDropPanel border + maxHeight 강제 초기화
     var fraudPanel = document.getElementById('fraudDropPanel');
     if (fraudPanel) {
         fraudPanel.style.borderColor = 'transparent';
         fraudPanel.style.maxHeight = '0px';
     }
-    // 구버전 잔재 정리
-    var hdr = document.querySelector('header');
-    if (hdr) hdr.classList.remove('fraud-flash');
-    var old = document.getElementById('_imi_chat_border_flash');
-    if (old && old.parentNode) old.parentNode.removeChild(old);
 }
 setInterval(function() {
     var fraudTab = document.getElementById('fraudHeaderTab');

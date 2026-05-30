@@ -241,7 +241,7 @@
         .hdr-tab-watch { background:rgba(34,197,94,0.15); border:2px solid #22c55e; color:#22c55e; }
         .hdr-tab-fraud { background:rgba(239,68,68,0.15); border:2px solid #ef4444; color:#ef4444; }
         @keyframes _hdrWatchBlink { 0%,100%{background:rgba(34,197,94,0.15);box-shadow:none;border-color:#22c55e} 50%{background:rgba(34,197,94,0.55);box-shadow:0 0 14px rgba(34,197,94,0.9),0 0 28px rgba(34,197,94,0.4);border-color:#86efac} }
-        @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);box-shadow:none;border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);box-shadow:0 0 14px rgba(239,68,68,0.9),0 0 28px rgba(239,68,68,0.4);border-color:#fca5a5} }
+        @keyframes _hdrFraudBlink { 0%,100%{background:rgba(239,68,68,0.15);border-color:#ef4444} 50%{background:rgba(239,68,68,0.55);border-color:#fca5a5} }
         .hdr-tab-watch.hdr-tab-blink { animation:_hdrWatchBlink 0.85s ease-in-out infinite; }
         .hdr-tab-fraud.hdr-tab-blink { animation:_hdrFraudBlink 0.75s ease-in-out infinite; }
         @keyframes _watchPanelBlink { 0%,100%{border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,0.7)} 50%{border-color:rgba(34,197,94,0.15);box-shadow:none} }
@@ -261,20 +261,11 @@
         .log-item-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border-ui); }
         .log-item-row:last-child { border-bottom:none; }
         #monitorAlertFlash.hidden { display:none!important; }
-        #fraudTopBar { position:fixed; top:0; left:0; right:0; height:3px; z-index:9999; pointer-events:none; display:none; }
-        @keyframes fraudTopBarAnim {
-            0%,100% { background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.9),0 0 20px rgba(239,68,68,0.4); }
-            50%      { background:rgba(239,68,68,0.15); box-shadow:none; }
-        }
-        #fraudTopBar.active { display:block; animation:fraudTopBarAnim 0.75s ease-in-out infinite; }
     </style>
     <script src="terms.js"></script>
 </head>
 
 <body class="light-mode" id="mainBody">
-
-<!-- 사기글 감지 상단 빨간 바 -->
-<div id="fraudTopBar"></div>
 
 <!-- ===== 락 화면 ===== -->
 <div id="lockScreen" style="position:fixed;inset:0;z-index:99999;background:#0f172a;align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
@@ -9069,6 +9060,6 @@
     db.ref('tmpl_bay').on('value',function(s){allTemplates.bay=s.val()||{};});
 
 </script>
-<script src="./monitor.js?v=3000865"></script>
+<script src="./monitor.js?v=3000866"></script>
 </body>
 </html>
