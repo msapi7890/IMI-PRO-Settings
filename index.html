@@ -1482,6 +1482,9 @@
     async function _authFetch(path, method, data){
         try{
             await _fbAuthPromise;
+            // % 기호가 유효한 퍼센트 인코딩(%XX)이 아닌 경우 → %25로 치환, 공백 → %20
+            // (예: "200% 구매" → "200%25%20구매" — 이미 인코딩된 _ukey 경로는 영향 없음)
+            var safePath = path.replace(/%(?![0-9A-Fa-f]{2})/g,'%25').replace(/\s/g,'%20');
             var token = _fbRestToken || '';
             try {
                 var cu = firebase.auth().currentUser;
@@ -1490,7 +1493,7 @@
             var authParam = token ? ('&auth='+token) : '';
             var opts = {cache:'no-store'};
             if(method){ opts.method=method; opts.headers={'Content-Type':'application/json'}; if(data!==undefined) opts.body=JSON.stringify(data); }
-            var r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+            var r = await fetch(_AUTH_DB+'/'+safePath+'?_t='+Date.now()+authParam, opts);
             if(r.status===401||r.status===403){
                 _authFetchBlocked=true;
                 // 재시도 1: SDK 토큰 강제갱신 (GitHub Pages 등 SDK 인증 가능한 환경)
@@ -1499,7 +1502,7 @@
                     if(cu2){
                         token = await cu2.getIdToken(true);
                         authParam = '&auth='+token;
-                        r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+                        r = await fetch(_AUTH_DB+'/'+safePath+'?_t='+Date.now()+authParam, opts);
                         if(r.ok){ _authFetchBlocked=false; return await r.json(); }
                     }
                 } catch(e3) {}
@@ -1513,7 +1516,7 @@
                     if(rd && rd.idToken){
                         _fbRestToken = rd.idToken;
                         authParam = '&auth='+rd.idToken;
-                        r = await fetch(_AUTH_DB+'/'+path+'?_t='+Date.now()+authParam, opts);
+                        r = await fetch(_AUTH_DB+'/'+safePath+'?_t='+Date.now()+authParam, opts);
                         if(r.ok){ _authFetchBlocked=false; return await r.json(); }
                     }
                 } catch(e4) {}

@@ -641,7 +641,7 @@ function _getNotifPrefs(){
     function _getContainer(isWatch) {
         var id = isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts';
         var c = document.getElementById(id);
-        if (c) return c;
+        if (c) { c.style.display = ''; return c; } // 새 알림 시 숨겨진 컨테이너도 재표시
         c = document.createElement('div');
         c.id = id;
         c.style.cssText = 'position:fixed;z-index:2147483640;bottom:20px;'
@@ -799,10 +799,11 @@ function _showMonitorFlash(s) {
         if (_np.sound) _playAlertBeep();
         _startTabBlink(s.ruleName, s.itemCount, 'fraud');
         _showInPagePopup('fraud', s);
-        // 상단바 탭 배지 표시
+        // 상단바 탭 배지 표시 + 줄 깜빡임
         var fTab = document.getElementById('fraudHeaderTab');
         if(fTab) {
             fTab.style.display = 'flex';
+            fTab.classList.add('hdr-tab-blink');
             if(typeof _updateWatchFraudRow === 'function') _updateWatchFraudRow();
             fTab._popupCount = (fTab._popupCount || 0) + (s.itemCount || 0);
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
