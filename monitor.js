@@ -811,25 +811,13 @@ function _playAlertBeep(){
     }catch(e){}
 }
 function _applyChatBorderFlash() {
-    var el = document.getElementById('chatSection');
-    if (!el) return;
-    var rect = el.getBoundingClientRect();
-    // body zoom 보정: body의 CSS 레이아웃 너비 vs 실제 viewport 너비 비율
-    var bodyW = document.body.getBoundingClientRect().width;
-    var zoom = bodyW > 0 ? window.innerWidth / bodyW : 1;
     var ov = document.getElementById('_imi_chat_border_flash');
-    if (ov && ov.parentNode !== document.body) { ov.parentNode.removeChild(ov); ov = null; }
     if (!ov) {
         ov = document.createElement('div');
         ov.id = '_imi_chat_border_flash';
-        ov.style.cssText = 'position:fixed;pointer-events:none;z-index:1500;box-sizing:border-box;'
-            + 'border-top:6px solid #ef4444;border-right:6px solid #ef4444;border-bottom:6px solid #ef4444;border-left:none;';
+        ov.style.cssText = 'position:fixed;top:0;left:0;right:0;height:5px;pointer-events:none;z-index:99999;';
         document.body.appendChild(ov);
     }
-    ov.style.top    = (rect.top    * zoom) + 'px';
-    ov.style.left   = (rect.left   * zoom) + 'px';
-    ov.style.width  = (rect.width  * zoom) + 'px';
-    ov.style.height = (rect.height * zoom) + 'px';
     ov.style.animation = 'chatRedFlash 0.5s ease-in-out infinite';
     ov.style.display = '';
 }
