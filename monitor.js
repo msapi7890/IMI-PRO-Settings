@@ -922,11 +922,12 @@ function _showMonitorFlash(s) {
         var notifCount = allTids.length === 0 ? (s.itemCount||0) : newTids.length;
         if (shouldNotif) {
             var _fireNotif = function() {
-                new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
+                var _n = new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
                     body: notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
                     icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
                     tag: 'imi-pro-alert'
                 });
+                _n.onclick = function() { window.focus(); };
             };
             if (Notification.permission === 'granted') {
                 _fireNotif();
