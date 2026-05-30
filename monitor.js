@@ -763,7 +763,7 @@ function _getNotifPrefs(){
                 var cont = document.getElementById(isWatch ? '_imi_watch_toasts' : '_imi_fraud_toasts');
                 if (cont && cont.childElementCount === 0) cont.style.display = 'none';
             }, 220);
-            if (!isWatch) _removeChatBorderFlash();
+            if (!isWatch) _applyChatBorderFlash(); // 최소화 — 상단 바 깜빡임 시작
             if (typeof _stopTabBlink === 'function') _stopTabBlink(isWatch ? 'watch' : 'fraud');
             var hdrTab = document.getElementById(isWatch ? 'watchHeaderTab' : 'fraudHeaderTab');
             if (hdrTab) hdrTab.classList.remove('hdr-tab-blink');
@@ -846,12 +846,20 @@ function _fireOsNotif(s) {
 }
 
 function _showMonitorFlash(s) {
-    if (s.ruleType === 'watch') return; // 비거래는 왼쪽 헤더패널만 사용
+    if (s.ruleType === 'watch') return;
+    // 필터제외 물품 제거 — 재감지 시 이미 제외된 물품은 알림 안 띄움
+    var filteredRows = (s.itemRows || []).filter(function(it) {
+        var k = it.key || (it.t||'').substring(0,30).trim();
+        return !_blockedKeysCache.has(String(k));
+    });
+    if (filteredRows.length === 0) return;
+    s.itemRows = filteredRows;
+    s.itemCount = filteredRows.length;
     var _np=_getNotifPrefs();
 
     // popup ON → 하단 팝업만 표시
     if (_np.popup) {
-        if (_np.flash) { _applyChatBorderFlash(); _triggerFullscreenFlash(); }
+        if (_np.flash) { _triggerFullscreenFlash(); }
         if (_np.sound) _playAlertBeep();
         _startTabBlink(s.ruleName, s.itemCount, 'fraud');
         _showInPagePopup('fraud', s);
@@ -908,7 +916,7 @@ function _showMonitorFlash(s) {
             card.remove();
             fraudPanel._totalCount = Math.max(0, (fraudPanel._totalCount||0) - (s.itemCount||0));
             var remaining = scrollBox.querySelectorAll('[data-fraud-card]').length;
-            _removeChatBorderFlash();
+            _applyChatBorderFlash(); // 최소화 — 상단 바 깜빡임 시작
             if(typeof _stopTabBlink === 'function') _stopTabBlink('fraud');
             if(fraudTab) fraudTab.classList.remove('hdr-tab-blink'); // 최소화 — 깜빡임 중지, 탭 유지
             if(remaining === 0) {
@@ -969,7 +977,6 @@ function _showMonitorFlash(s) {
     }
 
     if (_np.flash) {
-        _applyChatBorderFlash();
         _triggerFullscreenFlash();
     }
 
@@ -1038,8 +1045,6 @@ function _startTabBlink(ruleName, itemCount, id) {
 function _stopTabBlink(id) {
     if (id !== undefined) {
         window._tabBlinkQueue = (window._tabBlinkQueue || []).filter(function(e) { return e.id !== id; });
-        // fraud 종료 시 다른 항목(watch 등)이 큐에 남아 있어도 border flash는 즉시 제거
-        if (id === 'fraud') _removeChatBorderFlash();
         if (window._tabBlinkQueue.length > 0) return;
     } else {
         window._tabBlinkQueue = [];
@@ -1064,8 +1069,19 @@ function _hideMonitorFlashLocal() {
     if(fraudPanel){ fraudPanel.style.maxHeight = '0px'; fraudPanel.innerHTML = ''; fraudPanel._totalCount = 0; }
 }
 
-var _lastFlashAt = 0;    // 이미 처리한 flash at — 같은 감지 재발화 방지
-var _notifSentTids = new Set(); // 이미 알림 보낸 TID — 여러 규칙 중복 알림 방지
+var _lastFlashAt = 0;
+var _notifSentTids = new Set();
+var _blockedKeysCache = new Set();
+db.ref('/imi_blocked').on('value', function(snap) {
+    _blockedKeysCache = new Set();
+    var list = snap.val() || [];
+    if (!Array.isArray(list)) list = [];
+    list.forEach(function(item) {
+        var k = typeof item === 'object' ? item.key : item;
+        var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
+        if (t === 'fraud' && k) _blockedKeysCache.add(String(k));
+    });
+});
 db.ref('monitor_flash_state').on('value', function(snap) {
     var s = snap.val();
     if (!s) return;

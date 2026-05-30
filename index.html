@@ -262,8 +262,8 @@
         .log-item-row:last-child { border-bottom:none; }
         #monitorAlertFlash.hidden { display:none!important; }
         @keyframes chatRedFlash {
-            0%,100% { border-color:#ef4444; box-shadow:0 0 40px rgba(239,68,68,0.8); }
-            50%      { border-color:transparent; box-shadow:none; }
+            0%,100% { background:#ef4444; box-shadow:0 0 10px rgba(239,68,68,0.9); }
+            50%      { background:rgba(239,68,68,0.15); box-shadow:none; }
         }
     </style>
     <script src="terms.js"></script>
@@ -8790,7 +8790,11 @@
         // popup 모드면 하단 토스트 컨테이너 토글
         if(_notifPrefs && _notifPrefs.popup) {
             var toasts = document.getElementById('_imi_fraud_toasts');
-            if(toasts) toasts.style.display = (toasts.style.display === 'none') ? '' : 'none';
+            if(toasts) {
+                var wasHidden = toasts.style.display === 'none';
+                toasts.style.display = wasHidden ? '' : 'none';
+                if(wasHidden && typeof _removeChatBorderFlash === 'function') _removeChatBorderFlash();
+            }
             return;
         }
         var panel = document.getElementById('fraudDropPanel');
@@ -8811,6 +8815,7 @@
         } else {
             panel.style.maxHeight = '75vh';
             panel.classList.remove('fraud-panel-blink');
+            if(typeof _removeChatBorderFlash === 'function') _removeChatBorderFlash();
         }
     }
 
