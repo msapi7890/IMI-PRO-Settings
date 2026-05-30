@@ -884,6 +884,7 @@ function _showMonitorFlash(s) {
         fraudTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+totalCount+'</span>';
 
         fraudPanel.style.maxHeight = '75vh';
+        fraudPanel.classList.add('fraud-panel-blink');
 
         // 카드별 30초 자동 제거
         var _cardTimer = setTimeout(function(){
