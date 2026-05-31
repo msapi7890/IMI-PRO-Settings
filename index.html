@@ -8778,7 +8778,7 @@
                 panel.style.borderColor = '#22c55e';
                 panel.classList.add('watch-panel-blink');
                 _watchAlertMinimized = true;
-                if(tab){ tab.classList.remove('hdr-tab-blink'); void tab.offsetWidth; tab.classList.add('hdr-tab-blink'); }
+                if(tab){ tab.classList.remove('hdr-tab-blink'); requestAnimationFrame(function(){ requestAnimationFrame(function(){ tab.classList.add('hdr-tab-blink'); }); }); }
             } else {
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';
@@ -8861,21 +8861,30 @@
         tab.style.display = 'flex'; _updateWatchFraudRow();
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
         if(_watchAlertMinimized) {
-            tab.classList.remove('hdr-tab-blink'); void tab.offsetWidth; // 애니메이션 강제 재시작
-            tab.classList.add('hdr-tab-blink');
+            tab.classList.remove('hdr-tab-blink');
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){ tab.classList.add('hdr-tab-blink'); }); });
         } else { tab.classList.remove('hdr-tab-blink'); }
         // 브라우저 탭 제목 + 작업표시줄 깜빡임
         if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
 
         // 패널 내용 초기화
         panel.innerHTML = '';
-        var inner = document.createElement('div');
-        inner.style.cssText = 'padding:10px 12px;max-height:calc(75vh - 60px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
 
-        var lblEl = document.createElement('div');
-        lblEl.style.cssText = 'font-size:11px;color:#86efac;margin-bottom:6px;font-weight:800;';
-        lblEl.textContent = '📌 '+label+(keyword&&keyword!==label?' · '+keyword:'');
-        inner.appendChild(lblEl);
+        // 스티키 헤더 (라벨 + 남은 개수)
+        var panelHdr = document.createElement('div');
+        panelHdr.style.cssText = 'position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:8px 12px 6px;background:#0a1f10;border-bottom:1px solid rgba(34,197,94,0.2);flex-shrink:0;';
+        var panelHdrLabel = document.createElement('span');
+        panelHdrLabel.style.cssText = 'font-size:11px;color:#86efac;font-weight:800;';
+        panelHdrLabel.textContent = '🟡 '+label+(keyword&&keyword!==label?' · '+keyword:'');
+        var panelHdrCount = document.createElement('span');
+        panelHdrCount.style.cssText = 'font-size:10px;color:#64748b;font-weight:700;';
+        panelHdrCount.textContent = count+'개';
+        panelHdr.appendChild(panelHdrLabel);
+        panelHdr.appendChild(panelHdrCount);
+        panel.appendChild(panelHdr);
+
+        var inner = document.createElement('div');
+        inner.style.cssText = 'padding:8px 12px 10px;max-height:calc(75vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#334155 transparent;';
 
         var tidContainer = document.createElement('div');
         tidContainer.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
@@ -8884,7 +8893,7 @@
 
         function _updateTabBlink(){
             if(_watchAlertMinimized && tidContainer.children.length > 0){
-                tab.classList.add('hdr-tab-blink');
+                requestAnimationFrame(function(){ requestAnimationFrame(function(){ tab.classList.add('hdr-tab-blink'); }); });
             } else {
                 tab.classList.remove('hdr-tab-blink');
             }
@@ -8903,6 +8912,9 @@
                 if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
             } else {
                 _updateTabBlink();
+                var remaining = tidContainer.children.length;
+                panelHdrCount.textContent = remaining + '개';
+                tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">' + remaining + '</span>';
             }
         }
 
