@@ -108,7 +108,10 @@ function _subscribeBotStatus() {
 }
 _subscribeBotStatus(); // 초기 시도 (auth 캐시 있으면 즉시 성공)
 firebase.auth().onAuthStateChanged(function(user) {
-    if (user) _subscribeBotStatus(); // auth 완료 시 재구독
+    if (!user) return;
+    _subscribeBotStatus();
+    _subscribeBlocked();
+    _subscribeFlashState();
 });
 
 function _renderBotStatus() {
@@ -1064,31 +1067,39 @@ function _hideMonitorFlashLocal() {
 var _lastFlashAt = 0;
 var _notifSentTids = new Set();
 var _blockedKeysCache = new Set();
-db.ref('/imi_blocked').on('value', function(snap) {
-    _blockedKeysCache = new Set();
-    var list = snap.val() || [];
-    if (!Array.isArray(list)) list = [];
-    list.forEach(function(item) {
-        var k = typeof item === 'object' ? item.key : item;
-        var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
-        if (t === 'fraud' && k) _blockedKeysCache.add(String(k));
+function _subscribeBlocked() {
+    db.ref('/imi_blocked').off('value');
+    db.ref('/imi_blocked').on('value', function(snap) {
+        _blockedKeysCache = new Set();
+        var list = snap.val() || [];
+        if (!Array.isArray(list)) list = [];
+        list.forEach(function(item) {
+            var k = typeof item === 'object' ? item.key : item;
+            var t = typeof item === 'object' ? (item.type || 'fraud') : 'fraud';
+            if (t === 'fraud' && k) _blockedKeysCache.add(String(k));
+        });
     });
-});
-db.ref('monitor_flash_state').on('value', function(snap) {
-    var s = snap.val();
-    if (!s) return;
-    if (s.active && s.at && (Date.now() - s.at) < 60000 && s.at !== _lastFlashAt) {
-        _lastFlashAt = s.at;
-        _showMonitorFlash(s);
-        var panel = document.getElementById('logPanel');
-        if (panel && !panel.classList.contains('hidden')) {
-            var tab1 = document.getElementById('logTab1');
-            var tab2 = document.getElementById('logTab2');
-            if (tab1 && tab1.classList.contains('mon-tab-active')) setTimeout(loadMonitorLog, 1500);
-            else if (tab2 && tab2.classList.contains('mon-tab-active')) setTimeout(loadWatchLog, 1500);
-        }
-    } else if (!s.active) _hideMonitorFlashLocal();
-});
+}
+function _subscribeFlashState() {
+    db.ref('monitor_flash_state').off('value');
+    db.ref('monitor_flash_state').on('value', function(snap) {
+        var s = snap.val();
+        if (!s) return;
+        if (s.active && s.at && (Date.now() - s.at) < 60000 && s.at !== _lastFlashAt) {
+            _lastFlashAt = s.at;
+            _showMonitorFlash(s);
+            var panel = document.getElementById('logPanel');
+            if (panel && !panel.classList.contains('hidden')) {
+                var tab1 = document.getElementById('logTab1');
+                var tab2 = document.getElementById('logTab2');
+                if (tab1 && tab1.classList.contains('mon-tab-active')) setTimeout(loadMonitorLog, 1500);
+                else if (tab2 && tab2.classList.contains('mon-tab-active')) setTimeout(loadWatchLog, 1500);
+            }
+        } else if (!s.active) _hideMonitorFlashLocal();
+    });
+}
+_subscribeBlocked();
+_subscribeFlashState();
 
 // 필터제외 버튼 — 이벤트 위임 (fraudDropPanel 내)
 document.addEventListener('click', function(e) {

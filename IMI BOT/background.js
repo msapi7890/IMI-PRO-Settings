@@ -477,11 +477,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                         at:       nowW,
                         seen:     false
                     }).catch(() => {});
-                    // 탭 닫힌 실무자에게 FCM 웹 푸시
-                    _sendFcmPush(
-                        '🚨 비거래 감지됨',
-                        (msg.data.itemCount||0) + '개 · ' + (msg.data.ruleName||'') + (msg.data.ruleKeyword ? ' ('+msg.data.ruleKeyword+')' : '') + ' — IMI PRO 확인 바랍니다'
-                    );
                 } else {
                     // OS 토스트 알림 (사기글만) + FCM 웹 푸시
                     showOsNotif('fraud', msg.data);
