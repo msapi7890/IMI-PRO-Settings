@@ -8911,10 +8911,11 @@
                 panel.innerHTML = '';
                 if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
             } else {
-                _updateTabBlink();
                 var remaining = tidContainer.children.length;
                 panelHdrCount.textContent = remaining + '개';
-                tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">' + remaining + '</span>';
+                var tabSpan = tab.querySelector('span');
+                if(tabSpan) tabSpan.textContent = remaining;
+                _updateTabBlink();
             }
         }
 
