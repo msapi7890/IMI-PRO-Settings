@@ -38,7 +38,7 @@
       "run_at": "document_end"
     },
     {
-      "matches": ["https://msapi7890.github.io/*", "http://127.0.0.1/*", "http://localhost/*"],
+      "matches": ["https://msapi7890.github.io/*", "http://127.0.0.1/*", "http://127.0.0.1:5500/*", "http://localhost/*", "http://localhost:5500/*"],
       "js": ["bridge.js"],
       "run_at": "document_end"
     }

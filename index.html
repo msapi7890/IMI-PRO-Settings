@@ -1661,15 +1661,17 @@
         if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
         _fcmPushRegistered = true;
         Notification.requestPermission().then(function(perm) {
-            if(perm !== 'granted') return;
+            if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
             navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function(reg) {
+                console.log('[FCM] SW 등록 성공', reg);
                 var msg = firebase.messaging();
                 return msg.getToken({ vapidKey: 'BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ', serviceWorkerRegistration: reg });
             }).then(function(token) {
-                if(!token) return;
+                if(!token) { console.warn('[FCM] 토큰 없음'); return; }
+                console.log('[FCM] 토큰 저장:', token.substring(0,20)+'...');
                 var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
                 db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
-            }).catch(function(){});
+            }).catch(function(e){ console.error('[FCM] 에러:', e); });
         });
     }
 
@@ -8768,6 +8770,23 @@
     };
 
     var _watchAlertMinimized = false;
+    var _watchBlinkTimer = null;
+    function _startWatchBlink() {
+        if(_watchBlinkTimer) return;
+        var on = false;
+        _watchBlinkTimer = setInterval(function(){
+            var t = document.getElementById('watchHeaderTab');
+            if(!t || !_watchAlertMinimized){ _stopWatchBlink(); return; }
+            on = !on;
+            t.style.background = on ? 'rgba(34,197,94,0.55)' : 'rgba(34,197,94,0.15)';
+            t.style.borderColor = on ? '#86efac' : '#22c55e';
+        }, 425);
+    }
+    function _stopWatchBlink() {
+        if(_watchBlinkTimer){ clearInterval(_watchBlinkTimer); _watchBlinkTimer = null; }
+        var t = document.getElementById('watchHeaderTab');
+        if(t){ t.style.background = ''; t.style.borderColor = ''; }
+    }
 
     function _updateWatchFraudRow(){
         var w = document.getElementById('watchHeaderTab');
@@ -8798,7 +8817,7 @@
                 panel.style.borderColor = '#22c55e';
                 panel.classList.add('watch-panel-blink');
                 _watchAlertMinimized = true;
-                if(tab){ tab.classList.remove('hdr-tab-blink'); void tab.offsetWidth; tab.classList.add('hdr-tab-blink'); }
+                _startWatchBlink();
             } else {
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';
@@ -8809,7 +8828,7 @@
             panel.style.borderColor = '#22c55e';
             panel.classList.remove('watch-panel-blink');
             _watchAlertMinimized = false;
-            if(tab) tab.classList.remove('hdr-tab-blink');
+            _stopWatchBlink();
         }
     }
 
@@ -8880,10 +8899,10 @@
         // 탭 표시 (패널 열린 상태면 깜빡임 없음)
         tab.style.display = 'flex'; _updateWatchFraudRow();
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
-        tab.classList.remove('hdr-tab-blink');
         if(_watchAlertMinimized) {
-            void tab.offsetWidth;
-            tab.classList.add('hdr-tab-blink');
+            _startWatchBlink();
+        } else {
+            _stopWatchBlink();
         }
         // 브라우저 탭 제목 + 작업표시줄 깜빡임
         if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
@@ -8914,12 +8933,11 @@
 
         function _updateTabBlink(){
             if(!document.contains(tidContainer)) return;
-            if(_watchAlertMinimized && tidContainer.children.length > 0){
-                if(!tab.classList.contains('hdr-tab-blink')){
-                    tab.classList.add('hdr-tab-blink');
-                }
+            var activeItems = Array.from(tidContainer.children).filter(function(r){ return !r.dataset.doneShown; }).length;
+            if(_watchAlertMinimized && activeItems > 0){
+                _startWatchBlink();
             } else {
-                tab.classList.remove('hdr-tab-blink');
+                _stopWatchBlink();
             }
         }
 
@@ -8934,9 +8952,10 @@
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';
                 panel.innerHTML = '';
+                _stopWatchBlink();
                 if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
             } else {
-                var remaining = tidContainer.children.length;
+                var remaining = Array.from(tidContainer.children).filter(function(r){ return !r.dataset.doneShown; }).length;
                 panelHdrCount.textContent = remaining + '개';
                 var tabSpan = tab.querySelector('span');
                 if(tabSpan) tabSpan.textContent = remaining;
