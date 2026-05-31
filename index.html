@@ -4271,7 +4271,7 @@
     /* gIdx 기준 표시 순서: 9시(0) 12시(3) 15시(1) 17시(4) 야간(2) */
     var SCHED_DISPLAY_ORDER = [0,3,1,4,2];
     var _schedActiveGroups = null;
-    function _schedGroupStorageKey(){ return 'imi_sched_active_v3_'+_schedYear+'_'+_schedMonth; }
+    function _schedGroupStorageKey(){ return 'imi_sched_active_v3_'+(_schedTabId||'default')+'_'+_schedYear+'_'+_schedMonth; }
     function _getActiveGroups(){
         if(_schedActiveGroups===null){
             try{var s=JSON.parse(localStorage.getItem(_schedGroupStorageKey()));_schedActiveGroups=Array.isArray(s)?s:SCHED_GROUPS.map(function(g){return g.key;});}
@@ -8778,7 +8778,7 @@
                 panel.style.borderColor = '#22c55e';
                 panel.classList.add('watch-panel-blink');
                 _watchAlertMinimized = true;
-                if(tab) tab.classList.add('hdr-tab-blink');
+                if(tab){ tab.classList.remove('hdr-tab-blink'); void tab.offsetWidth; tab.classList.add('hdr-tab-blink'); }
             } else {
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';
@@ -8860,8 +8860,10 @@
         // 탭 표시 (패널 열린 상태면 깜빡임 없음)
         tab.style.display = 'flex'; _updateWatchFraudRow();
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
-        if(_watchAlertMinimized) tab.classList.add('hdr-tab-blink');
-        else tab.classList.remove('hdr-tab-blink');
+        if(_watchAlertMinimized) {
+            tab.classList.remove('hdr-tab-blink'); void tab.offsetWidth; // 애니메이션 강제 재시작
+            tab.classList.add('hdr-tab-blink');
+        } else { tab.classList.remove('hdr-tab-blink'); }
         // 브라우저 탭 제목 + 작업표시줄 깜빡임
         if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
 
