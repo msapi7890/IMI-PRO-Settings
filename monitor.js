@@ -840,7 +840,11 @@ function _fireOsNotif(s) {
             icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
             tag: 'imi-pro-alert'
         });
-        _n.onclick = function() { window.focus(); };
+        _n.onclick = function() {
+            _n.close();
+            if (window.opener) window.opener.focus();
+            window.focus();
+        };
     };
     if (Notification.permission === 'granted') { _fn(); }
     else if (Notification.permission === 'default') { Notification.requestPermission().then(function(p){ if(p==='granted') _fn(); }); }
