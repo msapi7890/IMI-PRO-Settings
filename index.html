@@ -8893,6 +8893,7 @@
         panel.appendChild(inner);
 
         function _updateTabBlink(){
+            if(!document.contains(tidContainer)) return;
             if(_watchAlertMinimized && tidContainer.children.length > 0){
                 if(!tab.classList.contains('hdr-tab-blink')){
                     tab.classList.add('hdr-tab-blink');
@@ -8903,6 +8904,7 @@
         }
 
         function _checkAllDone(){
+            if(!document.contains(tidContainer)) return;
             if(!tidContainer.children.length){
                 if(panel._procRef && panel._procListener){ panel._procRef.off('value', panel._procListener); panel._procRef = null; }
                 if(panel._doneRef && panel._doneListener){ panel._doneRef.off('value', panel._doneListener); panel._doneRef = null; }
@@ -8964,7 +8966,7 @@
                         filterBtn.disabled = true;
                         filterBtn.textContent = '제외됨';
                         row.style.opacity = '0.4';
-                        setTimeout(function(){ row.remove(); _checkAllDone(); }, 600);
+                        setTimeout(function(){ if(!document.contains(tidContainer)) return; row.remove(); _checkAllDone(); }, 600);
                         db.ref('/imi_blocked').once('value', function(snap){
                             var list = snap.val() || [];
                             if(!Array.isArray(list)) list = [];
@@ -8999,7 +9001,7 @@
                     ab.innerHTML = '<div style="flex:1;text-align:center;padding:5px 0;font-size:10px;font-weight:700;color:#22c55e;opacity:0.8;">✅ 처리완료'+(byName?' · '+byName:'')+'</div>';
                 }
                 r.style.opacity = '0.45';
-                setTimeout(function(){ r.remove(); _checkAllDone(); }, 4000);
+                setTimeout(function(){ if(!document.contains(tidContainer)) return; r.remove(); _checkAllDone(); }, 4000);
             }
 
             if(alertKey){

@@ -826,7 +826,7 @@ setInterval(function() {
 }, 200);
 function _fireOsNotif(s) {
     // 익스텐션이 설치돼 있으면 background.js가 알림을 처리하므로 중복 방지
-    if (window._imiBotLoaded) return;
+    if (_botBridgeConnected) return;
     if (s.ruleType === 'watch' || !('Notification' in window)) return;
     var allTids = (s.itemRows||[]).map(function(r){ return r.tid||''; }).filter(Boolean);
     var newTids = allTids.filter(function(t){ return !_notifSentTids.has(t); });
