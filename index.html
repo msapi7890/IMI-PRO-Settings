@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -1364,7 +1365,7 @@
         return _map;
     })();
 
-    var FIREBASE_CONFIG = {apiKey:"AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",storageBucket:"manual-9a47c.firebasestorage.app"};
+    var FIREBASE_CONFIG = {apiKey:"AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",projectId:"manual-9a47c",storageBucket:"manual-9a47c.firebasestorage.app",messagingSenderId:"360735158801",appId:"1:360735158801:web:1dd7b4d7a07ac9502a37b0"};
     firebase.initializeApp(FIREBASE_CONFIG);
     var db = firebase.database();
     var storage = firebase.storage();
@@ -1651,6 +1652,25 @@
         if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
+        // FCM 웹 푸시 등록 (익스텐션 없는 환경, 탭 닫혀도 알림 수신)
+        setTimeout(function(){ if(!_botBridgeConnected) _registerFcmPush(); }, 2000);
+    }
+
+    var _fcmPushRegistered = false;
+    function _registerFcmPush() {
+        if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
+        _fcmPushRegistered = true;
+        Notification.requestPermission().then(function(perm) {
+            if(perm !== 'granted') return;
+            navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function(reg) {
+                var msg = firebase.messaging();
+                return msg.getToken({ vapidKey: 'BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ', serviceWorkerRegistration: reg });
+            }).then(function(token) {
+                if(!token) return;
+                var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
+                db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
+            }).catch(function(){});
+        });
     }
 
     // 로그아웃
