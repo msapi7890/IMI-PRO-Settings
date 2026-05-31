@@ -8779,7 +8779,7 @@
         var on = false;
         _watchBlinkTimer = setInterval(function(){
             var t = document.getElementById('watchHeaderTab');
-            if(!t || !_watchAlertMinimized){ _stopWatchBlink(); return; }
+            if(!t){ _stopWatchBlink(); return; }
             on = !on;
             t.style.background = on ? 'rgba(34,197,94,0.55)' : 'rgba(34,197,94,0.15)';
             t.style.borderColor = on ? '#86efac' : '#22c55e';
@@ -8883,6 +8883,7 @@
                 wTab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+wTab._popupCount+'</span>';
                 _syncWatchBanner();
             }
+            _startWatchBlink();
             return;
         }
         var panel = document.getElementById('watchDropPanel');
@@ -8902,11 +8903,7 @@
         // 탭 표시 (패널 열린 상태면 깜빡임 없음)
         tab.style.display = 'flex'; _updateWatchFraudRow();
         tab.innerHTML = '⚠️ 비거래&nbsp;<span style="background:#22c55e;color:#000;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+count+'</span>';
-        if(_watchAlertMinimized) {
-            _startWatchBlink();
-        } else {
-            _stopWatchBlink();
-        }
+        _startWatchBlink(); // 새 감지 시 항상 헤더 탭 깜빡임 시작
         // 브라우저 탭 제목 + 작업표시줄 깜빡임
         if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
 
@@ -8937,7 +8934,7 @@
         function _updateTabBlink(){
             if(!document.contains(tidContainer)) return;
             var activeItems = Array.from(tidContainer.children).filter(function(r){ return !r.dataset.doneShown; }).length;
-            if(_watchAlertMinimized && activeItems > 0){
+            if(activeItems > 0){
                 _startWatchBlink();
             } else {
                 _stopWatchBlink();
