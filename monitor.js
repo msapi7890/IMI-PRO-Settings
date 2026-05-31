@@ -872,7 +872,6 @@ function _showMonitorFlash(s) {
             fTab.innerHTML = '🚨 사기글&nbsp;<span style="background:#ef4444;color:#fff;border-radius:99px;padding:0 6px;font-size:10px;font-weight:900;">'+fTab._popupCount+'</span>';
             if (_np.flash) _applyChatBorderFlash(); // 빨간불깜빡임 ON일 때만 상단 바 표시
         }
-        _fireOsNotif(s);
         return;
     }
 
@@ -964,7 +963,6 @@ function _showMonitorFlash(s) {
     // 경고음
     if (_np.sound) _playAlertBeep();
 
-    _fireOsNotif(s); // OS 브라우저 알림
 
     // 전역 타이머 제거 — 카드별 30초 타이머로 대체
     if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
