@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -1657,23 +1658,23 @@
 
     var _fcmPushRegistered = false;
     function _registerFcmPush() {
-        if(_fcmPushRegistered || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
         _fcmPushRegistered = true;
         Notification.requestPermission().then(function(perm) {
-            if(perm !== 'granted') return;
-            var pubKey = 'BPwW1lymv-O_4BMVbw-fW6d_24nFKIMWsNredcbzOhbGIhjHk2PnfaDqivg46JBnxS95FOuW2iYswb1vHEOpyuA';
-            var raw = Uint8Array.from(atob((pubKey + '='.repeat((4 - pubKey.length % 4) % 4)).replace(/-/g,'+').replace(/_/g,'/')), function(c){ return c.charCodeAt(0); });
-            navigator.serviceWorker.register('./firebase-messaging-sw.js')
-            .then(function() { return navigator.serviceWorker.ready; })
-            .then(function(reg) {
-                return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
-            })
-            .then(function(sub) {
-                var s = sub.toJSON();
+            if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
+            navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function() {
+                console.log('[FCM] SW 등록 성공, active 대기 중...');
+                return navigator.serviceWorker.ready;
+            }).then(function(reg) {
+                console.log('[FCM] SW active', reg);
+                var msg = firebase.messaging();
+                return msg.getToken({ serviceWorkerRegistration: reg });
+            }).then(function(token) {
+                if(!token) { console.warn('[FCM] 토큰 없음'); return; }
+                console.log('[FCM] 토큰 저장:', token.substring(0,20)+'...');
                 var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
-                db.ref('push_tokens/' + uid).set({ endpoint: s.endpoint, p256dh: s.keys.p256dh, auth: s.keys.auth, at: Date.now() });
-            })
-            .catch(function(e){ console.error('[Push] 에러:', e); });
+                db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
+            }).catch(function(e){ console.error('[FCM] 에러:', e); });
         });
     }
 

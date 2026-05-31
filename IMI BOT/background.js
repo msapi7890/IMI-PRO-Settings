@@ -477,15 +477,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                         at:       nowW,
                         seen:     false
                     }).catch(() => {});
-                    // 탭 닫힌 실무자에게 Web Push
-                    _sendWebPush(
+                    // 탭 닫힌 실무자에게 FCM 웹 푸시
+                    _sendFcmPush(
                         '🚨 비거래 감지됨',
                         (msg.data.itemCount||0) + '개 · ' + (msg.data.ruleName||'') + (msg.data.ruleKeyword ? ' ('+msg.data.ruleKeyword+')' : '') + ' — IMI PRO 확인 바랍니다'
                     );
                 } else {
                     // OS 토스트 알림 (사기글만) + FCM 웹 푸시
                     showOsNotif('fraud', msg.data);
-                    _sendWebPush(
+                    _sendFcmPush(
                         '🚨 ' + (msg.data.ruleName||'IMI PRO') + ' 감지됨',
                         (msg.data.itemCount||0) + '개 감지 — IMI PRO 확인 바랍니다'
                     );
@@ -735,9 +735,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 });
 
-// ── Web Push / VAPID (익스텐션 없는 환경 / 탭 닫혀있을 때) ──
-const _VAPID_PUBLIC = 'BPwW1lymv-O_4BMVbw-fW6d_24nFKIMWsNredcbzOhbGIhjHk2PnfaDqivg46JBnxS95FOuW2iYswb1vHEOpyuA';
-const _VAPID_JWK = { kty:'EC', crv:'P-256', d:'StJaJNINie0Ld6qLK7uQUpfU0wqzisFZJlbH8VeP2AQ', x:'_BbWXKa_47_gExVvD59bp3_bicUogxaw2t51xvM6FsY', y:'IhjHk2PnfaDqivg46JBnxS95FOuW2iYswb1vHEOpyuA' };
+// ── FCM V1 웹 푸시 (익스텐션 없는 환경 / 탭 닫혀있을 때) ──
+const _SA_EMAIL = 'firebase-adminsdk-fbsvc@manual-9a47c.iam.gserviceaccount.com';
+const _SA_KEY   = "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDSDVmUF2LJ1YzE\nRpoxTw0DR8LgHodOYpG9atzShuD7NGjbBm2peklHgGOOoAOve1bwkAK+0l1JoMu+\nTOiEndN1wIJF385j9o4Yg3FwLvLXZK62HAWsxktldkzCZSN31o7QpMR1pJr7fFZv\ncLWVHPPAVdxbT8JavRoYBz1i1PGMgfl2skYcg/dt2TMux/i9XddBamF5oKK0QV9a\nLYh1j4m3N4hyaxTyLeJqvGYDFvF0dUPx2yycT3/ZbPFJ6m5BHP1d0V6WlEyxdAkw\nokSRt2/s3JMonuB34IkmdE38SBF2/rMf+zst+7Amna+aFQJlbqyrPFJ1iyKRmZG0\nWljghjdJAgMBAAECggEAGhOeM0xT70qblyJMsiJmMyoNf1VK5uhFv4Yss9YayBTR\nj59Urd2Ii1/c/C/RRU/Ck0rNjHMBMcrMgGt70jrlrZCgm5wVO0O4kEKBKrQpYaQW\nLHV+HtzfL1FoZhm4NYBlanGKEjDFLMNa16reYAygFhiSqqNUNX+UZbdAX6yf8BlY\n852S/BhJBSewYtSTXcSoQjbxepAPp/CL/nDoZ+GGXT13aWts23TRrkD16UY1SBPY\n3Q9JGxn+2ylAuaLNQzjYnc55svmcMhIMCIwvpkmg7yEjvYta0Y7c2i4mWo1J71V9\nBAe0cgE4GFzL87IjD3Pkg/EOfvMpt/YusGGKa2wjoQKBgQD3nhEljYymZ/U0lnJB\nVH+KMENOkKCoC0HomIOmgGaQedFJxNZr/FNay8e+0a44Q+w/RO9wfJ+PXcNDfOBm\nbYqI+c2EkdbK/vU1gbWm2lEqjmZvM6pyj+zxDK4Z4Vo94gccu9Wlsiy1SwFtgEt9\nohc1XmByTbr+u9OzbrIJHDW8BwKBgQDZKbrYw/nsqr7RNL+/ZBW935a4vypzO/8W\noYp0Lr5MmSgs10buuOJsVqDzZOHYtWiERPSaUW4tvZw3JkoAlrcVyTxArMkcpDPf\nrytJ0Mh3cARFupWE6OfQM5tk6rxZGaRh/EoRhzWdq+GY7cvSvxhpNYZ3MBFQiwPV\ngc++Xik+LwKBgFNI5CWIXaVe0/ezHozgueEl6I2VUaQT3UA5hBZNm7G+d2ljfmdl\nwDeK0Q1ag0nDdsO1EP/5usVC2Tlq2CM7dtwpgTm0v9UZOiqcDRgo2CIDMWr3qr3L\nsPtGs4xa4rprus6sUujfa/AyYTGOdFW2Xi4CJ1hq0pl5XXQ9qD4uMdijAoGAZpNb\neoA3UR7luxPbbp/r1SADpYhGmN/CAgKTz4U0xiGh5GxbSO9zpBDXPaBtPVuS3sdj\ncnD8RgbF/xbK5bRLDrNbDoGPDURSbFnlbJx91EzI99bGQV1yAdoekHCAPuXpy47L\nvbPME4nYqc/I8ubotOlfdnTx+MVxLix+4EDB4mkCgYBLtkbxwMtU2WTU8Dfypuw+\nXi0D/A21nONgOzXGuDBWwHbQp94FhbDA95Z+keRXz9D4PbH/Iq8nH2eNl5N1JCeP\nF1ug8fFj4YraBTgprX2Jhdw7dUFi2o7pETn8WeHanZM3M+dZHYdeJq7j/kaVuRKm\nSanbz/HdU2RpI8xJzGAq8w==\n-----END PRIVATE KEY-----\n";
+const _FCM_PROJECT = 'manual-9a47c';
+let _fcmOAuthToken = null, _fcmOAuthExpiry = 0;
 
 function _b64url(str) {
     return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
@@ -746,34 +748,50 @@ function _b64urlBuf(buf) {
     return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
 }
 
-async function _createVapidJwt(endpoint) {
-    const audience = new URL(endpoint).origin;
-    const now = Math.floor(Date.now() / 1000);
-    const header  = _b64url(JSON.stringify({ alg:'ES256', typ:'JWT' }));
-    const payload = _b64url(JSON.stringify({ aud:audience, exp:now+43200, sub:'mailto:msapi7890@gmail.com' }));
-    const sigInput = header + '.' + payload;
-    const key = await crypto.subtle.importKey('jwk', _VAPID_JWK, { name:'ECDSA', namedCurve:'P-256' }, false, ['sign']);
-    const sig  = await crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, key, new TextEncoder().encode(sigInput));
-    return sigInput + '.' + _b64urlBuf(sig);
+async function _getFcmOAuthToken() {
+    if (_fcmOAuthToken && Date.now() < _fcmOAuthExpiry) return _fcmOAuthToken;
+    try {
+        const now = Math.floor(Date.now() / 1000);
+        const hdr = _b64url(JSON.stringify({ alg:'RS256', typ:'JWT' }));
+        const pay = _b64url(JSON.stringify({
+            iss: _SA_EMAIL, sub: _SA_EMAIL,
+            aud: 'https://oauth2.googleapis.com/token',
+            iat: now, exp: now + 3600,
+            scope: 'https://www.googleapis.com/auth/firebase.messaging'
+        }));
+        const hp = hdr + '.' + pay;
+        const pemBody = _SA_KEY.replace(/-----[^-]+-----/g,'').replace(/\s/g,'');
+        const keyBuf = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0)).buffer;
+        const key = await crypto.subtle.importKey('pkcs8', keyBuf,
+            { name:'RSASSA-PKCS1-v1_5', hash:'SHA-256' }, false, ['sign']);
+        const sigBuf = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(hp));
+        const jwt = hp + '.' + _b64urlBuf(sigBuf);
+        const res = await fetch('https://oauth2.googleapis.com/token', {
+            method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt
+        });
+        if (!res.ok) return null;
+        const { access_token } = await res.json();
+        _fcmOAuthToken = access_token;
+        _fcmOAuthExpiry = Date.now() + 3500000;
+        return _fcmOAuthToken;
+    } catch(e) { return null; }
 }
 
-async function _sendWebPush(title, body) {
+async function _sendFcmPush(title, body) {
     try {
         const tokensData = await fireGet('/push_tokens');
         if (!tokensData) return;
-        for (const [uid, sub] of Object.entries(tokensData)) {
-            if (!sub || !sub.endpoint) continue;
-            try {
-                const jwt = await _createVapidJwt(sub.endpoint);
-                await fetch(sub.endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'vapid t='+jwt+',k='+_VAPID_PUBLIC,
-                        'TTL': '86400',
-                        'Content-Type': 'application/octet-stream'
-                    }
-                });
-            } catch(e) {}
+        const tokens = Object.values(tokensData).map(v => v && v.token).filter(Boolean);
+        if (!tokens.length) return;
+        const accessToken = await _getFcmOAuthToken();
+        if (!accessToken) return;
+        for (const token of tokens) {
+            fetch(`https://fcm.googleapis.com/v1/projects/${_FCM_PROJECT}/messages:send`, {
+                method:'POST',
+                headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json' },
+                body: JSON.stringify({ message:{ token, data:{ title, body } } })
+            }).catch(()=>{});
         }
     } catch(e) {}
 }

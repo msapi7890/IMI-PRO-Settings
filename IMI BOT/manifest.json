@@ -9,10 +9,7 @@
     "https://manual-9a47c-default-rtdb.firebaseio.com/*",
     "https://msapi7890.github.io/*",
     "https://identitytoolkit.googleapis.com/*",
-    "https://securetoken.googleapis.com/*",
-    "https://fcm.googleapis.com/*",
-    "https://updates.push.services.mozilla.com/*",
-    "https://*.push.apple.com/*"
+    "https://securetoken.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"
