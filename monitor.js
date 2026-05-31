@@ -96,12 +96,19 @@ function _updateBotToggleBtn() {
     btn.disabled = false;
 }
 
-// Firebase에서 봇 상태 실시간 구독
-db.ref('bot_status').on('value', function(snap) {
-    _botStatus = snap.val();
-    _renderBotStatus();
-    _updateHdrDot();
-    _updateBotToggleBtn();
+// Firebase에서 봇 상태 실시간 구독 (auth 완료 후 재구독으로 permission_denied 복구)
+function _subscribeBotStatus() {
+    db.ref('bot_status').off('value');
+    db.ref('bot_status').on('value', function(snap) {
+        _botStatus = snap.val();
+        _renderBotStatus();
+        _updateHdrDot();
+        _updateBotToggleBtn();
+    });
+}
+_subscribeBotStatus(); // 초기 시도 (auth 캐시 있으면 즉시 성공)
+firebase.auth().onAuthStateChanged(function(user) {
+    if (user) _subscribeBotStatus(); // auth 완료 시 재구독
 });
 
 function _renderBotStatus() {
