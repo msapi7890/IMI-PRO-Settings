@@ -1662,8 +1662,11 @@
         _fcmPushRegistered = true;
         Notification.requestPermission().then(function(perm) {
             if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
-            navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function(reg) {
-                console.log('[FCM] SW 등록 성공', reg);
+            navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function() {
+                console.log('[FCM] SW 등록 성공, active 대기 중...');
+                return navigator.serviceWorker.ready;
+            }).then(function(reg) {
+                console.log('[FCM] SW active', reg);
                 var msg = firebase.messaging();
                 return msg.getToken({ vapidKey: 'BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ', serviceWorkerRegistration: reg });
             }).then(function(token) {
