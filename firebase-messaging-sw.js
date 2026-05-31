@@ -1,29 +1,31 @@
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
+// Web Push 서비스 워커 (Firebase SDK 없이 native push 이벤트 처리)
 
-firebase.initializeApp({
-    apiKey:            "AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",
-    authDomain:        "manual-9a47c.firebaseapp.com",
-    databaseURL:       "https://manual-9a47c-default-rtdb.firebaseio.com",
-    projectId:         "manual-9a47c",
-    storageBucket:     "manual-9a47c.firebasestorage.app",
-    messagingSenderId: "360735158801",
-    appId:             "1:360735158801:web:1dd7b4d7a07ac9502a37b0"
-});
-
-const messaging = firebase.messaging();
-
-// 백그라운드 메시지 수신 (탭 닫혀있을 때)
-messaging.onBackgroundMessage(function(payload) {
-    var d = payload.data || {};
-    self.registration.showNotification(d.title || '🚨 IMI PRO 감지됨', {
-        body:             d.body || '',
-        icon:             './favicon.ico',
-        badge:            './favicon.ico',
-        tag:              'imi-pro-alert',
-        requireInteraction: true,
-        data:             { url: self.location.origin + self.location.pathname.replace(/[^/]*$/, '') }
-    });
+self.addEventListener('push', function(event) {
+    event.waitUntil(
+        fetch('https://manual-9a47c-default-rtdb.firebaseio.com/monitor_flash_state.json')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var body = data ? ((data.itemCount||0)+'개 감지') : '새 감지 항목 있음';
+            return self.registration.showNotification('🚨 IMI PRO 감지됨', {
+                body:             body,
+                icon:             './favicon.ico',
+                badge:            './favicon.ico',
+                tag:              'imi-pro-alert',
+                requireInteraction: true,
+                data:             { url: self.location.origin + self.location.pathname.replace(/[^/]*$/, '') }
+            });
+        })
+        .catch(function() {
+            return self.registration.showNotification('🚨 IMI PRO 감지됨', {
+                body:             '새 감지 항목 있음',
+                icon:             './favicon.ico',
+                badge:            './favicon.ico',
+                tag:              'imi-pro-alert',
+                requireInteraction: true,
+                data:             { url: self.location.origin + self.location.pathname.replace(/[^/]*$/, '') }
+            });
+        })
+    );
 });
 
 // 알림 클릭 → IMI PRO 탭 열기/포커스
