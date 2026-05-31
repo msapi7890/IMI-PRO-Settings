@@ -8946,15 +8946,15 @@
                     filterBtn.style.cssText = 'flex:1;padding:6px 0;font-size:10px;font-weight:900;background:none;border:none;border-right:1px solid var(--border-ui);color:#f87171;cursor:pointer;';
                     filterBtn.onclick = function(){
                         filterBtn.disabled = true;
+                        filterBtn.textContent = '제외됨';
+                        row.style.opacity = '0.4';
+                        setTimeout(function(){ row.remove(); _checkAllDone(); }, 600);
                         db.ref('/imi_blocked').once('value', function(snap){
                             var list = snap.val() || [];
                             if(!Array.isArray(list)) list = [];
                             var addedBy = (typeof _currentUser!=='undefined'&&_currentUser)?(_currentUser.name||''):'';
                             list.push({key:itemKey, title:itemTitle, tid:tid, addedBy:addedBy, addedAt:Date.now(), type:'watch'});
-                            db.ref('/imi_blocked').set(list, function(){
-                                row.style.opacity = '0.4';
-                                setTimeout(function(){ row.remove(); _checkAllDone(); }, 600);
-                            });
+                            db.ref('/imi_blocked').set(list);
                         });
                     };
                     actionBar.appendChild(filterBtn);
