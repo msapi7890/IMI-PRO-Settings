@@ -15,11 +15,12 @@ const fs = require('fs');
 const APP_URL  = 'https://msapi7890.github.io/IMI-PRO/';
 const DB_BASE  = 'https://manual-9a47c-default-rtdb.firebaseio.com';
 
-let win        = null;
-let tray       = null;
-let sseReq     = null;
-let isQuitting = false;
-let lastAlertAt = 0;
+let win              = null;
+let tray             = null;
+let sseReq           = null;
+let isQuitting       = false;
+let lastAlertAt      = 0;
+let lastUpdateStatus = null;   // 페이지 로드 전 이벤트 캐시
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
 function iconPath() {
@@ -66,6 +67,13 @@ function createWindow() {
 
     win.once('ready-to-show', () => {
         win.show();
+    });
+
+    // 페이지 로드 완료 시 미처 못 받은 업데이트 상태 재전송
+    win.webContents.on('did-finish-load', () => {
+        if (lastUpdateStatus) {
+            win.webContents.send('update-status', lastUpdateStatus);
+        }
     });
 
     win.on('close', (e) => {
@@ -183,22 +191,15 @@ function setupAutoUpdater() {
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger               = null;
 
-    autoUpdater.on('update-available', (info) => {
-        // 앱 내 오버레이에서 표시하므로 윈도우 알림 없음
-        if (win) win.webContents.send('update-status', { type: 'downloading', version: info.version, percent: 0 });
-    });
+    function sendUpdate(data) {
+        lastUpdateStatus = data;
+        if (win) win.webContents.send('update-status', data);
+    }
 
-    autoUpdater.on('download-progress', (p) => {
-        if (win) win.webContents.send('update-status', { type: 'downloading', percent: Math.round(p.percent) });
-    });
-
-    autoUpdater.on('update-downloaded', (info) => {
-        if (win) win.webContents.send('update-status', { type: 'downloaded', version: info.version });
-    });
-
-    autoUpdater.on('update-not-available', () => {
-        if (win) win.webContents.send('update-status', { type: 'none' });
-    });
+    autoUpdater.on('update-available',   (info) => sendUpdate({ type: 'downloading', version: info.version, percent: 0 }));
+    autoUpdater.on('download-progress',  (p)    => sendUpdate({ type: 'downloading', percent: Math.round(p.percent) }));
+    autoUpdater.on('update-downloaded',  (info) => sendUpdate({ type: 'downloaded',  version: info.version }));
+    autoUpdater.on('update-not-available', ()   => { lastUpdateStatus = null; if (win) win.webContents.send('update-status', { type: 'none' }); });
 
     // checkForUpdates (알림 없음) — 알림은 위 이벤트에서 직접 처리
     autoUpdater.checkForUpdates().catch(() => {});
