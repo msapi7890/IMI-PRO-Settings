@@ -841,6 +841,9 @@ function _focusImiProTab() {
             chrome.windows.update(t.windowId, { focused: true, drawAttention: true }, function() {
                 chrome.tabs.update(t.id, { active: true });
             });
+        } else {
+            // IMI PRO 탭이 없으면 새 탭으로 열기
+            chrome.tabs.create({ url: 'https://msapi7890.github.io/IMI-PRO/' });
         }
     });
 }
