@@ -309,6 +309,16 @@
 
         /* ── 비거래 드롭패널 테마 연동 ── */
         #watchDropPanel { background: var(--bg-card) !important; }
+
+        /* ── hover 배경 전환 버튼 공통 (CSS 변수 신뢰성) ── */
+        .accent-hover-btn { transition: background 0.15s, color 0.15s, border-color 0.15s; color: var(--text-main); }
+        .accent-hover-btn:hover { background: var(--active-focus-color) !important; color: #fff !important; border-color: var(--active-focus-color) !important; }
+
+        /* ── 내 메모 헤더 ── */
+        .memo-sec-hdr { padding: 8px 10px 6px; }
+        .memo-sec-hdr h3 { font-size: 12px !important; font-weight: 900; letter-spacing: 0.08em; opacity: 1 !important; font-style: normal !important; color: var(--text-main); text-transform: none !important; }
+        body.light-mode .memo-sec-hdr h3 { color: #374151; }
+        body.green-mode .memo-sec-hdr h3 { color: #1e3a1e; }
     </style>
     <script src="terms.js"></script>
 </head>
@@ -553,7 +563,7 @@
         </div>
         <div id="tmplViewContent" class="flex-1 overflow-y-auto p-5 text-sm font-medium leading-relaxed whitespace-pre-wrap"></div>
         <div class="shrink-0 px-5 py-3 border-t-2 border-[var(--border-ui)]">
-            <button onclick="copyTmplViewContent()" id="tmplViewCopyBtn" class="w-full py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] hover:bg-[var(--active-focus-color)] hover:text-white hover:border-transparent transition-all">📋 템플릿 복사</button>
+            <button onclick="copyTmplViewContent()" id="tmplViewCopyBtn" class="accent-hover-btn w-full py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] transition-all">📋 템플릿 복사</button>
         </div>
     </div>
 </div>
@@ -1329,7 +1339,7 @@
                 <div class="assist-section">
                     <div class="assist-sec-header">🎮 게임정보</div>
                     <div style="padding:8px;">
-                        <a href="https://web-production-60bf5.up.railway.app" target="_blank" style="display:block;text-align:center;padding:8px 6px;border-radius:9px;border:2px solid var(--border-ui);font-size:13px;font-weight:900;text-decoration:none;color:var(--text-main);transition:0.15s;white-space:nowrap;" onmouseover="this.style.background='var(--active-focus-color)';this.style.color='white';this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.background='';this.style.color='var(--text-main)';this.style.borderColor='var(--border-ui)'">🎮 게임정보 바로가기 ↗</a>
+                        <a href="https://web-production-60bf5.up.railway.app" target="_blank" class="accent-hover-btn" style="display:block;text-align:center;padding:8px 6px;border-radius:9px;border:2px solid var(--border-ui);font-size:13px;font-weight:900;text-decoration:none;white-space:nowrap;">🎮 게임정보 바로가기 ↗</a>
                     </div>
                 </div>
             </div>
@@ -1337,13 +1347,13 @@
         <!-- 메모 패드 (나머지 공간 전부 차지) -->
         <div style="flex:1;display:flex;flex-direction:column;min-height:120px;overflow:hidden;">
             <div class="memo-sec-hdr" style="flex-shrink:0;">
-                <h3 style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;opacity:0.4;font-style:italic;">📝 내 메모</h3>
-                <button onclick="addMemo()" title="새 메모 추가" style="width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border-ui);font-size:16px;line-height:1;font-weight:900;opacity:0.55;transition:0.15s;background:transparent;color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.55">+</button>
+                <h3 style="font-size:12px;font-weight:900;letter-spacing:0.05em;">📝 내 메모</h3>
+                <button onclick="addMemo()" title="새 메모 추가" style="width:26px;height:26px;border-radius:7px;border:2px solid var(--border-ui);font-size:18px;line-height:1;font-weight:900;transition:0.15s;background:transparent;color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--active-focus-color)';this.style.color='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.color='var(--text-main)'">+</button>
             </div>
             <div id="memoList" class="memo-list"></div>
         </div>
         <div id="allMemosBtnWrap" style="flex-shrink:0;padding:12px 15px 20px;background:var(--bg-card);">
-            <button onclick="openAllMemosModal()" class="w-full py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] hover:bg-[var(--active-focus-color)] hover:text-white hover:border-transparent transition-all">📂 전체 메모</button>
+            <button onclick="openAllMemosModal()" class="accent-hover-btn w-full py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] transition-all">📂 전체 메모</button>
         </div>
     </aside>
 
@@ -1398,7 +1408,7 @@
             <div class="flex gap-2 items-center"><input type="date" id="datePicker" onchange="renderNotices()" onclick="this.showPicker()" class="flex-1 text-xs p-2.5 bordered-input cursor-pointer"><button onclick="resetFilters()" class="reset-btn">초기화</button></div>
         </div>
         <div id="noticeList" class="flex-1 overflow-y-auto min-h-0 space-y-2.5 pr-1"></div>
-        <button onclick="openAllNoticesModal()" class="shrink-0 w-full mt-3 py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] hover:bg-[var(--active-focus-color)] hover:text-white hover:border-transparent transition-all">📂 전체공지확인</button>
+        <button onclick="openAllNoticesModal()" class="accent-hover-btn shrink-0 w-full mt-3 py-2.5 text-[11px] font-black rounded-xl border-2 border-[var(--border-ui)] transition-all">📂 전체공지확인</button>
     </aside>
 </main>
 
