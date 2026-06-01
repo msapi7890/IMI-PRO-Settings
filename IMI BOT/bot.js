@@ -309,7 +309,21 @@
                           [el, ...Array.from(el.querySelectorAll('[data-tid]'))].reduce((acc, e) => acc || e.getAttribute('data-tid'), '');
             const tidM = href.match(/[?&]tid=(\d+)/);
             const idM  = href.match(/[?&]id=(\d+)/);
-            const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
+            let tid = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
+            // href·data-tid 모두 실패 시: 오늘 날짜 시작 TID 패턴을 DOM 속성 전체에서 탐색
+            if (!tid) {
+                const todayPfx = (() => { const d = new Date(); return String(d.getFullYear()) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'); })();
+                const re = new RegExp('\\b(' + todayPfx + '\\d{7,8})\\b');
+                const allNodes = [el, ...Array.from(el.querySelectorAll('*'))];
+                outer: for (const node of allNodes) {
+                    for (const attr of Array.from(node.attributes || [])) {
+                        const m = re.exec(attr.value);
+                        if (m) { tid = m[1]; break outer; }
+                    }
+                    const oc = node.getAttribute('onclick') || '';
+                    if (oc) { const m = re.exec(oc); if (m) { tid = m[1]; break; } }
+                }
+            }
 
             // 제외 체크: TID 있으면 TID 기준, 없으면 제목 기준 (fallback)
             const itemKey = tid ? ('tid_' + tid) : title.substring(0, 30).trim();
@@ -318,7 +332,7 @@
             const key = tid ? ('tid_' + tid) : (title.substring(0, 20) + '_' + price);
             if (seen.has(key)) return;
             seen.add(key);
-            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | href: ' + (href || '(없음)') });
+            chrome.runtime.sendMessage({ type: 'DEBUG_LOG', text: 'item: ' + title.substring(0,30) + ' | tid: ' + (tid || '(없음)') + ' | href: ' + (href || '(없음)') });
 
             // 등록일시 DOM에서 추출
             let listTime = '';
