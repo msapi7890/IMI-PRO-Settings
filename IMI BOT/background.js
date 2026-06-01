@@ -283,13 +283,30 @@ async function syncStatus() {
         enabled: r.enabled,
         tabOpen: tabMap[r.id] !== undefined
     }));
-    await fireSet('/bot_status', {
+    const statusPayload = {
         active,
         rules: ruleStatus,
         activeCount: ruleStatus.filter(r => r.enabled && r.tabOpen).length,
         totalCount: ruleStatus.length,
         lastUpdate: Date.now()
-    }).catch(() => {});
+    };
+    // Firebase 경유 (온라인 시)
+    fireSet('/bot_status', statusPayload).catch(() => {});
+    // Bridge 경유 직접 푸시 — Firebase 실패(오프라인)해도 페이지에 상태 전달
+    _pushStatusViaBridge(statusPayload);
+}
+
+function _pushStatusViaBridge(statusPayload) {
+    try {
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                if (!tab.url) return;
+                if (tab.url.includes('msapi7890.github.io') || tab.url.includes('127.0.0.1') || tab.url.includes('localhost')) {
+                    chrome.tabs.sendMessage(tab.id, { __imiBotPush: true, type: 'BOT_STATUS_DIRECT', status: statusPayload }).catch(() => {});
+                }
+            });
+        });
+    } catch(e) {}
 }
 
 // --- Tab management ---
@@ -462,6 +479,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 saveTabMap(m);
             });
         }
+        // OS 토스트는 chrome.notifications — Firebase 불필요, 오프라인에서도 즉시 발송
+        if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
+            if (msg.data.ruleType !== 'watch') {
+                showOsNotif('fraud', msg.data);
+            }
+        }
         fireSet(msg.path, msg.data).then(async () => {
             if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
                 if (msg.data.ruleType === 'watch') {
@@ -478,8 +501,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                         seen:     false
                     }).catch(() => {});
                 } else {
-                    // OS 토스트 알림 (사기글만) + FCM 웹 푸시
-                    showOsNotif('fraud', msg.data);
+                    // FCM 웹 푸시 (인터넷 필요, 실패해도 무관)
                     _sendFcmPush(
                         '🚨 ' + (msg.data.ruleName||'IMI PRO') + ' 감지됨',
                         (msg.data.itemCount||0) + '개 감지 — IMI PRO 확인 바랍니다'

@@ -13,6 +13,17 @@ window.addEventListener('message', function(e) {
             _sendToBot({ type: 'SYNC_STATUS' });
         }
     }
+    // Firebase 오프라인 시 bridge 직접 푸시로 상태 수신
+    if (e.data.type === 'BOT_STATUS_DIRECT' && e.data.status) {
+        var s = e.data.status;
+        var isFirebaseStale = !_botStatus || !_botStatus.lastUpdate || (Date.now() - _botStatus.lastUpdate) > 30000;
+        if (isFirebaseStale) {
+            _botStatus = s;
+            _renderBotStatus();
+            _updateHdrDot();
+            _updateBotToggleBtn();
+        }
+    }
 });
 
 function _sendToBot(msg) {

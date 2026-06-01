@@ -31,3 +31,5 @@ setTimeout(_announce, 1000);
 setTimeout(_announce, 3000);
 setTimeout(_announce, 7000);
 setTimeout(_announce, 15000);
+// 주기적 heartbeat — 서비스워커 재시작 또는 오프라인 상태에서도 연결 유지
+setInterval(_announce, 20000);
