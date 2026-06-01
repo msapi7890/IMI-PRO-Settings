@@ -377,6 +377,18 @@
     </div>
 </div>
 
+<!-- 커스텀 입력 모달 (Electron에서 window.prompt() 대체) -->
+<div id="customPromptModal" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;">
+    <div style="width:min(94vw,360px);background:#1e293b;border:2px solid #334155;border-radius:16px;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+        <div id="customPromptMsg" style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:14px;white-space:pre-wrap;"></div>
+        <input id="customPromptInput" type="text" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:14px;box-sizing:border-box;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')_customPromptOk();else if(event.key==='Escape')_customPromptCancel();">
+        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+            <button onclick="_customPromptCancel()" style="padding:9px 18px;border-radius:8px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:13px;font-weight:700;cursor:pointer;">취소</button>
+            <button onclick="_customPromptOk()" style="padding:9px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:13px;font-weight:900;cursor:pointer;">확인</button>
+        </div>
+    </div>
+</div>
+
 <!-- 회원관리 모달 -->
 <div id="userMgmtModal" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;font-family:'Segoe UI',sans-serif;" onclick="if(event.target===this)closeUserMgmtModal()">
     <div style="width:min(96vw,820px);max-height:86vh;background:#1e293b;border:2px solid #334155;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
@@ -1406,6 +1418,8 @@
             badge.style.display = 'inline-block';
             badge.style.borderColor = '#ef4444';
             badge.style.color = '#ef4444';
+            badge.style.cursor = 'pointer';
+            badge.onclick = checkAppStatus;
             badge.innerText = '\u26A0 API KEY \uD544\uC694';
             if(bar){
                 bar.style.display = 'block';
@@ -1422,21 +1436,44 @@
         }
     }
 
-    function checkAppStatus(){
+    var _customPromptResolve = null;
+    function showCustomPrompt(msg, isPassword) {
+        return new Promise(function(resolve) {
+            _customPromptResolve = resolve;
+            var modal = document.getElementById('customPromptModal');
+            document.getElementById('customPromptMsg').textContent = msg;
+            var inp = document.getElementById('customPromptInput');
+            inp.type = isPassword ? 'password' : 'text';
+            inp.value = '';
+            modal.style.display = 'flex';
+            setTimeout(function(){ inp.focus(); }, 80);
+        });
+    }
+    function _customPromptOk() {
+        var val = document.getElementById('customPromptInput').value;
+        document.getElementById('customPromptModal').style.display = 'none';
+        if (_customPromptResolve) { _customPromptResolve(val); _customPromptResolve = null; }
+    }
+    function _customPromptCancel() {
+        document.getElementById('customPromptModal').style.display = 'none';
+        if (_customPromptResolve) { _customPromptResolve(null); _customPromptResolve = null; }
+    }
+
+    async function checkAppStatus(){
         if(!CLAUDE_API_KEY){
-            var pw=prompt("관리자 비밀번호를 입력하세요:");
-            if(pw!==ADMIN_PW){if(pw)alert("❌ 비밀번호가 틀렸습니다.");return;}
-            var key=prompt("Claude API 키 입력 (sk-ant-...):");
-            if(key&&key.startsWith('sk-ant-')){
+            var pw = await showCustomPrompt("관리자 비밀번호를 입력하세요:", true);
+            if(pw !== ADMIN_PW){if(pw !== null)alert("❌ 비밀번호가 틀렸습니다.");return;}
+            var key = await showCustomPrompt("Claude API 키 입력 (sk-ant-...):");
+            if(key && key.startsWith('sk-ant-')){
                 db.ref('config/claude_api_key').set(key.trim());
                 alert("✅ API 키 저장 완료! 전체 실무자에게 자동 적용됩니다.");
             } else if(key){alert("❌ 올바르지 않은 형식입니다.");}
         } else {
             if(confirm("IMI PRO v49.0\n모드: "+currentMode.toUpperCase()+"\nAPI키: "+CLAUDE_API_KEY.substring(0,12)+"...\n\n[확인] 키 변경  [취소] 닫기")){
-                var pw=prompt("관리자 비밀번호를 입력하세요:");
-                if(pw!==ADMIN_PW){alert("❌ 비밀번호가 틀렸습니다.");return;}
-                var key=prompt("새 Claude API 키 입력 (sk-ant-...)\n※ 빈칸으로 확인 시 API 키 삭제됩니다:");
-                if(key===null){ /* 취소 */ }
+                var pw = await showCustomPrompt("관리자 비밀번호를 입력하세요:", true);
+                if(pw !== ADMIN_PW){if(pw !== null)alert("❌ 비밀번호가 틀렸습니다.");return;}
+                var key = await showCustomPrompt("새 Claude API 키 입력 (sk-ant-...)\n※ 빈칸으로 확인 시 API 키 삭제됩니다:");
+                if(key === null){ /* 취소 */ }
                 else if(key.trim()===''){
                     if(confirm("API 키를 삭제하시겠습니까?\nAI 기능이 비활성화됩니다.")){
                         db.ref('config/claude_api_key').set('');

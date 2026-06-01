@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell } = require('electron');
-const { autoUpdater } = require('electron-updater');
+let autoUpdater = null;
+try { autoUpdater = require('electron-updater').autoUpdater; } catch(_) {}
 const path = require('path');
 const https = require('https');
 const fs = require('fs');
@@ -15,8 +16,10 @@ let lastAlertAt = 0;
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
 function iconPath() {
-    const p = path.join(__dirname, 'assets', 'icon.ico');
-    return fs.existsSync(p) ? p : null;
+    const png = path.join(__dirname, 'assets', 'icon.png');
+    if (fs.existsSync(png)) return png;
+    const ico = path.join(__dirname, 'assets', 'icon.ico');
+    return fs.existsSync(ico) ? ico : null;
 }
 
 // ── 윈도우 생성 ───────────────────────────────────────────
@@ -55,15 +58,16 @@ function createWindow() {
 
 // ── 트레이 ────────────────────────────────────────────────
 function createTray() {
-    const icon = iconPath();
-    const img  = icon
-        ? nativeImage.createFromPath(icon)
-        : nativeImage.createEmpty();
-
-    tray = new Tray(img);
-    tray.setToolTip('IMI PRO');
-    tray.on('click', showWindow);
-    rebuildTrayMenu();
+    try {
+        const icon = iconPath();
+        const img  = icon ? nativeImage.createFromPath(icon) : nativeImage.createEmpty();
+        tray = new Tray(img);
+        tray.setToolTip('IMI PRO');
+        tray.on('click', showWindow);
+        rebuildTrayMenu();
+    } catch(e) {
+        console.error('트레이 생성 실패:', e.message);
+    }
 }
 
 function rebuildTrayMenu() {
@@ -151,6 +155,7 @@ function connectSSE() {
 
 // ── 자동 업데이트 ─────────────────────────────────────────
 function setupAutoUpdater() {
+    if (!autoUpdater) return;
     autoUpdater.autoDownload        = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger              = null;
