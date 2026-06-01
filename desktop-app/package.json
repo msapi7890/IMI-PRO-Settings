@@ -1,0 +1,49 @@
+{
+  "name": "imi-pro",
+  "version": "1.0.0",
+  "description": "IMI PRO Desktop",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "publish": "electron-builder --win --x64 --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.imipro.desktop",
+    "productName": "IMI PRO",
+    "copyright": "IMI PRO",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": ["Korean"],
+      "language": "1042",
+      "shortcutName": "IMI PRO"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "msapi7890",
+      "repo": "IMI-PRO",
+      "releaseType": "release"
+    }
+  }
+}
