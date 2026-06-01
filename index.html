@@ -1658,28 +1658,37 @@
     }
 
     var _fcmPushRegistered = false;
+    function _urlB64ToUint8Array(b64) {
+        var pad = '='.repeat((4 - b64.length % 4) % 4);
+        var base64 = (b64 + pad).replace(/-/g,'+').replace(/_/g,'/');
+        var raw = atob(base64);
+        var arr = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+        return arr;
+    }
     function _registerFcmPush() {
         if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
         _fcmPushRegistered = true;
         Notification.requestPermission().then(function(perm) {
             if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
-            // Installation 토큰 강제 갱신 후 FCM 토큰 발급
-            return firebase.installations().getToken(true).then(function(installToken) {
-                console.log('[FCM] Installation 토큰:', installToken ? 'OK' : 'NULL');
-                return navigator.serviceWorker.register('./firebase-messaging-sw.js');
-            }).then(function() {
-                console.log('[FCM] SW 등록 성공, active 대기 중...');
-                return navigator.serviceWorker.ready;
-            }).then(function(reg) {
-                console.log('[FCM] SW active', reg);
-                var msg = firebase.messaging();
-                return msg.getToken({ serviceWorkerRegistration: reg, vapidKey: 'BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ' });
-            }).then(function(token) {
-                if(!token) { console.warn('[FCM] 토큰 없음'); return; }
-                console.log('[FCM] 토큰 저장:', token.substring(0,20)+'...');
+            // fcmregistrations.googleapis.com 우회 — pushManager 직접 구독
+            return navigator.serviceWorker.register('./firebase-messaging-sw.js')
+            .then(function() { return navigator.serviceWorker.ready; })
+            .then(function(reg) {
+                return reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: _urlB64ToUint8Array('BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ')
+                });
+            }).then(function(sub) {
+                var endpoint = sub.endpoint;
+                console.log('[FCM] 구독 성공 endpoint:', endpoint.substring(0, 60) + '...');
+                // Chrome FCM endpoint: https://fcm.googleapis.com/fcm/send/{token}
+                var token = endpoint.split('/').pop();
+                if (!token) { console.warn('[FCM] 토큰 추출 실패'); return; }
+                console.log('[FCM] 토큰 저장:', token.substring(0, 20) + '...');
                 var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
                 db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
-            }).catch(function(e){ console.error('[FCM] 에러:', e.code, e.message); });
+            }).catch(function(e){ console.error('[FCM] 에러:', e.message); });
         });
     }
 
