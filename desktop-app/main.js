@@ -44,6 +44,19 @@ function createWindow() {
     win = new BrowserWindow(opts);
     win.loadURL(APP_URL);
 
+    // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
+    // 메인 프레임 이동도 앱 URL 외에는 브라우저로
+    win.webContents.on('will-navigate', (event, url) => {
+        if (!url.startsWith(APP_URL)) {
+            event.preventDefault();
+            shell.openExternal(url);
+        }
+    });
+
     win.once('ready-to-show', () => {
         win.show();
     });
