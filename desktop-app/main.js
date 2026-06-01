@@ -1,4 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, dialog } = require('electron');
+
+// ── 단일 인스턴스 잠금 ────────────────────────────────────
+if (!app.requestSingleInstanceLock()) {
+    app.quit();
+    process.exit(0);
+}
+app.on('second-instance', () => { showWindow(); });
 let autoUpdater = null;
 try { autoUpdater = require('electron-updater').autoUpdater; } catch(_) {}
 const path = require('path');
@@ -62,10 +69,24 @@ function createWindow() {
     });
 
     win.on('close', (e) => {
-        if (!isQuitting) {
-            e.preventDefault();
-            win.hide();   // X 버튼 → 트레이로
-        }
+        if (isQuitting) return;
+        e.preventDefault();
+        dialog.showMessageBox(win, {
+            type:    'question',
+            title:   'IMI PRO',
+            message: '어떻게 하시겠습니까?',
+            buttons: ['트레이로 닫기', '프로그램 종료'],
+            defaultId: 0,
+            cancelId:  0,
+            noLink: true
+        }).then(({ response }) => {
+            if (response === 1) {
+                isQuitting = true;
+                app.quit();
+            } else {
+                win.hide();
+            }
+        });
     });
 }
 
