@@ -36,6 +36,22 @@ function buildAppMenu() {
         label: '⚙ 설정',
         submenu: [
             {
+                label: lastUpdateStatus && lastUpdateStatus.type === 'downloaded'
+                    ? '🚀 업데이트 재시작 (준비 완료)'
+                    : lastUpdateStatus && lastUpdateStatus.type === 'downloading'
+                    ? '🔄 업데이트 다운로드 중...'
+                    : '🔍 업데이트 확인',
+                click: () => {
+                    showWindow();
+                    if (lastUpdateStatus) {
+                        if (win) win.webContents.send('update-status', lastUpdateStatus);
+                    } else if (autoUpdater) {
+                        autoUpdater.checkForUpdates().catch(() => {});
+                    }
+                }
+            },
+            { type: 'separator' },
+            {
                 label: '닫기 시 매번 선택',
                 type: 'radio',
                 checked: s.closeMode === 'ask',
@@ -266,6 +282,7 @@ function setupAutoUpdater() {
     function sendUpdate(data) {
         lastUpdateStatus = data;
         if (win) win.webContents.send('update-status', data);
+        buildAppMenu();   // 메뉴 레이블 갱신
     }
 
     autoUpdater.on('update-available',   (info) => sendUpdate({ type: 'downloading', version: info.version, percent: 0 }));
