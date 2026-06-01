@@ -1,10 +1,10 @@
 {
   "name": "imi-pro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "IMI PRO Desktop",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node_modules\\electron\\dist\\electron.exe .",
     "dist": "electron-builder --win --x64",
     "publish": "electron-builder --win --x64 --publish always"
   },
@@ -12,7 +12,7 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^31.7.7",
+    "electron": "^28.3.3",
     "electron-builder": "^24.13.3"
   },
   "build": {
@@ -35,8 +35,6 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerLanguages": ["Korean"],
-      "language": "1042",
       "shortcutName": "IMI PRO"
     },
     "publish": {
