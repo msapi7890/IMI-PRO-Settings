@@ -163,8 +163,7 @@ function setupAutoUpdater() {
     autoUpdater.logger               = null;
 
     autoUpdater.on('update-available', (info) => {
-        // 알림 1개만 (checkForUpdates 사용으로 중복 제거)
-        showNativeNotif('IMI PRO 업데이트', `v${info.version} 다운로드를 시작합니다.`);
+        // 앱 내 오버레이에서 표시하므로 윈도우 알림 없음
         if (win) win.webContents.send('update-status', { type: 'downloading', version: info.version, percent: 0 });
     });
 
