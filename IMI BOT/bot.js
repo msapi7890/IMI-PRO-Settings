@@ -304,15 +304,16 @@
                 }
             }
 
-            const itemKey = title.substring(0, 30).trim();
-            if (blockedItems.has(itemKey)) return;
-
             // TID를 먼저 추출해서 중복 키로 사용 — 제목+가격이 같아도 TID가 다르면 별개 물품
             const elTid = el.getAttribute('data-tid') ||
                           [el, ...Array.from(el.querySelectorAll('[data-tid]'))].reduce((acc, e) => acc || e.getAttribute('data-tid'), '');
             const tidM = href.match(/[?&]tid=(\d+)/);
             const idM  = href.match(/[?&]id=(\d+)/);
             const tid  = (elTid && /^\d+$/.test(elTid)) ? elTid : (tidM ? tidM[1] : (idM ? idM[1] : ''));
+
+            // 제외 체크: TID 있으면 TID 기준, 없으면 제목 기준 (fallback)
+            const itemKey = tid ? ('tid_' + tid) : title.substring(0, 30).trim();
+            if (blockedItems.has(itemKey)) return;
 
             const key = tid ? ('tid_' + tid) : (title.substring(0, 20) + '_' + price);
             if (seen.has(key)) return;
