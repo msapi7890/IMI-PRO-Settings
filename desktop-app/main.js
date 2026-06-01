@@ -215,6 +215,7 @@ ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed 
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);   // 기본 메뉴바 제거
     createWindow();
     createTray();
 
