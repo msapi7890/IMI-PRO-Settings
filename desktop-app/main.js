@@ -72,19 +72,8 @@ function createTray() {
 
 function rebuildTrayMenu() {
     if (!tray) return;
-    const autoStart = app.getLoginItemSettings().openAtLogin;
     tray.setContextMenu(Menu.buildFromTemplate([
-        { label: 'IMI PRO 열기',  click: showWindow },
-        { type: 'separator' },
-        {
-            label: '컴퓨터 시작 시 자동 실행',
-            type:  'checkbox',
-            checked: autoStart,
-            click: (item) => {
-                app.setLoginItemSettings({ openAtLogin: item.checked });
-                rebuildTrayMenu();
-            }
-        },
+        { label: 'IMI PRO 열기', click: showWindow },
         { type: 'separator' },
         { label: '종료', click: () => { isQuitting = true; app.quit(); } }
     ]));
@@ -173,15 +162,12 @@ ipcMain.handle('get-version',       ()                   => app.getVersion());
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
-    // 최초 실행 시 자동 실행 기본값 ON
-    const flagFile = path.join(app.getPath('userData'), 'autostart_set.flag');
-    if (!fs.existsSync(flagFile)) {
-        app.setLoginItemSettings({ openAtLogin: true });
-        fs.writeFileSync(flagFile, '1');
-    }
-
     createWindow();
     createTray();
+
+    // 항상 자동 실행 강제 적용
+    app.setLoginItemSettings({ openAtLogin: true, path: app.getPath('exe') });
+
     connectSSE();
     if (app.isPackaged) setupAutoUpdater();
 });
