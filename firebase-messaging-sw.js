@@ -1,12 +1,19 @@
 // IMI PRO 웹 푸시 서비스워커
 // Firebase Messaging SDK 미사용 — raw push 이벤트 직접 처리
 
+self.addEventListener('install', function(event) {
+    event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', function(event) {
     var title = '🚨 IMI PRO 감지됨';
     var options = {
         body: '',
-        icon: './favicon.ico',
-        badge: './favicon.ico',
+        icon: 'https://msapi7890.github.io/IMI-PRO/guide_imgs/1.png',
         tag: 'imi-pro-alert',
         requireInteraction: true,
         data: { url: 'https://msapi7890.github.io/IMI-PRO/' }
