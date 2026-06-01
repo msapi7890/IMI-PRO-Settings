@@ -75,12 +75,12 @@ function createWindow() {
             type:    'question',
             title:   'IMI PRO',
             message: '어떻게 하시겠습니까?',
-            buttons: ['트레이로 닫기', '프로그램 종료'],
-            defaultId: 0,
-            cancelId:  0,
+            buttons: ['프로그램 종료', '트레이로 닫기'],
+            defaultId: 1,
+            cancelId:  1,
             noLink: true
         }).then(({ response }) => {
-            if (response === 1) {
+            if (response === 0) {
                 isQuitting = true;
                 app.quit();
             } else {
