@@ -210,7 +210,7 @@ function setupAutoUpdater() {
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
 ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
-ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(); });
+ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(true, true); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 
 // ── 앱 시작 ───────────────────────────────────────────────
