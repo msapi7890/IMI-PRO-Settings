@@ -158,20 +158,37 @@ function connectSSE() {
 // ── 자동 업데이트 ─────────────────────────────────────────
 function setupAutoUpdater() {
     if (!autoUpdater) return;
-    autoUpdater.autoDownload        = true;
+    autoUpdater.autoDownload         = true;
     autoUpdater.autoInstallOnAppQuit = true;
-    autoUpdater.logger              = null;
+    autoUpdater.logger               = null;
 
-    autoUpdater.on('update-available',  () => showNativeNotif('IMI PRO 업데이트', '새 버전을 다운로드 중입니다...'));
-    autoUpdater.on('update-downloaded', () => showNativeNotif('IMI PRO 업데이트 완료', '앱 종료 시 자동 설치됩니다.'));
+    autoUpdater.on('update-available', (info) => {
+        // 알림 1개만 (checkForUpdates 사용으로 중복 제거)
+        showNativeNotif('IMI PRO 업데이트', `v${info.version} 다운로드를 시작합니다.`);
+        if (win) win.webContents.send('update-status', { type: 'downloading', version: info.version, percent: 0 });
+    });
 
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
-    setInterval(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 60 * 60 * 1000);
+    autoUpdater.on('download-progress', (p) => {
+        if (win) win.webContents.send('update-status', { type: 'downloading', percent: Math.round(p.percent) });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        if (win) win.webContents.send('update-status', { type: 'downloaded', version: info.version });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        if (win) win.webContents.send('update-status', { type: 'none' });
+    });
+
+    // checkForUpdates (알림 없음) — 알림은 위 이벤트에서 직접 처리
+    autoUpdater.checkForUpdates().catch(() => {});
+    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 60 * 60 * 1000);
 }
 
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
 ipcMain.handle('show-notification', (_, { title, body }) => showNativeNotif(title, body));
 ipcMain.handle('get-version',       ()                   => app.getVersion());
+ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(); });
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {

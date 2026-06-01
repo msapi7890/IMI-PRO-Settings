@@ -1,9 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    // 웹 앱에서 네이티브 알림 요청
     showNotification: (title, body) => ipcRenderer.invoke('show-notification', { title, body }),
-    // 앱 버전 조회
-    getVersion: () => ipcRenderer.invoke('get-version'),
+    getVersion:       () => ipcRenderer.invoke('get-version'),
+    installUpdate:    () => ipcRenderer.invoke('install-update'),
+    onUpdateStatus:   (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
     isElectron: true
 });
