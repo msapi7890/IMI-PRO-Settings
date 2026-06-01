@@ -99,8 +99,8 @@ function createIconPNG(size) {
     if(size>=32){
         const gW=IMI_GLYPH[0].length; // 15
         const gH=IMI_GLYPH.length;    // 9
-        // 아이콘의 80% 너비를 채우는 스케일
-        const scale=Math.max(1, Math.floor(size*0.82/gW));
+        // 아이콘의 92% 너비를 채우는 스케일
+        const scale=Math.max(1, Math.round(size*0.92/gW));
         const tW=gW*scale, tH=gH*scale;
         const sx=Math.round((W-tW)/2), sy=Math.round((H-tH)/2);
         drawCombined(img,W,H,IMI_GLYPH,sx,sy,scale);
