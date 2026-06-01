@@ -33,7 +33,7 @@ function saveSettings(s) {
 function buildAppMenu() {
     const s = loadSettings();
     Menu.setApplicationMenu(Menu.buildFromTemplate([{
-        label: '수정',
+        label: '⚙ 설정',
         submenu: [
             {
                 label: '닫기 시 매번 선택',
