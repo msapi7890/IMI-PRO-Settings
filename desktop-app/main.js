@@ -32,15 +32,15 @@ function saveSettings(s) {
 // ── 수정 메뉴 ─────────────────────────────────────────────
 function buildAppMenu() {
     const s = loadSettings();
-    const _hasUpdate = lastUpdateStatus && (lastUpdateStatus.type === 'downloaded' || lastUpdateStatus.type === 'downloading');
+    const _updateReady = lastUpdateStatus && lastUpdateStatus.type === 'downloaded';
     Menu.setApplicationMenu(Menu.buildFromTemplate([{
-        label: _hasUpdate ? '⚙ 설정  🔴' : '⚙ 설정',
+        label: _updateReady ? '⚙ 설정  🔴' : '⚙ 설정',
         submenu: [
             {
-                label: lastUpdateStatus && lastUpdateStatus.type === 'downloaded'
+                label: _updateReady
                     ? '🔴 NEW   🚀 업데이트 재시작 (준비 완료)'
                     : lastUpdateStatus && lastUpdateStatus.type === 'downloading'
-                    ? '🔴 NEW   🔄 업데이트 다운로드 중...'
+                    ? '🔄 업데이트 다운로드 중...'
                     : '🔍 업데이트 확인',
                 click: () => {
                     showWindow();
