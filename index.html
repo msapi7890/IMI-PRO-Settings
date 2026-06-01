@@ -1688,7 +1688,7 @@
         if(saved && saved.name && saved.hash){
             var user = await _authFetch('imi_users/'+_ukey(saved.name)+'.json');
             if(user && user.pw_hash === saved.hash && user.approved){
-                _authGrant({name:saved.name, role:user.role});
+                _authGrant({name:saved.name, role:user.role, monitor_disabled:!!user.monitor_disabled});
                 return;
             }
         }
@@ -1727,11 +1727,11 @@
         // 월 1회 비밀번호 변경 체크 (30일)
         var MONTH_MS=30*86400000;
         if(!user.pw_changed_at || Date.now()-user.pw_changed_at>MONTH_MS){
-            _currentUser={name:name, role:user.role};
+            _currentUser={name:name, role:user.role, monitor_disabled:!!user.monitor_disabled};
             _showLockChange('🔒 매월 비밀번호 변경이 필요합니다\n현재 비밀번호를 입력 후 새 비밀번호를 설정하세요.', false);
             return;
         }
-        _authGrant({name:name, role:user.role});
+        _authGrant({name:name, role:user.role, monitor_disabled:!!user.monitor_disabled});
     }
 
     // 회원가입
@@ -1777,6 +1777,14 @@
         if(user.role === 'admin' || user.role === 'subadmin') _authWatchPending();
         // 봇 버튼 권한 적용 (monitor.js 함수)
         if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
+        // 모니터링 기능 권한 적용 (monitor_disabled 플래그)
+        var _monDis = !!user.monitor_disabled && user.role !== 'admin';
+        var _wTab = document.getElementById('watchHeaderTab');
+        var _fTab = document.getElementById('fraudHeaderTab');
+        var _wPanel = document.getElementById('watchDropPanel');
+        if(_wTab)  _wTab.style.display  = _monDis ? 'none' : '';
+        if(_fTab)  _fTab.style.display  = _monDis ? 'none' : '';
+        if(_monDis && _wPanel){ _wPanel.style.maxHeight='0'; _wPanel.style.overflow='hidden'; }
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
         // FCM 웹 푸시 등록 (익스텐션 없는 환경, 탭 닫혀도 알림 수신)
@@ -4018,6 +4026,7 @@
                     r += '<button onclick="_umSetEmpId(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\',\''+escHtml(u.emp_id||'')+'\')" style="'+ABT+'background:none;border:1px solid #1e3a5f;color:#93c5fd;" title="사번 설정">ID</button>';
                     if(!isMe){
                         r += '<button onclick="_authResetPw(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#f59e0b;" title="비밀번호 초기화">&#x1f511;</button>';
+                        r += '<button onclick="_umToggleMonitor(\''+u._key+'\','+!!u.monitor_disabled+')" style="'+ABT+(u.monitor_disabled ? 'background:#b91c1c33;border:1px solid #b91c1c;color:#f87171;' : 'background:none;border:1px solid #334155;color:#64748b;')+'" title="'+(u.monitor_disabled?'모니터링 차단됨 (클릭 시 해제)':'모니터링 허용 (클릭 시 차단)')+'">&#x1f4e1;'+(u.monitor_disabled?'&#x274c;':'&#x2714;')+'</button>';
                         r += '<button onclick="_authDelete(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#64748b;" title="삭제">&#x2715;</button>';
                     }
                 }
@@ -4209,6 +4218,11 @@
     async function _umSetPart(key, part){
         await _authFetch('imi_users/'+key+'/part.json', 'PUT', part);
     }
+    async function _umToggleMonitor(key, current){
+        await _authFetch('imi_users/'+key+'/monitor_disabled.json', 'PUT', !current);
+        _renderUserMgmt();
+    }
+
     async function _umSetRole(key, role){
         if(!confirm('권한을 변경하시겠습니까?')) return;
         await _authFetch('imi_users/'+key+'/role.json', 'PUT', role);
