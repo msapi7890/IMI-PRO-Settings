@@ -807,7 +807,20 @@ async function _sendFcmPush(title, body) {
             fetch(`https://fcm.googleapis.com/v1/projects/${_FCM_PROJECT}/messages:send`, {
                 method:'POST',
                 headers:{ 'Authorization':'Bearer '+accessToken, 'Content-Type':'application/json' },
-                body: JSON.stringify({ message:{ token, data:{ title, body } } })
+                body: JSON.stringify({ message:{
+                    token,
+                    data: { title, body },
+                    webpush: {
+                        notification: {
+                            title,
+                            body,
+                            icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
+                            requireInteraction: true,
+                            tag: 'imi-pro-alert'
+                        },
+                        fcm_options: { link: 'https://msapi7890.github.io/IMI-PRO/' }
+                    }
+                }})
             }).catch(()=>{});
         }
     } catch(e) {}
