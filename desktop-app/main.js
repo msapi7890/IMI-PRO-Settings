@@ -140,6 +140,14 @@ function createWindow() {
         win.show();
     });
 
+    // F5 / Ctrl+R 새로고침 단축키 복원
+    win.webContents.on('before-input-event', (event, input) => {
+        if (input.type !== 'keyDown') return;
+        if (input.key === 'F5' || (input.control && input.key === 'r')) {
+            win.webContents.reload();
+        }
+    });
+
     // 페이지 로드 완료 시 미처 못 받은 업데이트 상태 재전송
     win.webContents.on('did-finish-load', () => {
         if (lastUpdateStatus) {
