@@ -21,6 +21,7 @@ let sseReq           = null;
 let isQuitting       = false;
 let lastAlertAt      = 0;
 let lastUpdateStatus = null;   // 페이지 로드 전 이벤트 캐시
+let monitorSuppressed = false; // 모니터링 차단 유저 플래그
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
 function iconPath() {
@@ -174,7 +175,7 @@ function connectSSE() {
 
                     const title = '🚨 ' + (d.ruleName || 'IMI PRO') + ' 감지됨';
                     const body  = (d.itemCount || 0) + '개 감지 · 키워드: ' + (d.keyword || '') + '\nIMI PRO 확인 바랍니다';
-                    showNativeNotif(title, body);
+                    if (!monitorSuppressed) showNativeNotif(title, body);
                 }
             });
             res.on('end',   () => setTimeout(connectSSE, 5000));
@@ -207,9 +208,10 @@ function setupAutoUpdater() {
 }
 
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
-ipcMain.handle('show-notification', (_, { title, body }) => showNativeNotif(title, body));
+ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
 ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(); });
+ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
