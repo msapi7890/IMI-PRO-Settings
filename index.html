@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-installations-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -1662,7 +1663,11 @@
         _fcmPushRegistered = true;
         Notification.requestPermission().then(function(perm) {
             if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
-            navigator.serviceWorker.register('./firebase-messaging-sw.js').then(function() {
+            // Installation 토큰 강제 갱신 후 FCM 토큰 발급
+            return firebase.installations().getToken(true).then(function(installToken) {
+                console.log('[FCM] Installation 토큰:', installToken ? 'OK' : 'NULL');
+                return navigator.serviceWorker.register('./firebase-messaging-sw.js');
+            }).then(function() {
                 console.log('[FCM] SW 등록 성공, active 대기 중...');
                 return navigator.serviceWorker.ready;
             }).then(function(reg) {
@@ -1674,7 +1679,7 @@
                 console.log('[FCM] 토큰 저장:', token.substring(0,20)+'...');
                 var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
                 db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
-            }).catch(function(e){ console.error('[FCM] 에러:', e); });
+            }).catch(function(e){ console.error('[FCM] 에러:', e.code, e.message); });
         });
     }
 
