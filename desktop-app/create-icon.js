@@ -1,4 +1,4 @@
-// IMI PRO 아이콘 — 배경 없음, IMI 붙임 로고만 (그라데이션)
+// IMI PRO 아이콘 — 파랑→핑크 그라데이션 + 그림자 + 투명 배경
 const zlib = require('zlib');
 const fs   = require('fs');
 const path = require('path');
@@ -39,7 +39,7 @@ function encodePNG(W, H, img) {
     ]);
 }
 
-// ── IMI 붙임 로고 글리프 (15×9) — I·M·I 이어진 하나의 심볼 ─
+// ── IMI 붙임 로고 글리프 (15×9) ────────────────────────────
 const IMI_GLYPH = [
     '111111000111111',
     '001001101100100',
@@ -60,31 +60,60 @@ const IMI_MINI = [
     '111101111',
 ];
 
-// ── 픽셀 그라데이션 색상 계산 ──────────────────────────────
-// 글자 위: 밝은 하늘색(#7dd3fc) → 아래: 진한 파랑(#0284c7)
-function letterColor(row, totalRows) {
-    const t = totalRows <= 1 ? 0 : row / (totalRows - 1);
-    return [
-        Math.round(125*(1-t) +  2*t),   // R
-        Math.round(211*(1-t) +132*t),   // G
-        Math.round(252*(1-t) +199*t),   // B
-    ];
+// ── 앱 로고와 동일한 파랑→핑크 그라데이션 (135deg) ──────────
+// #0284c7 → #3abff8 → #db2777
+function gradColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t < 0.5) {
+        const s = t * 2;
+        return [
+            Math.round(2   + (58 - 2)   * s),
+            Math.round(132 + (191-132)  * s),
+            Math.round(199 + (248-199)  * s),
+        ];
+    } else {
+        const s = (t - 0.5) * 2;
+        return [
+            Math.round(58  + (219-58)   * s),
+            Math.round(191 + (39 -191)  * s),
+            Math.round(248 + (119-248)  * s),
+        ];
+    }
 }
 
-// ── 글리프 그리기 (픽셀마다 그라데이션) ──────────────────────
-function drawCombined(img, W, H, glyph, x0, y0, scale) {
-    const rows=glyph.length;
+// ── 픽셀 쓰기 ─────────────────────────────────────────────
+function setPixel(img, W, H, x, y, r, g, b, a) {
+    if(x<0||x>=W||y<0||y>=H) return;
+    const i=(y*W+x)*4;
+    const fa=a/255, ba=img[i+3]/255, oa=fa+ba*(1-fa);
+    if(oa===0){ img[i+3]=0; return; }
+    img[i]  =Math.round((r*fa + img[i]  *ba*(1-fa))/oa);
+    img[i+1]=Math.round((g*fa + img[i+1]*ba*(1-fa))/oa);
+    img[i+2]=Math.round((b*fa + img[i+2]*ba*(1-fa))/oa);
+    img[i+3]=Math.round(oa*255);
+}
+
+// ── 글리프 렌더링 ─────────────────────────────────────────
+function renderGlyph(img, W, H, glyph, x0, y0, scale, offX, offY, r, g, b, a) {
     glyph.forEach((row, ry) => {
-        const [r,g,b]=letterColor(ry, rows);
         [...row].forEach((bit, cx) => {
-            if(bit!=='1') return;
-            for(let sy=0; sy<scale; sy++){
-                const [ri,gi,bi]=letterColor(ry*scale+sy, rows*scale);
-                for(let sx=0; sx<scale; sx++){
-                    const px=x0+cx*scale+sx, py=y0+ry*scale+sy;
-                    if(px<0||px>=W||py<0||py>=H) continue;
-                    const i=(py*W+px)*4;
-                    img[i]=ri; img[i+1]=gi; img[i+2]=bi; img[i+3]=255;
+            if(bit !== '1') return;
+            for(let sy=0; sy<scale; sy++)
+                for(let sx=0; sx<scale; sx++)
+                    setPixel(img,W,H, x0+cx*scale+sx+offX, y0+ry*scale+sy+offY, r,g,b,a);
+        });
+    });
+}
+function renderGlyphGrad(img, W, H, glyph, x0, y0, scale, tW, tH) {
+    glyph.forEach((row, ry) => {
+        [...row].forEach((bit, cx) => {
+            if(bit !== '1') return;
+            for(let sy=0; sy<scale; sy++) {
+                for(let sx=0; sx<scale; sx++) {
+                    const px=cx*scale+sx, py=ry*scale+sy;
+                    const t=(px/tW + py/tH)/2;
+                    const [r,g,b]=gradColor(t);
+                    setPixel(img,W,H, x0+px, y0+py, r,g,b, 255);
                 }
             }
         });
@@ -94,23 +123,30 @@ function drawCombined(img, W, H, glyph, x0, y0, scale) {
 // ── 아이콘 PNG 생성 (투명 배경) ────────────────────────────
 function createIconPNG(size) {
     const W=size, H=size;
-    const img=new Uint8Array(W*H*4); // 전체 투명
+    const img=new Uint8Array(W*H*4);
 
-    if(size>=32){
-        const gW=IMI_GLYPH[0].length; // 15
-        const gH=IMI_GLYPH.length;    // 9
-        // 아이콘의 92% 너비를 채우는 스케일
-        const scale=Math.max(1, Math.round(size*0.92/gW));
-        const tW=gW*scale, tH=gH*scale;
-        const sx=Math.round((W-tW)/2), sy=Math.round((H-tH)/2);
-        drawCombined(img,W,H,IMI_GLYPH,sx,sy,scale);
+    let glyph, gW, gH, scale, sx, sy;
+
+    if(size >= 32){
+        glyph=IMI_GLYPH;
+        gW=glyph[0].length; gH=glyph.length;
+        scale=Math.max(1, Math.round(size*0.92/gW));
     } else {
-        // 16px: 미니 9×5
-        const gW=IMI_MINI[0].length;
-        const gH=IMI_MINI.length;
-        const sx=Math.round((W-gW)/2), sy=Math.round((H-gH)/2);
-        drawCombined(img,W,H,IMI_MINI,sx,sy,1);
+        glyph=IMI_MINI;
+        gW=glyph[0].length; gH=glyph.length;
+        scale=1;
     }
+
+    const tW=gW*scale, tH=gH*scale;
+    sx=Math.round((W-tW)/2);
+    sy=Math.round((H-tH)/2);
+
+    // 1) 그림자 (오른쪽 아래 1~2px, 반투명 어두운색)
+    const sOff=Math.max(1, Math.round(scale*0.6));
+    renderGlyph(img,W,H,glyph,sx,sy,scale, sOff,sOff, 0,0,0, 140);
+
+    // 2) 글자 본체 — 파랑→핑크 그라데이션
+    renderGlyphGrad(img,W,H,glyph,sx,sy,scale, tW,tH);
 
     return encodePNG(W,H,img);
 }
@@ -137,6 +173,5 @@ if(!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir);
 
 fs.writeFileSync(path.join(assetsDir,'icon.ico'), createICO([16,32,48,256]));
 console.log('icon.ico 생성 완료');
-
 fs.writeFileSync(path.join(assetsDir,'icon.png'), createIconPNG(256));
 console.log('icon.png 생성 완료');
