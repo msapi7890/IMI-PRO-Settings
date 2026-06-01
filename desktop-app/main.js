@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell } = require('electron');
 
 // ── 단일 인스턴스 잠금 ────────────────────────────────────
 if (!app.requestSingleInstanceLock()) {
@@ -14,6 +14,53 @@ const fs = require('fs');
 
 const APP_URL  = 'https://msapi7890.github.io/IMI-PRO/';
 const DB_BASE  = 'https://manual-9a47c-default-rtdb.firebaseio.com';
+
+// ── 설정 파일 ─────────────────────────────────────────────
+let _settingsPath = null;
+function settingsPath() {
+    if (!_settingsPath) _settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    return _settingsPath;
+}
+function loadSettings() {
+    try { return Object.assign({ closeMode: 'tray', openAtLogin: true }, JSON.parse(fs.readFileSync(settingsPath(), 'utf8'))); }
+    catch(_) { return { closeMode: 'tray', openAtLogin: true }; }
+}
+function saveSettings(s) {
+    try { fs.writeFileSync(settingsPath(), JSON.stringify(s)); } catch(_) {}
+}
+
+// ── 수정 메뉴 ─────────────────────────────────────────────
+function buildAppMenu() {
+    const s = loadSettings();
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{
+        label: '수정',
+        submenu: [
+            {
+                label: '닫기 시 트레이로',
+                type: 'radio',
+                checked: s.closeMode !== 'quit',
+                click: () => { saveSettings(Object.assign(s, { closeMode: 'tray' })); buildAppMenu(); }
+            },
+            {
+                label: '닫기 시 프로그램 종료',
+                type: 'radio',
+                checked: s.closeMode === 'quit',
+                click: () => { saveSettings(Object.assign(s, { closeMode: 'quit' })); buildAppMenu(); }
+            },
+            { type: 'separator' },
+            {
+                label: '컴퓨터 시작 시 자동 실행',
+                type: 'checkbox',
+                checked: !!s.openAtLogin,
+                click: (item) => {
+                    s.openAtLogin = item.checked;
+                    saveSettings(s);
+                    app.setLoginItemSettings({ openAtLogin: s.openAtLogin, path: app.getPath('exe') });
+                }
+            }
+        ]
+    }]));
+}
 
 let win              = null;
 let tray             = null;
@@ -80,22 +127,12 @@ function createWindow() {
     win.on('close', (e) => {
         if (isQuitting) return;
         e.preventDefault();
-        dialog.showMessageBox(win, {
-            type:    'question',
-            title:   'IMI PRO',
-            message: '어떻게 하시겠습니까?',
-            buttons: ['프로그램 종료', '트레이로 닫기'],
-            defaultId: 1,
-            cancelId:  1,
-            noLink: true
-        }).then(({ response }) => {
-            if (response === 0) {
-                isQuitting = true;
-                app.quit();
-            } else {
-                win.hide();
-            }
-        });
+        if (loadSettings().closeMode === 'quit') {
+            isQuitting = true;
+            app.quit();
+        } else {
+            win.hide();
+        }
     });
 }
 
@@ -215,12 +252,12 @@ ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed 
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
-    Menu.setApplicationMenu(null);   // 기본 메뉴바 제거
+    buildAppMenu();
     createWindow();
     createTray();
 
-    // 항상 자동 실행 강제 적용
-    app.setLoginItemSettings({ openAtLogin: true, path: app.getPath('exe') });
+    const s = loadSettings();
+    app.setLoginItemSettings({ openAtLogin: !!s.openAtLogin, path: app.getPath('exe') });
 
     connectSSE();
     if (app.isPackaged) setupAutoUpdater();
