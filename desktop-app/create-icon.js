@@ -93,27 +93,21 @@ function setPixel(img, W, H, x, y, r, g, b, a) {
     img[i+3]=Math.round(oa*255);
 }
 
-// ── 글리프 렌더링 ─────────────────────────────────────────
-function renderGlyph(img, W, H, glyph, x0, y0, scale, offX, offY, r, g, b, a) {
+// ── 글리프 렌더링 (원형 확장으로 굵은 획) ───────────────────
+// radius: 각 픽셀을 원형으로 r만큼 확장 → 선 굵기 증가
+function renderGlyphColor(img, W, H, glyph, x0, y0, scale, tW, tH, radius, offX, offY, fr, fg, fb, fa) {
     glyph.forEach((row, ry) => {
         [...row].forEach((bit, cx) => {
             if(bit !== '1') return;
-            for(let sy=0; sy<scale; sy++)
-                for(let sx=0; sx<scale; sx++)
-                    setPixel(img,W,H, x0+cx*scale+sx+offX, y0+ry*scale+sy+offY, r,g,b,a);
-        });
-    });
-}
-function renderGlyphGrad(img, W, H, glyph, x0, y0, scale, tW, tH) {
-    glyph.forEach((row, ry) => {
-        [...row].forEach((bit, cx) => {
-            if(bit !== '1') return;
-            for(let sy=0; sy<scale; sy++) {
-                for(let sx=0; sx<scale; sx++) {
-                    const px=cx*scale+sx, py=ry*scale+sy;
-                    const t=(px/tW + py/tH)/2;
-                    const [r,g,b]=gradColor(t);
-                    setPixel(img,W,H, x0+px, y0+py, r,g,b, 255);
+            const basePx = cx*scale + scale*0.5;
+            const basePy = ry*scale + scale*0.5;
+            for(let dy=-radius; dy<=radius; dy++) {
+                for(let dx=-radius; dx<=radius; dx++) {
+                    if(dx*dx + dy*dy > radius*radius) continue;
+                    const px=Math.round(basePx+dx), py=Math.round(basePy+dy);
+                    const t=((px/tW)+(py/tH))/2;
+                    const [r,g,b] = (fr===-1) ? gradColor(t) : [fr,fg,fb];
+                    setPixel(img,W,H, x0+px+offX, y0+py+offY, r,g,b, fa);
                 }
             }
         });
@@ -141,12 +135,15 @@ function createIconPNG(size) {
     sx=Math.round((W-tW)/2);
     sy=Math.round((H-tH)/2);
 
-    // 1) 그림자 (오른쪽 아래 1~2px, 반투명 어두운색)
-    const sOff=Math.max(1, Math.round(scale*0.6));
-    renderGlyph(img,W,H,glyph,sx,sy,scale, sOff,sOff, 0,0,0, 140);
+    // 획 굵기: scale 비례로 확장 (크롬 아이콘처럼 꽉 차 보이도록)
+    const radius = Math.max(1, Math.round(scale * 0.9));
 
-    // 2) 글자 본체 — 파랑→핑크 그라데이션
-    renderGlyphGrad(img,W,H,glyph,sx,sy,scale, tW,tH);
+    // 1) 그림자 (offset + 동일 radius)
+    const sOff = Math.max(1, Math.round(scale * 0.5));
+    renderGlyphColor(img,W,H,glyph,sx,sy,scale,tW,tH,radius, sOff,sOff, 0,0,0, 130);
+
+    // 2) 글자 본체 — 파랑→핑크 그라데이션 (fr=-1 이면 gradColor 사용)
+    renderGlyphColor(img,W,H,glyph,sx,sy,scale,tW,tH,radius, 0,0, -1,0,0, 255);
 
     return encodePNG(W,H,img);
 }
