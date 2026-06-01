@@ -264,6 +264,22 @@
         .log-item-row:last-child { border-bottom:none; }
         #monitorAlertFlash.hidden { display:none!important; }
 
+        /* ── 헤더 버튼 구분선 — 모든 테마 강화 ── */
+        body.light-mode header button,
+        body.light-mode header .slider-container,
+        body.light-mode #authUserBadge > div { border-color: #9ca3af !important; }
+        body.light-mode header button:hover { border-color: var(--active-focus-color) !important; }
+
+        body.green-mode header button,
+        body.green-mode header .slider-container,
+        body.green-mode #authUserBadge > div { border-color: #5a7a5a !important; }
+        body.green-mode header button:hover { border-color: var(--active-focus-color) !important; }
+
+        body.dark-mode header button,
+        body.dark-mode header .slider-container,
+        body.dark-mode #authUserBadge > div { border-color: #475569 !important; }
+        body.dark-mode header button:hover { border-color: var(--active-focus-color) !important; }
+
         /* ── 라이트 모드 시인성 개선 ── */
         body.light-mode .assist-sec-header {
             background: #d1d5db; opacity: 1; color: #1f2937;
