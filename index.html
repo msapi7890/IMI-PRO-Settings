@@ -1669,20 +1669,27 @@
     function _registerFcmPush() {
         if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
         _fcmPushRegistered = true;
+        var SW_VER = 'v3'; // 서비스워커 업데이트 시 증가 → 자동 재구독 유도
         Notification.requestPermission().then(function(perm) {
             if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
-            // fcmregistrations.googleapis.com 우회 — pushManager 직접 구독
             return navigator.serviceWorker.register('./firebase-messaging-sw.js')
             .then(function() { return navigator.serviceWorker.ready; })
             .then(function(reg) {
-                return reg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: _urlB64ToUint8Array('BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ')
+                // 서비스워커 버전 바뀌면 기존 구독 해제 후 재구독 (탭 닫힌 상태 push 수신 보장)
+                var needResub = localStorage.getItem('fcm_sw_ver') !== SW_VER;
+                var p = needResub
+                    ? reg.pushManager.getSubscription().then(function(s){ return s ? s.unsubscribe() : null; })
+                    : Promise.resolve();
+                return p.then(function() {
+                    return reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: _urlB64ToUint8Array('BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ')
+                    });
                 });
             }).then(function(sub) {
+                localStorage.setItem('fcm_sw_ver', SW_VER);
                 var endpoint = sub.endpoint;
                 console.log('[FCM] 구독 성공 endpoint:', endpoint.substring(0, 60) + '...');
-                // Chrome FCM endpoint: https://fcm.googleapis.com/fcm/send/{token}
                 var token = endpoint.split('/').pop();
                 if (!token) { console.warn('[FCM] 토큰 추출 실패'); return; }
                 console.log('[FCM] 토큰 저장:', token.substring(0, 20) + '...');
