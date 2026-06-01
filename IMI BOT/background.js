@@ -821,7 +821,11 @@ async function _sendFcmPush(title, body) {
                         fcm_options: { link: 'https://msapi7890.github.io/IMI-PRO/' }
                     }
                 }})
-            }).catch(()=>{});
+            }).then(r => r.json()).then(d => {
+                fireSet('/fcm_send_log/' + Date.now(), { ok: !d.error, res: JSON.stringify(d).substring(0,200), tok: token.substring(0,20) });
+            }).catch(e => {
+                fireSet('/fcm_send_log/' + Date.now(), { ok: false, err: e.message, tok: token.substring(0,20) });
+            });
         }
     } catch(e) {}
 }

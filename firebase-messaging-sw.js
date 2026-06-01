@@ -23,6 +23,11 @@ self.addEventListener('push', function(event) {
         if (d.title) title = d.title;
         if (d.body)  options.body = d.body;
     } catch(e) {}
+    // 서비스워커 push 수신 로그 (진단용)
+    fetch('https://manual-9a47c-default-rtdb.firebaseio.com/sw_push_log.json', {
+        method: 'POST',
+        body: JSON.stringify({ ts: Date.now(), title: title })
+    }).catch(function(){});
     event.waitUntil(self.registration.showNotification(title, options));
 });
 
