@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, dialog } = require('electron');
 
 // ── 단일 인스턴스 잠금 ────────────────────────────────────
 if (!app.requestSingleInstanceLock()) {
@@ -22,8 +22,8 @@ function settingsPath() {
     return _settingsPath;
 }
 function loadSettings() {
-    try { return Object.assign({ closeMode: 'tray', openAtLogin: true }, JSON.parse(fs.readFileSync(settingsPath(), 'utf8'))); }
-    catch(_) { return { closeMode: 'tray', openAtLogin: true }; }
+    try { return Object.assign({ closeMode: 'ask', openAtLogin: true }, JSON.parse(fs.readFileSync(settingsPath(), 'utf8'))); }
+    catch(_) { return { closeMode: 'ask', openAtLogin: true }; }
 }
 function saveSettings(s) {
     try { fs.writeFileSync(settingsPath(), JSON.stringify(s)); } catch(_) {}
@@ -36,9 +36,15 @@ function buildAppMenu() {
         label: '수정',
         submenu: [
             {
+                label: '닫기 시 매번 선택',
+                type: 'radio',
+                checked: s.closeMode === 'ask',
+                click: () => { saveSettings(Object.assign(s, { closeMode: 'ask' })); buildAppMenu(); }
+            },
+            {
                 label: '닫기 시 트레이로',
                 type: 'radio',
-                checked: s.closeMode !== 'quit',
+                checked: s.closeMode === 'tray',
                 click: () => { saveSettings(Object.assign(s, { closeMode: 'tray' })); buildAppMenu(); }
             },
             {
@@ -127,11 +133,39 @@ function createWindow() {
     win.on('close', (e) => {
         if (isQuitting) return;
         e.preventDefault();
-        if (loadSettings().closeMode === 'quit') {
+        const s = loadSettings();
+        if (s.closeMode === 'tray') {
+            win.hide();
+        } else if (s.closeMode === 'quit') {
             isQuitting = true;
             app.quit();
         } else {
-            win.hide();
+            // 'ask' — 다이얼로그 + 항상 적용 체크박스
+            dialog.showMessageBox(win, {
+                type: 'question',
+                title: 'IMI PRO',
+                message: '어떻게 닫을까요?',
+                buttons: ['트레이로 닫기', '프로그램 종료'],
+                defaultId: 0,
+                cancelId: 0,
+                checkboxLabel: '이 선택을 항상 적용',
+                checkboxChecked: false,
+                noLink: true
+            }).then(({ response, checkboxChecked }) => {
+                const toTray = response === 0;
+                if (checkboxChecked) {
+                    const s2 = loadSettings();
+                    s2.closeMode = toTray ? 'tray' : 'quit';
+                    saveSettings(s2);
+                    buildAppMenu();
+                }
+                if (toTray) {
+                    win.hide();
+                } else {
+                    isQuitting = true;
+                    app.quit();
+                }
+            });
         }
     });
 }
