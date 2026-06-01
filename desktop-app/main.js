@@ -16,10 +16,10 @@ let lastAlertAt = 0;
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
 function iconPath() {
-    const png = path.join(__dirname, 'assets', 'icon.png');
-    if (fs.existsSync(png)) return png;
     const ico = path.join(__dirname, 'assets', 'icon.ico');
-    return fs.existsSync(ico) ? ico : null;
+    if (fs.existsSync(ico)) return ico;
+    const png = path.join(__dirname, 'assets', 'icon.png');
+    return fs.existsSync(png) ? png : null;
 }
 
 // ── 윈도우 생성 ───────────────────────────────────────────
@@ -173,6 +173,13 @@ ipcMain.handle('get-version',       ()                   => app.getVersion());
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
+    // 최초 실행 시 자동 실행 기본값 ON
+    const flagFile = path.join(app.getPath('userData'), 'autostart_set.flag');
+    if (!fs.existsSync(flagFile)) {
+        app.setLoginItemSettings({ openAtLogin: true });
+        fs.writeFileSync(flagFile, '1');
+    }
+
     createWindow();
     createTray();
     connectSSE();
