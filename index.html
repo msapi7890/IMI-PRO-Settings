@@ -9067,13 +9067,21 @@
     var _watchAlertMinimized = false;
     var _watchBlinkTimer = null;
     var _tabBlinkActive = new Set();
+    var _tabBlinkLabel = '';
     function _startTabBlink(label, count, type) {
         _tabBlinkActive.add(type || 'default');
-        if (window.electronAPI && window.electronAPI.flashFrame) window.electronAPI.flashFrame(true);
+        _tabBlinkLabel = label || '';
+        if (window.electronAPI) {
+            if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(true);
+            if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, label || '');
+        }
     }
     function _stopTabBlink(type) {
         _tabBlinkActive.delete(type || 'default');
-        if (_tabBlinkActive.size === 0 && window.electronAPI && window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
+        if (_tabBlinkActive.size === 0 && window.electronAPI) {
+            if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
+            if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false);
+        }
     }
 
     function _startWatchBlink() {

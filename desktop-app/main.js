@@ -319,6 +319,24 @@ ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed 
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });
 ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flashFrame(!!val); });
 
+// ── 타이틀 깜빡임 (너비 고정: 항상 같은 포맷으로 교체) ────
+let _titleBlinkTimer = null;
+ipcMain.on('blink-title', (_, { on, label }) => {
+    if (!on) {
+        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+        if (win) win.setTitle('IMI PRO');
+        return;
+    }
+    if (_titleBlinkTimer) return;   // 이미 깜빡이는 중
+    const alertTitle = '🚨 ' + (label || 'IMI PRO');
+    let phase = false;
+    _titleBlinkTimer = setInterval(() => {
+        if (!win) return;
+        phase = !phase;
+        win.setTitle(phase ? alertTitle : 'IMI PRO');
+    }, 900);
+});
+
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {
     buildAppMenu();
