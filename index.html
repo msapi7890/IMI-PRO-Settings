@@ -9295,14 +9295,27 @@
             var doneBtn2 = document.createElement('button');
             doneBtn2.textContent = '처리완료';
             doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
-            doneBtn2.onclick = function(){
+            var _closeNoTids = function(){
+                if(panel.innerHTML === '') return;
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
-                tab.style.display = 'none';
+                tab.style.display = 'none'; _updateWatchFraudRow();
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';
                 panel.innerHTML = '';
+                _stopWatchBlink();
+                if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
+                if(typeof _syncWatchBanner === 'function') _syncWatchBanner();
             };
+            doneBtn2.onclick = _closeNoTids;
             tidContainer.appendChild(doneBtn2);
+            // tids 없는 알림 — 30초 후 자동 닫힘
+            var _noTidsAutoClose = setTimeout(_closeNoTids, 30000);
+            // Firebase done 변경 시 즉시 닫힘 (다른 클라이언트에서 처리완료 누른 경우)
+            if(alertKey){
+                db.ref('imi_watch_alerts/'+alertKey+'/done').on('value', function(snap){
+                    if(snap.val()){ clearTimeout(_noTidsAutoClose); _closeNoTids(); }
+                });
+            }
         }
 
         // 패널 열기 (최소화 상태면 탭만 표시)
