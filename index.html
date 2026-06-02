@@ -9308,8 +9308,8 @@
             };
             doneBtn2.onclick = _closeNoTids;
             tidContainer.appendChild(doneBtn2);
-            // tids 없는 알림 — 30초 후 자동 닫힘
-            var _noTidsAutoClose = setTimeout(_closeNoTids, 30000);
+            // tids 없는 알림 — 5초 후 자동 닫힘
+            var _noTidsAutoClose = setTimeout(_closeNoTids, 5000);
             // Firebase done 변경 시 즉시 닫힘 (다른 클라이언트에서 처리완료 누른 경우)
             if(alertKey){
                 db.ref('imi_watch_alerts/'+alertKey+'/done').on('value', function(snap){
