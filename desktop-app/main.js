@@ -321,19 +321,21 @@ ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flash
 
 // ── 타이틀 깜빡임 (너비 고정: 항상 같은 포맷으로 교체) ────
 let _titleBlinkTimer = null;
-ipcMain.on('blink-title', (_, { on, label }) => {
-    if (!on) {
-        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+ipcMain.on('blink-title', (_, { on, labels }) => {
+    if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+    if (!on || !labels || labels.length === 0) {
         if (win) win.setTitle('IMI PRO');
         return;
     }
-    if (_titleBlinkTimer) return;   // 이미 깜빡이는 중
-    const alertTitle = '🚨 ' + (label || 'IMI PRO');
-    let phase = false;
+    // 1개면 "🚨 라벨" ↔ "IMI PRO", 2개면 "🚨 비거래" ↔ "🚨 사기글" 번갈아
+    const titles = labels.length === 1
+        ? ['🚨 ' + labels[0] + ' 감지', 'IMI PRO']
+        : labels.map(l => '🚨 ' + l + ' 감지');
+    let idx = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        phase = !phase;
-        win.setTitle(phase ? alertTitle : 'IMI PRO');
+        win.setTitle(titles[idx % titles.length]);
+        idx++;
     }, 900);
 });
 

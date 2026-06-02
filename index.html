@@ -9066,21 +9066,25 @@
 
     var _watchAlertMinimized = false;
     var _watchBlinkTimer = null;
-    var _tabBlinkActive = new Set();
-    var _tabBlinkLabel = '';
+    var _tabBlinkLabels = {};   // type → label
     function _startTabBlink(label, count, type) {
-        _tabBlinkActive.add(type || 'default');
-        _tabBlinkLabel = label || '';
+        _tabBlinkLabels[type || 'default'] = label || '';
+        var activeLabels = Object.values(_tabBlinkLabels);
         if (window.electronAPI) {
             if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(true);
-            if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, label || '');
+            if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, activeLabels);
         }
     }
     function _stopTabBlink(type) {
-        _tabBlinkActive.delete(type || 'default');
-        if (_tabBlinkActive.size === 0 && window.electronAPI) {
-            if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
-            if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false);
+        delete _tabBlinkLabels[type || 'default'];
+        var activeLabels = Object.values(_tabBlinkLabels);
+        if (window.electronAPI) {
+            if (activeLabels.length === 0) {
+                if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
+                if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false, []);
+            } else {
+                if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, activeLabels);
+            }
         }
     }
 
