@@ -1693,7 +1693,7 @@
         if(saved && saved.name && saved.hash){
             var user = await _authFetch('imi_users/'+_ukey(saved.name)+'.json');
             if(user && user.pw_hash === saved.hash && user.approved){
-                _authGrant({name:saved.name, role:user.role, monitor_disabled:!!user.monitor_disabled});
+                _authGrant({name:saved.name, role:user.role, monitor_disabled:!!user.monitor_disabled, os_notif_disabled:!!user.os_notif_disabled});
                 return;
             }
         }
@@ -1732,11 +1732,11 @@
         // 월 1회 비밀번호 변경 체크 (30일)
         var MONTH_MS=30*86400000;
         if(!user.pw_changed_at || Date.now()-user.pw_changed_at>MONTH_MS){
-            _currentUser={name:name, role:user.role, monitor_disabled:!!user.monitor_disabled};
+            _currentUser={name:name, role:user.role, monitor_disabled:!!user.monitor_disabled, os_notif_disabled:!!user.os_notif_disabled};
             _showLockChange('🔒 매월 비밀번호 변경이 필요합니다\n현재 비밀번호를 입력 후 새 비밀번호를 설정하세요.', false);
             return;
         }
-        _authGrant({name:name, role:user.role, monitor_disabled:!!user.monitor_disabled});
+        _authGrant({name:name, role:user.role, monitor_disabled:!!user.monitor_disabled, os_notif_disabled:!!user.os_notif_disabled});
     }
 
     // 회원가입
@@ -1790,6 +1790,10 @@
         // 앱 내 showNotification도 no-op으로 차단 (탭/패널은 계속 보임)
         if(_monDis && window.electronAPI)
             window.electronAPI.showNotification = function(){ return Promise.resolve(); };
+        // OS 알림만 차단 (os_notif_disabled 플래그, admin은 항상 허용)
+        var _osNotifDis = !!user.os_notif_disabled && user.role !== 'admin';
+        if(window.electronAPI && window.electronAPI.setOsNotifMuted)
+            window.electronAPI.setOsNotifMuted(_osNotifDis);
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
         // FCM 웹 푸시 등록 (차단된 유저는 스킵)
@@ -4032,6 +4036,7 @@
                     if(!isMe){
                         r += '<button onclick="_authResetPw(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#f59e0b;" title="비밀번호 초기화">&#x1f511;</button>';
                         r += '<button onclick="_umToggleMonitor(\''+u._key+'\','+!!u.monitor_disabled+')" style="'+ABT+(u.monitor_disabled ? 'background:#b91c1c33;border:1px solid #b91c1c;color:#f87171;' : 'background:none;border:1px solid #334155;color:#64748b;')+'" title="'+(u.monitor_disabled?'모니터링 차단됨 (클릭 시 해제)':'모니터링 허용 (클릭 시 차단)')+'">&#x1f4e1;'+(u.monitor_disabled?'&#x274c;':'&#x2714;')+'</button>';
+                        r += '<button onclick="_umToggleOsNotif(\''+u._key+'\','+!!u.os_notif_disabled+')" style="'+ABT+(u.os_notif_disabled ? 'background:#78350f33;border:1px solid #d97706;color:#fbbf24;' : 'background:none;border:1px solid #334155;color:#64748b;')+'" title="'+(u.os_notif_disabled?'윈도우 알림 차단됨 (클릭 시 해제)':'윈도우 알림 허용 (클릭 시 차단)')+'">&#x1f514;'+(u.os_notif_disabled?'&#x274c;':'&#x2714;')+'</button>';
                         r += '<button onclick="_authDelete(\''+u._key+'\',\''+escHtml(u.name||u._key)+'\')" style="'+ABT+'background:none;border:1px solid #334155;color:#64748b;" title="삭제">&#x2715;</button>';
                     }
                 }
@@ -4225,6 +4230,10 @@
     }
     async function _umToggleMonitor(key, current){
         await _authFetch('imi_users/'+key+'/monitor_disabled.json', 'PUT', !current);
+        _renderUserMgmt();
+    }
+    async function _umToggleOsNotif(key, current){
+        await _authFetch('imi_users/'+key+'/os_notif_disabled.json', 'PUT', !current);
         _renderUserMgmt();
     }
 
