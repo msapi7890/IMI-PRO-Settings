@@ -292,7 +292,7 @@ function connectSSE() {
 function setupAutoUpdater() {
     if (!autoUpdater) return;
     autoUpdater.autoDownload         = true;
-    autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger               = null;
 
     function sendUpdate(data) {
