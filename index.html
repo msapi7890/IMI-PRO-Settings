@@ -13,7 +13,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-installations-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -1796,50 +1795,6 @@
             window.electronAPI.setOsNotifMuted(_osNotifDis);
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
-        // FCM 웹 푸시 등록 (차단된 유저는 스킵)
-        if(!_monDis) setTimeout(function(){ if(!_botBridgeConnected) _registerFcmPush(); }, 2000);
-    }
-
-    var _fcmPushRegistered = false;
-    function _urlB64ToUint8Array(b64) {
-        var pad = '='.repeat((4 - b64.length % 4) % 4);
-        var base64 = (b64 + pad).replace(/-/g,'+').replace(/_/g,'/');
-        var raw = atob(base64);
-        var arr = new Uint8Array(raw.length);
-        for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-        return arr;
-    }
-    function _registerFcmPush() {
-        if(_fcmPushRegistered || !('serviceWorker' in navigator)) return;
-        _fcmPushRegistered = true;
-        var SW_VER = 'v3'; // 서비스워커 업데이트 시 증가 → 자동 재구독 유도
-        Notification.requestPermission().then(function(perm) {
-            if(perm !== 'granted') { console.warn('[FCM] 알림 권한 없음:', perm); return; }
-            return navigator.serviceWorker.register('./firebase-messaging-sw.js')
-            .then(function() { return navigator.serviceWorker.ready; })
-            .then(function(reg) {
-                // 서비스워커 버전 바뀌면 기존 구독 해제 후 재구독 (탭 닫힌 상태 push 수신 보장)
-                var needResub = localStorage.getItem('fcm_sw_ver') !== SW_VER;
-                var p = needResub
-                    ? reg.pushManager.getSubscription().then(function(s){ return s ? s.unsubscribe() : null; })
-                    : Promise.resolve();
-                return p.then(function() {
-                    return reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: _urlB64ToUint8Array('BFNKYwG4m5sq_d5P-mKUKpOhTEdrhNJNQBoBFun73LC6JMx_hbaNZGIoUTnjGF8ioiPUC11GaB25uAdeUYDRgcQ')
-                    });
-                });
-            }).then(function(sub) {
-                localStorage.setItem('fcm_sw_ver', SW_VER);
-                var endpoint = sub.endpoint;
-                console.log('[FCM] 구독 성공 endpoint:', endpoint.substring(0, 60) + '...');
-                var token = endpoint.split('/').pop();
-                if (!token) { console.warn('[FCM] 토큰 추출 실패'); return; }
-                console.log('[FCM] 토큰 저장:', token.substring(0, 20) + '...');
-                var uid = (_currentUser && _currentUser.name) ? _currentUser.name.replace(/[.#$\[\]]/g,'_') : 'anon';
-                db.ref('push_tokens/' + uid).set({ token: token, at: Date.now() });
-            }).catch(function(e){ console.error('[FCM] 에러:', e.message); });
-        });
     }
 
     // 로그아웃
