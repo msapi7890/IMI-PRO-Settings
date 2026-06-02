@@ -12,7 +12,7 @@ const path = require('path');
 const https = require('https');
 const fs = require('fs');
 
-const APP_URL  = 'https://msapi7890.github.io/IMI-PRO/';
+const APP_URL  = 'https://msapi7890.github.io/IMI-PRO-Settings/';
 const DB_BASE  = 'https://manual-9a47c-default-rtdb.firebaseio.com';
 
 // ── 설정 파일 ─────────────────────────────────────────────
