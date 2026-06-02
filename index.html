@@ -6941,12 +6941,20 @@
             var rows=Math.ceil(_mUrls.length/cols);
             var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);">';
             _mUrls.forEach(function(url,i){
-                var col=i%cols, row=Math.floor(i/cols);
-                var hPos=(col===cols-1)?'right:8px':'left:8px';
-                var vPos=(row===rows-1)?'bottom:8px':'top:8px';
+                var badgeStyle;
+                if(_mPlatform==='bay'){
+                    // 베이: 각 이미지 하단 중앙
+                    badgeStyle='bottom:8px;left:50%;transform:translateX(-50%);';
+                } else {
+                    // 매니아: 각 이미지 바깥쪽 모서리
+                    var col=i%cols, row=Math.floor(i/cols);
+                    var hPos=(col===cols-1)?'right:8px':'left:8px';
+                    var vPos=(row===rows-1)?'bottom:8px':'top:8px';
+                    badgeStyle=vPos+';'+hPos+';';
+                }
                 html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'" onclick="_imgMvSelect('+i+')">'
                     +'<img src="'+url+'" onerror="this.style.display=\'none\'">'
-                    +'<div class="im-mv-num-badge" style="'+vPos+';'+hPos+';" onclick="event.stopPropagation();_imgMvSelect('+i+')">'+(i+1)+'</div>'
+                    +'<div class="im-mv-num-badge" style="'+badgeStyle+'" onclick="event.stopPropagation();_imgMvSelect('+i+')">'+(i+1)+'</div>'
                     +'</div>';
             });
             html+='</div>';
