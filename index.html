@@ -8787,6 +8787,8 @@
                             b.innerHTML = '🔔 새 버전이 배포됐습니다. 클릭하면 새로고침됩니다. <span style="opacity:0.5;font-size:11px;">(업무 마무리 후 클릭하세요)</span>';
                             b.onclick = function(){ location.reload(); };
                             document.body.prepend(b);
+                            // 배너 높이만큼 body 밀어내기 (버튼 가림 방지)
+                            requestAnimationFrame(function(){ document.body.style.paddingTop = b.offsetHeight + 'px'; });
                         }
                     }).catch(function(){});
             }
