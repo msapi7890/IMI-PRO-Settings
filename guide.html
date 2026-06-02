@@ -22,10 +22,23 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);li
 .nav-sec{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:#3abff8;padding:12px 14px 3px;opacity:.6;}
 
 /* 본문 */
-.content{margin-left:210px;padding:36px 44px;max-width:1400px;margin-right:260px;}
+.content{margin-left:210px;margin-top:40px;padding:36px 44px;max-width:1400px;margin-right:260px;}
+.nav{top:40px;height:calc(100vh - 40px);}
+
+/* 상단 탭 */
+.guide-tabs{position:fixed;top:0;left:0;right:0;height:40px;background:#0a1120;border-bottom:2px solid #334155;display:flex;align-items:stretch;z-index:300;padding:0;}
+.guide-tab-logo{width:210px;display:flex;align-items:center;padding:0 14px;border-right:2px solid #334155;font-size:13px;font-weight:900;font-style:italic;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0;letter-spacing:.06em;}
+.guide-tab-btns{display:flex;align-items:stretch;gap:0;padding:0 10px;}
+.guide-tab{padding:0 20px;border:none;border-bottom:3px solid transparent;background:none;color:#64748b;font-size:12px;font-weight:900;cursor:pointer;transition:.15s;white-space:nowrap;margin-bottom:-2px;}
+.guide-tab.active{color:#3abff8;border-bottom-color:#3abff8;}
+.guide-tab:hover:not(.active){color:#94a3b8;}
+
+/* 매뉴얼 iframe 래퍼 */
+#manual-iframe-wrap{display:none;position:fixed;top:40px;left:210px;right:0;bottom:0;z-index:150;background:#0f172a;}
+#manual-iframe-wrap iframe{width:100%;height:100%;border:none;}
 
 /* 오른쪽 코멘트 패널 */
-.note-panel{position:fixed;right:0;top:0;width:260px;height:100vh;background:#1a2235;border-left:2px solid #334155;z-index:101;display:flex;flex-direction:column;transition:transform .25s;overflow:hidden;}
+.note-panel{position:fixed;right:0;top:40px;width:260px;height:calc(100vh - 40px);background:#1a2235;border-left:2px solid #334155;z-index:101;display:flex;flex-direction:column;transition:transform .25s;overflow:hidden;}
 .note-panel.hidden{transform:translateX(260px);}
 .note-panel-hdr{padding:10px 12px;border-bottom:2px solid #334155;flex-shrink:0;}
 .note-panel-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
@@ -352,6 +365,20 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
 </style>
 </head>
 <body>
+
+<!-- 상단 탭 바 -->
+<div class="guide-tabs">
+  <div class="guide-tab-logo">✦ IMI PRO ✦</div>
+  <div class="guide-tab-btns">
+    <button class="guide-tab active" onclick="switchGuideTab('guide')">📖 사용설명서</button>
+    <button class="guide-tab" onclick="switchGuideTab('manual')">📚 매뉴얼 가이드</button>
+  </div>
+</div>
+
+<!-- 매뉴얼 가이드 iframe -->
+<div id="manual-iframe-wrap">
+  <iframe src="manual-guide.html" id="manual-iframe"></iframe>
+</div>
 
 <!-- 사이드 네비 -->
 <nav class="nav">
@@ -2390,6 +2417,32 @@ window.addEventListener('scroll', function(){
     initObserver();
   });
 })();
+
+window.switchGuideTab = function(tab) {
+  var tabs = document.querySelectorAll('.guide-tab');
+  var content = document.querySelector('.content');
+  var notePanel = document.querySelector('.note-panel');
+  var nav = document.querySelector('.nav');
+  var iframeWrap = document.getElementById('manual-iframe-wrap');
+
+  if (tab === 'manual') {
+    tabs[0].classList.remove('active');
+    tabs[1].classList.add('active');
+    content.style.display = 'none';
+    notePanel.style.display = 'none';
+    nav.style.display = 'none';
+    iframeWrap.style.display = 'block';
+    iframeWrap.style.left = '0';
+  } else {
+    tabs[0].classList.add('active');
+    tabs[1].classList.remove('active');
+    content.style.display = '';
+    notePanel.style.display = '';
+    nav.style.display = '';
+    iframeWrap.style.display = 'none';
+    iframeWrap.style.left = '210px';
+  }
+};
 </script>
 </body>
 </html>
