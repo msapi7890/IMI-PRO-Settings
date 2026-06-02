@@ -6884,7 +6884,7 @@
         if(mvBtn) mvBtn.style.display=_mUrls.length>1?'flex':'none';
         if(_mMultiView){
             singleWrap.style.display='none';
-            mvWrap.style.display='';
+            mvWrap.style.display='block';
             document.querySelectorAll('#imgModal .im-nav').forEach(function(n){n.style.display='none';});
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){if(b.id!=='imgMvBtn')b.style.visibility='hidden';});
             if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
