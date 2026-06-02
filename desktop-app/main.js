@@ -89,7 +89,8 @@ let win              = null;
 let tray             = null;
 let sseReq           = null;
 let isQuitting       = false;
-let lastAlertAt      = 0;
+const _ruleLastNotif = {};              // ruleName → last OS-notif timestamp
+const NOTIF_COOLDOWN = 30 * 60 * 1000; // 같은 룰 30분 이내 중복 OS 알림 차단
 let lastUpdateStatus = null;   // 페이지 로드 전 이벤트 캐시
 let monitorSuppressed = false; // 모니터링 차단 유저 플래그
 let osNotifMuted      = false; // OS 알림만 차단 플래그
@@ -266,12 +267,14 @@ function connectSSE() {
                     ? [payload]
                     : Object.values(payload || {});
 
+                const now = Date.now();
                 for (const d of items) {
                     if (!d || !d.active) continue;
                     const at = d.at || 0;
-                    if (at <= lastAlertAt) continue;
-                    if (Date.now() - at > 120000) continue;   // 2분 초과 무시
-                    lastAlertAt = at;
+                    if (now - at > 120000) continue;   // 2분 초과 무시
+                    const ruleKey = d.ruleName || d.keyword || '_default';
+                    if (now - (_ruleLastNotif[ruleKey] || 0) < NOTIF_COOLDOWN) continue; // 30분 쿨다운
+                    _ruleLastNotif[ruleKey] = now;
 
                     const title = '🚨 ' + (d.ruleName || 'IMI PRO') + ' 감지됨';
                     const body  = (d.itemCount || 0) + '개 감지 · 키워드: ' + (d.keyword || '') + '\nIMI PRO 확인 바랍니다';
