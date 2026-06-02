@@ -491,12 +491,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     // Firebase 경유 → 페이지의 _showWatchAlert 트리거 (페이지에서 설정에 따라 상단/하단 처리)
                     const nowW = Date.now();
                     const rowsW = (msg.data.itemRows || []);
+                    const tidsW = rowsW.map(r => r.tid || '').filter(Boolean);
+                    // tid 추출 실패 시 알림 스킵 (tid 없으면 처리 불가 + 반복 팝업 방지)
+                    if (tidsW.length === 0) return;
                     firePush('/imi_watch_alerts', {
-                        tids:     rowsW.map(r => r.tid || '').filter(Boolean),
+                        tids:     tidsW,
                         itemRows: rowsW.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
                         label:    msg.data.label   || msg.data.ruleName    || '',
                         keyword:  msg.data.keyword || msg.data.ruleKeyword || '',
-                        count:    msg.data.itemCount || msg.data.count || 0,
+                        count:    tidsW.length,
                         at:       nowW,
                         seen:     false
                     }).catch(() => {});
