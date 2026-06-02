@@ -167,6 +167,13 @@
         .im-zoom { position:absolute; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:10001; }
         .im-zoom-btn { background:rgba(30,30,30,0.82); border:1px solid rgba(255,255,255,0.35); color:white; font-size:22px; width:40px; height:40px; border-radius:10px; cursor:pointer; opacity:0.9; font-weight:900; line-height:1; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .im-zoom-btn:hover { opacity:1; background:rgba(50,50,50,0.95); }
+        #imgMvWrap { display:none; max-width:95vw; max-height:90vh; overflow-y:auto; }
+        .im-mv-grid { display:grid; gap:6px; padding:10px; cursor:default; }
+        .im-mv-cell { position:relative; cursor:zoom-in; border-radius:6px; overflow:hidden; background:#0f172a; border:2px solid #334155; transition:border-color 0.15s; }
+        .im-mv-cell:hover { border-color:#64748b; }
+        .im-mv-cell.im-mv-active { border-color:#3abff8; box-shadow:0 0 0 1px #3abff8; }
+        .im-mv-cell img { width:100%; display:block; object-fit:contain; }
+        .im-mv-cell-num { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); color:#fff; font-size:10px; font-weight:700; text-align:center; padding:2px 0; }
         /* AI 도우미 패널 */
         #aiAssistPanel { overflow: hidden; font-size: 16px !important; }
         .assist-inner { flex: 1; overflow-y: auto; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -512,9 +519,11 @@
   <div class="im-zoom" onclick="event.stopPropagation()">
     <button class="im-zoom-btn" onclick="zoomImg(-0.25)">&#8722;</button>
     <button class="im-zoom-btn" onclick="zoomImg(0.25)">&#43;</button>
+    <button class="im-zoom-btn" id="imgMvBtn" onclick="toggleImgMultiView()" title="멀티뷰" style="font-size:15px;display:none;">&#9783;</button>
   </div>
   <span class="im-nav im-prev" onclick="event.stopPropagation();moveImg(-1)">&#8249;</span>
   <div id="imgModalWrap"><img id="imgModalImg" src="" alt=""></div>
+  <div id="imgMvWrap" onclick="event.stopPropagation()"></div>
   <span class="im-nav im-next" onclick="event.stopPropagation();moveImg(1)">&#8250;</span>
   <div class="im-info" id="imgPageInfo"></div>
 </div>
@@ -6086,6 +6095,7 @@
                 }
                 var imgKey='_imgs_'+Date.now();
                 window[imgKey]=urls;
+                window[imgKey+'_plat']=currentMode;
                 var _cT=(range&&range.cropTop!=null)?Number(range.cropTop):0;
                 var _cB=(range&&range.cropBottom!=null)?Number(range.cropBottom):100;
                 var _cPS=(range&&range.start!=null)?Number(range.start):null;
@@ -6845,11 +6855,15 @@
     }
     var _mDrag={active:false,sx:0,sy:0,ox:0,oy:0};
     var _modalCropGen=0;
+    var _mMultiView=false;
+    var _mPlatform='mania';
 
     function openImgModal(keyOrArr,idx){
         var urls=(typeof keyOrArr==='string')?window[keyOrArr]:keyOrArr;
         if(!urls||!urls.length) return;
         _mUrls=urls; _mIdx=idx||0; _mZoom=1.0; _mTX=0; _mTY=0; _mTotalUrls=urls.length;
+        _mMultiView=false;
+        _mPlatform=(typeof keyOrArr==='string'?(window[keyOrArr+'_plat']||'mania'):'mania');
         var cd=window._currentCropData||{};
         _mCropTop=cd.cropTop||0; _mCropBot=(cd.cropBottom!==undefined)?cd.cropBottom:100;
         _updateModal();
@@ -6864,14 +6878,51 @@
         if(img) img.style.cursor=_mZoom>1?'grab':'default';
     }
     function _updateModal(){
-        var img=document.getElementById('imgModalImg');
-        img.src=_mUrls[_mIdx];
-        _applyTransform();
-        document.getElementById('imgPageInfo').innerText=(_mIdx+1)+' / '+_mUrls.length;
-        document.querySelectorAll('#imgModal .im-nav').forEach(function(n){
-            n.style.display=_mUrls.length>1?'':'none';
-        });
-        _applyModalCrop();
+        var singleWrap=document.getElementById('imgModalWrap');
+        var mvWrap=document.getElementById('imgMvWrap');
+        var mvBtn=document.getElementById('imgMvBtn');
+        if(mvBtn) mvBtn.style.display=_mUrls.length>1?'flex':'none';
+        if(_mMultiView){
+            singleWrap.style.display='none';
+            mvWrap.style.display='';
+            document.querySelectorAll('#imgModal .im-nav').forEach(function(n){n.style.display='none';});
+            document.querySelectorAll('.im-zoom-btn').forEach(function(b){if(b.id!=='imgMvBtn')b.style.visibility='hidden';});
+            if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
+            document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
+            var maxCols=_mPlatform==='bay'?3:4;
+            var cols=Math.min(_mUrls.length,maxCols);
+            var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);">';
+            _mUrls.forEach(function(url,i){
+                html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'" onclick="_imgMvSelect('+i+')">'
+                    +'<img src="'+url+'" loading="lazy" onerror="this.style.display=\'none\'">'
+                    +'<div class="im-mv-cell-num">'+(i+1)+'</div>'
+                    +'</div>';
+            });
+            html+='</div>';
+            mvWrap.innerHTML=html;
+        } else {
+            mvWrap.style.display='none';
+            singleWrap.style.display='';
+            document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
+            if(mvBtn){mvBtn.style.background='';mvBtn.style.borderColor='';mvBtn.style.opacity='';}
+            var img=document.getElementById('imgModalImg');
+            img.src=_mUrls[_mIdx];
+            _applyTransform();
+            document.getElementById('imgPageInfo').innerText=(_mIdx+1)+' / '+_mUrls.length;
+            document.querySelectorAll('#imgModal .im-nav').forEach(function(n){
+                n.style.display=_mUrls.length>1?'':'none';
+            });
+            _applyModalCrop();
+        }
+    }
+    function toggleImgMultiView(){
+        _mMultiView=!_mMultiView;
+        _mZoom=1.0;_mTX=0;_mTY=0;
+        _updateModal();
+    }
+    function _imgMvSelect(i){
+        _mIdx=i;_mMultiView=false;_mZoom=1.0;_mTX=0;_mTY=0;
+        _updateModal();
     }
     function _applyModalCrop(){
         var img=document.getElementById('imgModalImg');
