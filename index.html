@@ -167,10 +167,10 @@
         .im-zoom { position:absolute; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:10001; }
         .im-zoom-btn { background:rgba(30,30,30,0.82); border:1px solid rgba(255,255,255,0.35); color:white; font-size:22px; width:40px; height:40px; border-radius:10px; cursor:pointer; opacity:0.9; font-weight:900; line-height:1; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .im-zoom-btn:hover { opacity:1; background:rgba(50,50,50,0.95); }
-        #imgMvWrap { display:none; position:fixed; top:54px; left:0; right:0; bottom:20px; z-index:10000; overflow:hidden; cursor:grab; background:#000; }
+        #imgMvWrap { display:none; position:fixed; top:54px; left:0; right:0; bottom:20px; z-index:10000; overflow:hidden; cursor:grab; background:transparent; touch-action:none; }
         #imgMvWrap.mv-dragging { cursor:grabbing; }
-        .im-mv-grid { display:grid; gap:2px; width:100%; height:100%; transform-origin:center center; will-change:transform; }
-        .im-mv-cell { position:relative; cursor:pointer; overflow:hidden; background:#000; }
+        .im-mv-grid { display:grid; gap:0; width:100%; height:100%; transform-origin:center center; will-change:transform; }
+        .im-mv-cell { position:relative; cursor:pointer; overflow:hidden; background:transparent; }
         .im-mv-cell.im-mv-active img { outline:2px solid #3abff8; }
         .im-mv-cell img { width:100%; height:100%; display:block; object-fit:contain; }
         #imgMvWrap img { max-width:100%!important; max-height:100%!important; }
@@ -6869,34 +6869,39 @@
         if(_mvEventsInit) return;
         _mvEventsInit=true;
         var wrap=document.getElementById('imgMvWrap');
+        // 확대/축소
         wrap.addEventListener('wheel',function(e){
-            if(!_mMultiView) return;
             e.preventDefault();
-            var factor=e.deltaY<0?1.12:0.89;
-            _mvZoom=Math.max(0.4,Math.min(8,_mvZoom*factor));
+            var factor=e.deltaY<0?1.13:0.88;
+            _mvZoom=Math.max(0.3,Math.min(10,_mvZoom*factor));
             _applyMvTransform();
         },{passive:false});
-        wrap.addEventListener('mousedown',function(e){
+        // 드래그 팬 (pointer capture로 신뢰성 보장)
+        wrap.addEventListener('pointerdown',function(e){
             if(e.button!==0) return;
             _mvDrag.active=true; _mvDragMoved=false;
             _mvDrag.sx=e.clientX; _mvDrag.sy=e.clientY;
             _mvDrag.ox=_mvTX; _mvDrag.oy=_mvTY;
             wrap.classList.add('mv-dragging');
-            e.stopPropagation();
+            wrap.setPointerCapture(e.pointerId);
+            e.preventDefault();
         });
-        document.addEventListener('mousemove',function(e){
+        wrap.addEventListener('pointermove',function(e){
             if(!_mvDrag.active) return;
             var dx=e.clientX-_mvDrag.sx, dy=e.clientY-_mvDrag.sy;
             if(Math.abs(dx)>4||Math.abs(dy)>4) _mvDragMoved=true;
             _mvTX=_mvDrag.ox+dx/_mvZoom; _mvTY=_mvDrag.oy+dy/_mvZoom;
             _applyMvTransform();
+            e.preventDefault();
         });
-        document.addEventListener('mouseup',function(){
-            if(_mvDrag.active){
-                _mvDrag.active=false;
-                var w=document.getElementById('imgMvWrap');
-                if(w) w.classList.remove('mv-dragging');
-            }
+        wrap.addEventListener('pointerup',function(e){
+            _mvDrag.active=false;
+            wrap.classList.remove('mv-dragging');
+            try{ wrap.releasePointerCapture(e.pointerId); }catch(_){}
+        });
+        wrap.addEventListener('pointercancel',function(){
+            _mvDrag.active=false;
+            wrap.classList.remove('mv-dragging');
         });
     }
 
