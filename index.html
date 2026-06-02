@@ -169,12 +169,12 @@
         .im-zoom-btn:hover { opacity:1; background:rgba(50,50,50,0.95); }
         #imgMvWrap { display:none; position:fixed; top:54px; left:0; right:0; bottom:20px; z-index:10000; overflow:hidden; cursor:grab; background:transparent; touch-action:none; }
         #imgMvWrap.mv-dragging { cursor:grabbing; }
-        .im-mv-grid { display:grid; gap:0; width:100%; height:100%; transform-origin:center center; will-change:transform; }
+        .im-mv-grid { display:grid; gap:0; width:100%; height:100%; transform-origin:center center; }
         .im-mv-cell { position:relative; cursor:pointer; overflow:hidden; background:transparent; }
         .im-mv-cell.im-mv-active img { outline:2px solid #3abff8; }
-        .im-mv-cell img { width:100%; height:100%; display:block; object-fit:contain; }
+        .im-mv-cell img { width:100%; height:100%; display:block; object-fit:scale-down; image-rendering:high-quality; }
         #imgMvWrap img { max-width:100%!important; max-height:100%!important; }
-        .im-mv-cell-num { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.55); color:#fff; font-size:10px; font-weight:700; text-align:center; padding:2px 0; }
+        .im-mv-cell-num { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.62); color:#fff; font-size:20px; font-weight:900; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.45); pointer-events:none; }
         /* AI 도우미 패널 */
         #aiAssistPanel { overflow: hidden; font-size: 16px !important; }
         .assist-inner { flex: 1; overflow-y: auto; padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -6932,8 +6932,9 @@
         if(_mMultiView){
             singleWrap.style.display='none';
             mvWrap.style.display='block';
+            document.getElementById('imgModal').style.backdropFilter='none'; // compositor 레이어 해제 → 화질 보호
             document.querySelectorAll('#imgModal .im-nav').forEach(function(n){n.style.display='none';});
-            document.querySelectorAll('.im-zoom-btn').forEach(function(b){if(b.id!=='imgMvBtn')b.style.visibility='hidden';});
+            document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
             if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
             document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
             var cols=_mPlatform==='bay'?Math.min(_mUrls.length,3):2;
@@ -6950,6 +6951,7 @@
         } else {
             mvWrap.style.display='none';
             singleWrap.style.display='';
+            document.getElementById('imgModal').style.backdropFilter=''; // 단일뷰: backdrop-filter 복원
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
             if(mvBtn){mvBtn.style.background='';mvBtn.style.borderColor='';mvBtn.style.opacity='';}
             var img=document.getElementById('imgModalImg');
@@ -7003,9 +7005,14 @@
     }
     function moveImg(dir){ _mIdx=(_mIdx+dir+_mUrls.length)%_mUrls.length; _mZoom=1.0; _mTX=0; _mTY=0; _updateModal(); }
     function zoomImg(d){
-        _mZoom=Math.max(0.3,Math.min(4.0,_mZoom+d));
-        if(_mZoom<=1.0){_mTX=0;_mTY=0;}
-        _applyTransform();
+        if(_mMultiView){
+            _mvZoom=Math.max(0.3,Math.min(10,_mvZoom*(d>0?1.2:0.85)));
+            _applyMvTransform();
+        } else {
+            _mZoom=Math.max(0.3,Math.min(4.0,_mZoom+d));
+            if(_mZoom<=1.0){_mTX=0;_mTY=0;}
+            _applyTransform();
+        }
     }
     function closeImgModal(e){
         // 배경 클릭으로는 닫지 않음 — X 버튼 또는 ESC만
@@ -8856,6 +8863,16 @@
             }
             setInterval(checkUpdate, 120000);
         })();
+        // 이미지 모달 스크롤 줌 (단일뷰) — document 레벨로 걸어야 display:flex 전환 후도 확실히 동작
+        document.addEventListener('wheel',function(e){
+            if(!document.getElementById('imgModal').classList.contains('open')) return;
+            if(_mMultiView) return;
+            e.preventDefault();
+            var factor=e.deltaY<0?1.13:0.88;
+            _mZoom=Math.max(0.3,Math.min(8,_mZoom*factor));
+            if(_mZoom<=1.0){_mTX=0;_mTY=0;}
+            _applyTransform();
+        },{passive:false});
         // 이미지 모달 드래그 이동
         var _imgEl=document.getElementById('imgModalWrap');
         if(_imgEl){
