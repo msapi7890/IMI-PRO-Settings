@@ -314,6 +314,7 @@ ipcMain.handle('get-version',       ()                   => app.getVersion());
 ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(true, true); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });
+ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flashFrame(!!val); });
 
 // ── 앱 시작 ───────────────────────────────────────────────
 app.whenReady().then(() => {

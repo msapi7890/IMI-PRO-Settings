@@ -167,7 +167,7 @@
         .im-zoom { position:absolute; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:10001; }
         .im-zoom-btn { background:rgba(30,30,30,0.82); border:1px solid rgba(255,255,255,0.35); color:white; font-size:22px; width:40px; height:40px; border-radius:10px; cursor:pointer; opacity:0.9; font-weight:900; line-height:1; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .im-zoom-btn:hover { opacity:1; background:rgba(50,50,50,0.95); }
-        #imgMvWrap { display:none; max-width:95vw; max-height:90vh; overflow-y:auto; }
+        #imgMvWrap { display:none; width:min(92vw, 900px); max-height:88vh; overflow-y:auto; }
         .im-mv-grid { display:grid; gap:6px; padding:10px; cursor:default; }
         .im-mv-cell { position:relative; cursor:zoom-in; border-radius:6px; overflow:hidden; background:#0f172a; border:2px solid #334155; transition:border-color 0.15s; }
         .im-mv-cell:hover { border-color:#64748b; }
@@ -6893,7 +6893,7 @@
             var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);">';
             _mUrls.forEach(function(url,i){
                 html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'" onclick="_imgMvSelect('+i+')">'
-                    +'<img src="'+url+'" loading="lazy" onerror="this.style.display=\'none\'">'
+                    +'<img src="'+url+'" onerror="this.style.display=\'none\'">'
                     +'<div class="im-mv-cell-num">'+(i+1)+'</div>'
                     +'</div>';
             });
@@ -8964,6 +8964,16 @@
 
     var _watchAlertMinimized = false;
     var _watchBlinkTimer = null;
+    var _tabBlinkActive = new Set();
+    function _startTabBlink(label, count, type) {
+        _tabBlinkActive.add(type || 'default');
+        if (window.electronAPI && window.electronAPI.flashFrame) window.electronAPI.flashFrame(true);
+    }
+    function _stopTabBlink(type) {
+        _tabBlinkActive.delete(type || 'default');
+        if (_tabBlinkActive.size === 0 && window.electronAPI && window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
+    }
+
     function _startWatchBlink() {
         if(_watchBlinkTimer) return;
         var on = false;
@@ -9049,6 +9059,7 @@
                 panel.style.borderColor = '#ef4444';
                 panel.classList.add('fraud-panel-blink');
                 if(tab) tab.classList.add('hdr-tab-blink');
+                _startTabBlink('사기글', 0, 'fraud');
             } else {
                 panel.style.maxHeight = '0px';
                 panel.style.borderColor = 'transparent';

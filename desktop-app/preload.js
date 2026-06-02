@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onUpdateStatus:      (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
     setMonitorDisabled:  (val) => ipcRenderer.send('set-monitor-disabled', val),
     setOsNotifMuted:     (val) => ipcRenderer.send('set-os-notif-muted', val),
+    flashFrame:          (val) => ipcRenderer.send('flash-frame', val),
     isElectron: true
 });
