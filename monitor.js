@@ -658,7 +658,7 @@ function _getNotifPrefs(){
         if (_styleInjected) return;
         _styleInjected = true;
         var s = document.createElement('style');
-        s.textContent = '@keyframes _imiPopIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}';
+        s.textContent = '@keyframes _imiPopIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}} ._imi-wrap{opacity:1!important;}';
         document.head.appendChild(s);
     }
     function _getContainer(isWatch) {
@@ -669,7 +669,8 @@ function _getNotifPrefs(){
         c.id = id;
         c.style.cssText = 'position:fixed;z-index:2147483640;bottom:20px;'
             + (isWatch ? 'left:20px;' : 'right:20px;')
-            + 'display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;max-width:480px;';
+            + 'display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;max-width:480px;'
+            + 'isolation:isolate;';
         document.body.appendChild(c);
         return c;
     }
@@ -684,10 +685,11 @@ function _getNotifPrefs(){
         var container = _getContainer(isWatch);
 
         var wrap = document.createElement('div');
-        wrap.style.cssText = 'width:460px;border:1.5px solid '+accentA+';border-radius:8px;'
-            + 'background:#1e293b;font-family:sans-serif;font-size:12px;color:#f1f5f9;'
-            + 'animation:_imiPopIn 0.22s ease;pointer-events:auto;'
-            + 'box-shadow:0 4px 24px rgba(0,0,0,0.45);';
+        wrap.className = '_imi-wrap';
+        wrap.style.cssText = 'width:460px;border:2px solid '+(isWatch?'#22c55e':'#ef4444')+';border-radius:8px;'
+            + 'background:#0f172a;font-family:sans-serif;font-size:12px;color:#f1f5f9;'
+            + 'animation:_imiPopIn 0.22s ease forwards;pointer-events:auto;'
+            + 'box-shadow:0 4px 32px rgba(0,0,0,0.85);';
 
         // 카드 헤더
         var cardHdr = document.createElement('div');
@@ -855,17 +857,17 @@ function _fireOsNotif(s) {
     newTids.forEach(function(t){ _notifSentTids.add(t); });
     if (!shouldNotif) return;
     var notifCount = allTids.length === 0 ? (s.itemCount||0) : newTids.length;
+    var title = '🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨';
+    var body  = notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다';
+    // Electron 환경: IPC 경유 → main.js의 showWindow()가 클릭 처리 (트레이·최소화 모두 복원)
+    if (window.electronAPI && window.electronAPI.showNotification) {
+        window.electronAPI.showNotification(title, body);
+        return;
+    }
+    // 웹 브라우저 폴백
     var _fn = function() {
-        var _n = new Notification('🚨 ' + (s.ruleName || 'IMI PRO') + ' 감지됨', {
-            body: notifCount + '개 감지' + (s.ruleKeyword ? ' · 키워드: ' + s.ruleKeyword : '') + '\nIMI PRO 확인 바랍니다',
-            icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico',
-            tag: 'imi-pro-alert'
-        });
-        _n.onclick = function() {
-            _n.close();
-            if (window.opener) window.opener.focus();
-            window.focus();
-        };
+        var _n = new Notification(title, { body: body, icon: 'https://msapi7890.github.io/IMI-PRO/favicon.ico', tag: 'imi-pro-alert' });
+        _n.onclick = function() { _n.close(); window.focus(); };
     };
     if (Notification.permission === 'granted') { _fn(); }
     else if (Notification.permission === 'default') { Notification.requestPermission().then(function(p){ if(p==='granted') _fn(); }); }
