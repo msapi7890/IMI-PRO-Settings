@@ -541,27 +541,31 @@ kbd {
   </div>
 
   <div class="shot-block">
-    <div class="shot-label"><div class="dot"></div>화면 5 — 멀티뷰 모달 팝업</div>
+    <div class="shot-label"><div class="dot"></div>화면 5 — 단일뷰 모달 (⊞ 멀티뷰 버튼 포함)</div>
     <div class="shot-img-wrap">
-      <img src="guide_imgs/매뉴얼 5.png" alt="멀티뷰 모달">
+      <img src="guide_imgs/멀티뷰 아이콘.png" alt="멀티뷰 아이콘 버튼">
 
       <!-- ① 항목명/페이지 정보 (중앙 타이틀 영역) -->
-      <div class="hl-box blue" style="top:0%;left:16%;width:66%;height:9%;"></div>
-      <div class="callout-pin blue" style="top:4.5%;left:82%;">①</div>
+      <div class="hl-box blue" style="top:0%;left:16%;width:60%;height:9%;"></div>
+      <div class="callout-pin blue" style="top:4.5%;left:76%;">①</div>
 
-      <!-- ② 닫기 버튼 -->
+      <!-- ② ⊞ 멀티뷰 전환 버튼 -->
+      <div class="hl-box" style="top:0%;left:77%;width:15%;height:9%;border-color:#a78bfa;"></div>
+      <div class="callout-pin" style="top:4.5%;left:84%;background:#a78bfa;">②</div>
+
+      <!-- ③ 닫기 버튼 -->
       <div class="hl-box" style="top:0%;left:93%;width:7%;height:9%;"></div>
-      <div class="callout-pin" style="top:4.5%;left:93%;">②</div>
+      <div class="callout-pin" style="top:4.5%;left:93%;">③</div>
 
-      <!-- ③ 매뉴얼 내용 -->
+      <!-- ④ 매뉴얼 내용 -->
       <div class="hl-box green" style="top:14%;left:7%;width:86%;height:75%;"></div>
-      <div class="callout-pin green" style="top:51%;left:93%;">③</div>
+      <div class="callout-pin green" style="top:51%;left:93%;">④</div>
 
-      <!-- ④ 이전/다음 버튼 -->
+      <!-- ⑤ 이전/다음 버튼 -->
       <div class="hl-box orange" style="top:35%;left:0.5%;width:6%;height:25%;"></div>
-      <div class="callout-pin orange" style="top:47.5%;left:6.5%;">④</div>
+      <div class="callout-pin orange" style="top:47.5%;left:6.5%;">⑤</div>
       <div class="hl-box orange" style="top:35%;left:93.5%;width:6%;height:25%;"></div>
-      <div class="callout-pin orange" style="top:47.5%;left:93.5%;">④</div>
+      <div class="callout-pin orange" style="top:47.5%;left:93.5%;">⑤</div>
     </div>
     <div class="callouts">
       <div class="callout-item">
@@ -572,21 +576,28 @@ kbd {
         </div>
       </div>
       <div class="callout-item">
-        <div class="callout-badge cb-red">②</div>
+        <div class="callout-badge" style="background:#a78bfa;color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;">②</div>
+        <div class="callout-text">
+          <strong>⊞ 멀티뷰 전환 버튼</strong>
+          <p>클릭하면 모든 이미지를 그리드로 한 번에 볼 수 있는 멀티뷰 모드로 전환됩니다. 다시 클릭하면 단일뷰로 복귀합니다.</p>
+        </div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-badge cb-red">③</div>
         <div class="callout-text">
           <strong>✕ 닫기 버튼</strong>
           <p>우측 상단 ✕를 클릭하면 모달이 닫힙니다.</p>
         </div>
       </div>
       <div class="callout-item">
-        <div class="callout-badge cb-green">③</div>
+        <div class="callout-badge cb-green">④</div>
         <div class="callout-text">
           <strong>매뉴얼 페이지 이미지</strong>
           <p>해당 페이지의 매뉴얼 이미지가 크게 표시됩니다. 세부 내용을 확인할 수 있습니다.</p>
         </div>
       </div>
       <div class="callout-item">
-        <div class="callout-badge cb-orange">④</div>
+        <div class="callout-badge cb-orange">⑤</div>
         <div class="callout-text">
           <strong>‹ › 이전 / 다음 페이지</strong>
           <p>좌우 화살표 버튼으로 항목에 포함된 페이지를 넘길 수 있습니다.</p>
@@ -595,33 +606,60 @@ kbd {
     </div>
   </div>
 
+  <!-- 멀티뷰 화면 스크린샷 -->
+  <div class="shot-block" style="margin-top:20px;">
+    <div class="shot-label"><div class="dot" style="background:#a78bfa;"></div>화면 5-2 — ⊞ 멀티뷰 모드 전환 후</div>
+    <div class="shot-img-wrap">
+      <img src="guide_imgs/멀티뷰1.png" alt="멀티뷰 화면">
+    </div>
+    <div class="callouts">
+      <div class="callout-item">
+        <div class="callout-badge" style="background:#a78bfa;color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;">⊞</div>
+        <div class="callout-text">
+          <strong>멀티뷰 그리드</strong>
+          <p>모든 이미지가 한 화면에 표시됩니다. 매니아 2장은 좌우 나란히, 3~4장은 2×2 그리드로 배치됩니다. 각 이미지에 순서 번호(①②③④)가 표시됩니다.</p>
+        </div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-badge" style="background:#38bdf8;color:#0f172a;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;">🖱</div>
+        <div class="callout-text">
+          <strong>스크롤로 확대/축소</strong>
+          <p>마우스 휠을 위로 스크롤하면 확대, 아래로 스크롤하면 축소됩니다. 단일뷰와 멀티뷰 모두 동일하게 작동합니다. −/+ 버튼 없이도 사용 가능합니다.</p>
+        </div>
+      </div>
+      <div class="callout-item">
+        <div class="callout-badge" style="background:#22c55e;color:#000;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0;">↔</div>
+        <div class="callout-text">
+          <strong>드래그로 이동</strong>
+          <p>확대 후 이미지를 클릭하여 드래그하면 원하는 위치로 이동(패닝)할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 이미지 모달 기능 상세 -->
   <div class="card blue-card" style="margin-bottom:14px;">
-    <div class="card-title">🖼️ 이미지 클릭 시 — 전체화면 모달 뷰어 기능</div>
+    <div class="card-title">🖼️ 전체화면 모달 뷰어 기능 전체 정리</div>
     <p style="font-size:11.5px;color:#94a3b8;margin-bottom:14px;line-height:1.7;">
-      멀티뷰에서 <em>이미지를 클릭</em>하면 전체 화면 모달이 열립니다.<br>
-      이 모달에는 아래 기능들이 포함되어 있습니다.
+      이미지를 클릭하면 전체 화면 모달이 열립니다. 단일뷰와 멀티뷰 모두 아래 기능을 사용할 수 있습니다.
     </p>
 
     <!-- 시각적 모달 구조 -->
     <div style="background:#0a1120;border:1.5px solid #334155;border-radius:10px;overflow:hidden;margin-bottom:16px;">
       <!-- 상단 -->
       <div style="background:#111827;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;">
-        <div style="width:24px;"></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="background:rgba(30,30,30,0.82);border:1px solid rgba(255,255,255,0.35);color:white;font-size:16px;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;">−</span>
-          <span style="font-size:10px;color:#475569;">축소</span>
-          <span style="font-size:10px;color:#334155;">|</span>
-          <span style="font-size:10px;color:#475569;">확대</span>
           <span style="background:rgba(30,30,30,0.82);border:1px solid rgba(255,255,255,0.35);color:white;font-size:16px;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;">+</span>
         </div>
+        <div style="background:rgba(167,139,250,0.2);border:1.5px solid #a78bfa;color:#a78bfa;font-size:13px;font-weight:900;padding:5px 14px;border-radius:8px;cursor:pointer;">⊞ 멀티뷰</div>
         <div style="background:rgba(0,0,0,0.5);color:white;font-size:20px;font-weight:900;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:6px;">✕</div>
       </div>
       <!-- 중앙 이미지 영역 -->
       <div style="position:relative;padding:28px 20px;display:flex;align-items:center;justify-content:center;min-height:120px;background:#0a1120;">
         <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(20,20,20,0.85);color:white;font-size:28px;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;">‹</span>
         <div style="background:#1e293b;border-radius:6px;width:60%;padding:20px;text-align:center;font-size:11px;color:#475569;">
-          📷 매뉴얼 이미지
+          📷 매뉴얼 이미지<br><span style="font-size:9px;color:#334155;">🖱 스크롤로 확대/축소 · 드래그로 이동</span>
         </div>
         <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(20,20,20,0.85);color:white;font-size:28px;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;">›</span>
       </div>
@@ -634,10 +672,24 @@ kbd {
     <!-- 각 기능 설명 -->
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;">
+        <span style="font-size:18px;flex-shrink:0;">🖱</span>
+        <div>
+          <div style="font-size:12px;font-weight:900;color:#e2e8f0;margin-bottom:2px;">스크롤 확대 / 축소 <span style="font-size:10px;color:#38bdf8;font-weight:700;">(신규)</span></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6;">마우스 휠을 <em>위로</em> 스크롤하면 확대, <em>아래로</em> 스크롤하면 축소됩니다.<br>단일뷰·멀티뷰 모두 동일하게 작동하며, −/+ 버튼 없이도 빠르게 조절 가능합니다.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;">
+        <span style="font-size:20px;flex-shrink:0;">⊞</span>
+        <div>
+          <div style="font-size:12px;font-weight:900;color:#a78bfa;margin-bottom:2px;">멀티뷰 전환 <span style="font-size:10px;font-weight:700;">(신규)</span></div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6;">상단 <em>⊞ 멀티뷰</em> 버튼으로 모든 이미지를 그리드로 표시합니다.<br>매니아 2장 → 좌우 나란히(하단 번호), 3~4장 → 2×2 그리드(중앙 번호 클러스터). 다시 클릭하면 단일뷰로 복귀.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;">
         <span style="font-size:20px;flex-shrink:0;">−&nbsp;+</span>
         <div>
-          <div style="font-size:12px;font-weight:900;color:#e2e8f0;margin-bottom:2px;">축소 / 확대</div>
-          <div style="font-size:11px;color:#64748b;line-height:1.6;">상단 중앙의 <em>−</em> <em>+</em> 버튼으로 이미지 크기를 조절합니다.<br>글자가 잘 안 보일 때 <em>+</em>를 눌러 확대하세요. 한 번에 25%씩 조절됩니다.</div>
+          <div style="font-size:12px;font-weight:900;color:#e2e8f0;margin-bottom:2px;">버튼 축소 / 확대</div>
+          <div style="font-size:11px;color:#64748b;line-height:1.6;">상단 좌측 <em>−</em> <em>+</em> 버튼으로도 크기를 조절할 수 있습니다. 스크롤과 동일한 기능입니다.</div>
         </div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;">
