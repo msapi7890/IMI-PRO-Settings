@@ -808,7 +808,7 @@
         </div>
         <!-- 스탬프 입력 툴바 (두 번째 행으로 이동) -->
         <div id="schedStampToolbar" style="display:flex;align-items:center;gap:6px;padding:5px 18px;border-bottom:1px solid var(--border-ui);flex-shrink:0;flex-wrap:wrap;">
-            <span style="font-size:10.5px;font-weight:700;opacity:0.45;white-space:nowrap;">✏️ 클릭·드래그로 입력 <span style="font-size:9px;">(같은 버튼 다시 클릭 = 삭제)</span>:</span>
+            <span style="font-size:10.5px;font-weight:700;opacity:0.45;white-space:nowrap;">✏️ 클릭·드래그로 입력 <span style="font-size:9px;">(같은 버튼 다시 클릭 = 삭제 · Ctrl+클릭 = 두 개 등록)</span>:</span>
             <button id="stamp_휴무" onclick="setScheduleStamp('휴무')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #ef4444;background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">휴무</button>
             <button id="stamp_9시" onclick="setScheduleStamp('9시')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #eab308;background:rgba(234,179,8,0.12);color:#eab308;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">9시</button>
             <button id="stamp_12시" onclick="setScheduleStamp('12시')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #d946ef;background:rgba(217,70,239,0.12);color:#d946ef;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">12시</button>
@@ -4482,6 +4482,7 @@
     var _schedStamp = '휴무';
     var _schedCells = {}, _schedNames = {};
     var _schedDragging = false;
+    var _schedCtrlMode = false;
     var _schedDragSeen = {};
     var _schedMemos = {}, _schedMemoActiveKey = null;
     var _schedCellRef = null, _schedCellListener = null;
@@ -5014,6 +5015,7 @@
     function _onCellMouseDown(e, gIdx, staffId, d) {
         if (window._schedViewMode === 'week') return;
         if (_schedStamp) {
+            _schedCtrlMode = !!(e.ctrlKey || e.metaKey);
             _schedDragStart(gIdx, staffId, d);
         } else {
             _schedSelBegin(gIdx, staffId, d);
@@ -5082,21 +5084,28 @@
         var parts = cur ? cur.split('|').filter(Boolean) : [];
         var idx = parts.indexOf(_schedStamp);
         var newVal;
-        if(idx !== -1 && !_schedDragging){
-            /* 단일 클릭 토글: 해당 값 제거 */
-            parts.splice(idx, 1);
-            newVal = parts.join('|');
-        } else if(idx !== -1){
-            /* 드래그 중 이미 같은 값 → 유지 */
-            newVal = cur;
-        } else if(parts.length >= 2){
-            /* 두 칸 가득 → 두 번째 값 교체 */
-            parts[1] = _schedStamp;
-            newVal = parts.join('|');
+        if(_schedCtrlMode){
+            /* Ctrl 누름: 기존 값 유지하고 추가 */
+            if(idx !== -1 && !_schedDragging){
+                parts.splice(idx, 1);
+                newVal = parts.join('|');
+            } else if(idx !== -1){
+                newVal = cur;
+            } else if(parts.length >= 2){
+                parts[1] = _schedStamp;
+                newVal = parts.join('|');
+            } else {
+                parts.push(_schedStamp);
+                newVal = parts.join('|');
+            }
         } else {
-            /* 빈 칸이거나 한 칸만 → 추가 */
-            parts.push(_schedStamp);
-            newVal = parts.join('|');
+            /* 일반 클릭: 기존 값 교체 */
+            if(idx !== -1 && !_schedDragging){
+                /* 같은 값 재클릭 → 토글 제거 */
+                newVal = '';
+            } else {
+                newVal = _schedStamp;
+            }
         }
         if(newVal){
             _schedCells[key] = newVal;
