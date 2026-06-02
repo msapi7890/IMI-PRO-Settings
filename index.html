@@ -174,7 +174,6 @@
         .im-mv-cell.im-mv-active img { outline:2px solid #3abff8; }
         .im-mv-cell img { width:100%; height:100%; display:block; object-fit:scale-down; image-rendering:high-quality; }
         #imgMvWrap img { max-width:100%!important; max-height:100%!important; }
-        .im-mv-num-cluster { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:grid; gap:3px; z-index:10001; pointer-events:none; }
         .im-mv-num-badge { position:absolute; z-index:10001; background:rgba(0,0,0,0.72); color:#fff; font-size:15px; font-weight:900; width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; border:2px solid rgba(255,255,255,0.45); pointer-events:none; }
         /* AI 도우미 패널 */
         #aiAssistPanel { overflow: hidden; font-size: 16px !important; }
@@ -6942,19 +6941,15 @@
             var rows=Math.ceil(_mUrls.length/cols);
             var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);">';
             _mUrls.forEach(function(url,i){
-                var badgeStyle=(_mPlatform==='bay')?'top:8px;left:50%;transform:translateX(-50%);':'';
+                var badgeStyle=(_mPlatform==='bay')
+                    ?'top:8px;left:50%;transform:translateX(-50%);'
+                    :'bottom:8px;left:50%;transform:translateX(-50%);';
                 html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'">'
                     +'<img src="'+url+'" onerror="this.style.display=\'none\'">'
-                    +(_mPlatform==='bay'?'<div class="im-mv-num-badge" style="'+badgeStyle+'">'+(i+1)+'</div>':'')
+                    +'<div class="im-mv-num-badge" style="'+badgeStyle+'">'+(i+1)+'</div>'
                     +'</div>';
             });
             html+='</div>';
-            // 매니아: 이미지 교차점 중앙에 번호 클러스터
-            if(_mPlatform!=='bay'){
-                html+='<div class="im-mv-num-cluster" style="grid-template-columns:repeat('+cols+',38px);grid-template-rows:repeat('+rows+',38px);">';
-                _mUrls.forEach(function(url,i){ html+='<div class="im-mv-num-badge" style="position:static;">'+(i+1)+'</div>'; });
-                html+='</div>';
-            }
             mvWrap.innerHTML=html;
         } else {
             mvWrap.style.display='none';
