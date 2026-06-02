@@ -5039,21 +5039,68 @@
         }
     }
     
+    function _schedValColor(v){
+        if(v==='휴무') return '#ef4444';
+        if(v==='12시') return '#d946ef';
+        if(v==='17시') return '#22c55e';
+        if(v==='연차') return '#8b5cf6';
+        if(v==='반차') return '#f97316';
+        if(v==='안식') return '#14b8a6';
+        if(v==='9시')  return '#eab308';
+        if(v==='15시') return '#06b6d4';
+        if(v==='교육') return '#f59e0b';
+        return 'var(--text-main)';
+    }
+    function _schedValColorFaded(v){
+        if(v==='휴무') return 'rgba(239,68,68,0.5)';
+        if(v==='12시') return 'rgba(217,70,239,0.5)';
+        if(v==='17시') return 'rgba(34,197,94,0.5)';
+        if(v==='연차') return 'rgba(139,92,246,0.5)';
+        if(v==='반차') return 'rgba(249,115,22,0.5)';
+        if(v==='안식') return 'rgba(20,184,166,0.5)';
+        if(v==='9시')  return 'rgba(234,179,8,0.5)';
+        if(v==='15시') return 'rgba(6,182,212,0.5)';
+        if(v==='교육') return 'rgba(245,158,11,0.5)';
+        return 'rgba(140,140,140,0.5)';
+    }
+    function _schedDualTxt(parts, faded){
+        var c0 = faded ? _schedValColorFaded(parts[0]) : _schedValColor(parts[0]);
+        var c1 = faded ? _schedValColorFaded(parts[1]) : _schedValColor(parts[1]);
+        return '<span style="display:block;font-size:9px;font-weight:900;line-height:1.2;color:'+c0+';">'+parts[0]+'</span>'+
+               '<span style="display:block;font-size:9px;font-weight:900;line-height:1.2;color:'+c1+';">'+parts[1]+'</span>';
+    }
+
     function _schedApplyCell(gIdx, staffId, day){
         var key = _schedCellKey(gIdx, staffId, day);
         if(_schedDragging && _schedDragSeen[key]) return; /* 드래그 중 이미 적용한 셀 스킵 */
         _schedDragSeen[key] = true;
         var path = _schedFbRoot()+_schedYear+'/'+_schedMonth+'/cells/'+key;
+        var cur = _schedCells[key] || '';
+        var parts = cur ? cur.split('|').filter(Boolean) : [];
+        var idx = parts.indexOf(_schedStamp);
         var newVal;
-        if(!_schedDragging && _schedCells[key] === _schedStamp){
-            /* 단일 클릭만 토글 삭제 (드래그 중엔 토글 없음) */
-            newVal = '';
+        if(idx !== -1 && !_schedDragging){
+            /* 단일 클릭 토글: 해당 값 제거 */
+            parts.splice(idx, 1);
+            newVal = parts.join('|');
+        } else if(idx !== -1){
+            /* 드래그 중 이미 같은 값 → 유지 */
+            newVal = cur;
+        } else if(parts.length >= 2){
+            /* 두 칸 가득 → 두 번째 값 교체 */
+            parts[1] = _schedStamp;
+            newVal = parts.join('|');
+        } else {
+            /* 빈 칸이거나 한 칸만 → 추가 */
+            parts.push(_schedStamp);
+            newVal = parts.join('|');
+        }
+        if(newVal){
+            _schedCells[key] = newVal;
+            db.ref(path).set(newVal);
+        } else {
             delete _schedCells[key];
             db.ref(path).remove();
-        } else {
-            newVal = _schedStamp;
-            _schedCells[key] = _schedStamp;
-            db.ref(path).set(_schedStamp);
         }
         var cell = document.getElementById('scell_'+key);
         if(cell) _applySchedCellStyle(cell, newVal, day);
@@ -5069,38 +5116,42 @@
         var cc = (_schedColors[gKey]||{})[parseInt(parts[1])]||'';
         var baseBg = cc ? _colRgba(cc, 0.06) : (isRedC?'rgba(239,68,68,0.13)':(isSatC?'rgba(96,165,250,0.13)':''));
         var vspan = document.getElementById('sval_'+key);
+        var valParts = val ? val.split('|').filter(Boolean) : [];
         if(!val){
-            if(vspan) vspan.textContent='';
+            if(vspan) vspan.innerHTML='';
+            cell.style.background=baseBg; cell.style.color=''; cell.style.fontWeight='';
+        } else if(valParts.length >= 2){
+            if(vspan) vspan.innerHTML=_schedDualTxt(valParts, false);
             cell.style.background=baseBg; cell.style.color=''; cell.style.fontWeight='';
         } else if(val==='휴무'){
-            if(vspan) vspan.textContent='휴무';
+            if(vspan) vspan.innerHTML='휴무';
             cell.style.background=baseBg; cell.style.color='#ef4444'; cell.style.fontWeight='900';
         } else if(val==='12시'){
-            if(vspan) vspan.textContent='12시';
+            if(vspan) vspan.innerHTML='12시';
             cell.style.background=baseBg; cell.style.color='#d946ef'; cell.style.fontWeight='900';
         } else if(val==='17시'){
-            if(vspan) vspan.textContent='17시';
+            if(vspan) vspan.innerHTML='17시';
             cell.style.background=baseBg; cell.style.color='#22c55e'; cell.style.fontWeight='900';
         } else if(val==='연차'){
-            if(vspan) vspan.textContent='연차';
+            if(vspan) vspan.innerHTML='연차';
             cell.style.background=baseBg; cell.style.color='#8b5cf6'; cell.style.fontWeight='900';
         } else if(val==='반차'){
-            if(vspan) vspan.textContent='반차';
+            if(vspan) vspan.innerHTML='반차';
             cell.style.background=baseBg; cell.style.color='#f97316'; cell.style.fontWeight='900';
         } else if(val==='안식'){
-            if(vspan) vspan.textContent='안식';
+            if(vspan) vspan.innerHTML='안식';
             cell.style.background=baseBg; cell.style.color='#14b8a6'; cell.style.fontWeight='900';
         } else if(val==='교육'){
-            if(vspan) vspan.textContent='교육';
+            if(vspan) vspan.innerHTML='교육';
             cell.style.background=baseBg; cell.style.color='#f59e0b'; cell.style.fontWeight='900';
         } else if(val==='9시'){
-            if(vspan) vspan.textContent='9시';
+            if(vspan) vspan.innerHTML='9시';
             cell.style.background=baseBg; cell.style.color='#eab308'; cell.style.fontWeight='900';
         } else if(val==='15시'){
-            if(vspan) vspan.textContent='15시';
+            if(vspan) vspan.innerHTML='15시';
             cell.style.background=baseBg; cell.style.color='#06b6d4'; cell.style.fontWeight='900';
         } else {
-            if(vspan) vspan.textContent=val;
+            if(vspan) vspan.innerHTML=val;
             cell.style.background=baseBg; cell.style.color='var(--text-main)'; cell.style.fontWeight='800';
         }
     }
@@ -5536,29 +5587,20 @@
                         bg=cc3?_colRgba(cc3,isToday?0.16:(isRed||isSat?0.10:0.06)):(isToday?'rgba(34,197,94,0.15)':(isRed?'rgba(239,68,68,0.13)':(isSat?'rgba(96,165,250,0.13)':'')));
                         if(!isCur) bg = 'rgba(0,0,0,0.02)';
 
-                        if(val==='휴무'){color='#ef4444';fw='900';txt='휴무';}
-                        else if(val==='12시'){color='#d946ef';fw='900';txt='12시';}
-                        else if(val==='17시'){color='#22c55e';fw='900';txt='17시';}
-                        else if(val==='연차'){color='#8b5cf6';fw='900';txt='연차';}
-                        else if(val==='반차'){color='#f97316';fw='900';txt='반차';}
-                        else if(val==='안식'){color='#14b8a6';fw='900';txt='안식';}
-                        else if(val==='9시'){color='#eab308';fw='900';txt='9시';}
-                        else if(val==='15시'){color='#06b6d4';fw='900';txt='15시';}
-                        else if(val==='교육'){color='#f59e0b';fw='900';txt='교육';}
-                        else { color='var(--text-main)'; fw='800'; txt=val; }
-
-                        if (!isCur && txt) {
-                            if(val==='휴무') color='rgba(239,68,68,0.5)';
-                            else if(val==='12시') color='rgba(217,70,239,0.5)';
-                            else if(val==='17시') color='rgba(34,197,94,0.5)';
-                            else if(val==='연차') color='rgba(139,92,246,0.5)';
-                            else if(val==='반차') color='rgba(249,115,22,0.5)';
-                            else if(val==='안식') color='rgba(20,184,166,0.5)';
-                            else if(val==='교육') color='rgba(245,158,11,0.5)';
-                            else if(val==='9시') color='rgba(234,179,8,0.5)';
-                            else if(val==='15시') color='rgba(6,182,212,0.5)';
-                            else color='rgba(140,140,140,0.5)';
-                        }
+                        var _vp = val ? val.split('|').filter(Boolean) : [];
+                        if(_vp.length >= 2){
+                            txt=_schedDualTxt(_vp, !isCur);
+                            color=''; fw='';
+                        } else if(val==='휴무'){color=isCur?'#ef4444':'rgba(239,68,68,0.5)';fw='900';txt='휴무';}
+                        else if(val==='12시'){color=isCur?'#d946ef':'rgba(217,70,239,0.5)';fw='900';txt='12시';}
+                        else if(val==='17시'){color=isCur?'#22c55e':'rgba(34,197,94,0.5)';fw='900';txt='17시';}
+                        else if(val==='연차'){color=isCur?'#8b5cf6':'rgba(139,92,246,0.5)';fw='900';txt='연차';}
+                        else if(val==='반차'){color=isCur?'#f97316':'rgba(249,115,22,0.5)';fw='900';txt='반차';}
+                        else if(val==='안식'){color=isCur?'#14b8a6':'rgba(20,184,166,0.5)';fw='900';txt='안식';}
+                        else if(val==='9시'){color=isCur?'#eab308':'rgba(234,179,8,0.5)';fw='900';txt='9시';}
+                        else if(val==='15시'){color=isCur?'#06b6d4':'rgba(6,182,212,0.5)';fw='900';txt='15시';}
+                        else if(val==='교육'){color=isCur?'#f59e0b':'rgba(245,158,11,0.5)';fw='900';txt='교육';}
+                        else if(val){ color=isCur?'var(--text-main)':'rgba(140,140,140,0.5)'; fw='800'; txt=val; }
 
                         var foldColor=memo?'#ef4444':'rgba(130,130,130,0.13)';
                         if (!isCur && memo) foldColor = 'rgba(239,68,68,0.4)';
@@ -5617,11 +5659,12 @@
                             } else {
                                 v = _nextSchedCells[k] || '';
                             }
-                            if(v==='휴무') hwCnt++;
-                            else if(v==='연차') yCnt++;
-                            else if(v==='반차') bCnt++;
-                            else if(v==='안식') anCnt++;
-                            else if(v==='교육') edCnt++;
+                            var _vf = v ? v.split('|')[0] : '';
+                            if(_vf==='휴무') hwCnt++;
+                            else if(_vf==='연차') yCnt++;
+                            else if(_vf==='반차') bCnt++;
+                            else if(_vf==='안식') anCnt++;
+                            else if(_vf==='교육') edCnt++;
                         }
                         var total = hwCnt + yCnt + bCnt * 0.5 + anCnt;
                         var totalStr = total > 0 ? total+'일' : '—';
