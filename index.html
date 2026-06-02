@@ -6889,8 +6889,7 @@
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){if(b.id!=='imgMvBtn')b.style.visibility='hidden';});
             if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
             document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
-            var maxCols=_mPlatform==='bay'?3:4;
-            var cols=Math.min(_mUrls.length,maxCols);
+            var cols=_mPlatform==='bay'?Math.min(_mUrls.length,3):2;
             var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);">';
             _mUrls.forEach(function(url,i){
                 html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'" onclick="_imgMvSelect('+i+')">'
