@@ -4423,9 +4423,9 @@
         localStorage.setItem('imi_font_size', v);
         var chatBox=document.getElementById('chatBox');
         var chatW=chatBox ? chatBox.clientWidth : 800;
-        // 이미지 크기: 12→62%/65%, 16→72%/77%, 18→77%/83%, 20→82%/89%
-        var maniaPct=Math.min(62+(v-12)*2.5, 90);
-        var bayPct=Math.min(65+(v-12)*3.0, 92);
+        // 이미지 크기: 12→72%/75%, 14→77%/80%, 16→82%/85%, 18→87%/90%, 20→92%/95%
+        var maniaPct=Math.min(72+(v-12)*2.5, 95);
+        var bayPct=Math.min(75+(v-12)*2.5, 97);
         var maxW=Math.round(chatW*0.97);
         var maniaW=Math.min(Math.round(chatW*maniaPct/100), maxW);
         var bayW=Math.min(Math.round(chatW*bayPct/100), maxW);
