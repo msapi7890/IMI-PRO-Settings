@@ -818,7 +818,7 @@
             <button id="stamp_연차" onclick="setScheduleStamp('연차')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #8b5cf6;background:rgba(139,92,246,0.12);color:#8b5cf6;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">연차</button>
             <button id="stamp_반차" onclick="setScheduleStamp('반차')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #f97316;background:rgba(249,115,22,0.12);color:#f97316;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">반차</button>
             <button id="stamp_안식" onclick="setScheduleStamp('안식')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #14b8a6;background:rgba(20,184,166,0.12);color:#14b8a6;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">안식</button>
-            <button id="stamp_교육" onclick="setScheduleStamp('교육')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">교육</button>
+            <button id="stamp_교육" onclick="setScheduleStamp('교육')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #2563eb;background:rgba(37,99,235,0.12);color:#2563eb;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">교육</button>
         </div>
         <!-- 테이블 영역 -->
         <div style="flex:1;overflow:hidden;min-height:0;padding:12px 14px;">
@@ -5048,7 +5048,7 @@
         if(v==='안식') return '#14b8a6';
         if(v==='9시')  return '#eab308';
         if(v==='15시') return '#06b6d4';
-        if(v==='교육') return '#f59e0b';
+        if(v==='교육') return '#2563eb';
         return 'var(--text-main)';
     }
     function _schedValColorFaded(v){
@@ -5060,7 +5060,7 @@
         if(v==='안식') return 'rgba(20,184,166,0.5)';
         if(v==='9시')  return 'rgba(234,179,8,0.5)';
         if(v==='15시') return 'rgba(6,182,212,0.5)';
-        if(v==='교육') return 'rgba(245,158,11,0.5)';
+        if(v==='교육') return 'rgba(37,99,235,0.5)';
         return 'rgba(140,140,140,0.5)';
     }
     function _schedDualTxt(parts, faded){
@@ -5602,7 +5602,7 @@
                         else if(val==='안식'){color=isCur?'#14b8a6':'rgba(20,184,166,0.5)';fw='900';txt='안식';}
                         else if(val==='9시'){color=isCur?'#eab308':'rgba(234,179,8,0.5)';fw='900';txt='9시';}
                         else if(val==='15시'){color=isCur?'#06b6d4':'rgba(6,182,212,0.5)';fw='900';txt='15시';}
-                        else if(val==='교육'){color=isCur?'#f59e0b':'rgba(245,158,11,0.5)';fw='900';txt='교육';}
+                        else if(val==='교육'){color=isCur?'#2563eb':'rgba(37,99,235,0.5)';fw='900';txt='교육';}
                         else if(val){ color=isCur?'var(--text-main)':'rgba(140,140,140,0.5)'; fw='800'; txt=val; }
 
                         var foldColor=memo?'#ef4444':'rgba(130,130,130,0.13)';
@@ -7937,7 +7937,7 @@
                     var gc2=_GCOL[_PASTE_GRP[cell]]||'#888';
                     content='<span style="color:'+gc2+';font-weight:900;">'+cell+'</span>';
                 } else if(isDataRow&&KNOWN_VAL[cell]){
-                    var vc={'휴무':'#ef4444','연차':'#f59e0b','반차':'#f97316','안식':'#8b5cf6','교육':'#f59e0b','9시':'#eab308','12시':'#d946ef','15시':'#06b6d4','17시':'#22c55e'}[cell]||'#6b7280';
+                    var vc={'휴무':'#ef4444','연차':'#f59e0b','반차':'#f97316','안식':'#8b5cf6','교육':'#2563eb','9시':'#eab308','12시':'#d946ef','15시':'#06b6d4','17시':'#22c55e'}[cell]||'#6b7280';
                     content='<span style="background:'+vc+'22;color:'+vc+';padding:1px 5px;border-radius:5px;font-weight:900;font-size:9.5px;">'+cell+'</span>';
                 }
                 if(isTimeHdr||isGrpHdr||isStaffHdr)tdStyle+='font-weight:700;';
