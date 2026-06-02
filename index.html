@@ -167,9 +167,10 @@
         .im-zoom { position:absolute; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:10001; }
         .im-zoom-btn { background:rgba(30,30,30,0.82); border:1px solid rgba(255,255,255,0.35); color:white; font-size:22px; width:40px; height:40px; border-radius:10px; cursor:pointer; opacity:0.9; font-weight:900; line-height:1; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
         .im-zoom-btn:hover { opacity:1; background:rgba(50,50,50,0.95); }
-        #imgMvWrap { display:none; position:absolute; top:60px; left:0; right:0; bottom:28px; overflow:hidden; }
-        .im-mv-grid { display:grid; gap:2px; padding:2px; width:100%; height:100%; }
-        .im-mv-cell { position:relative; cursor:zoom-in; overflow:hidden; background:#0f172a; border:2px solid #334155; transition:border-color 0.15s; }
+        #imgMvWrap { display:none; position:absolute; top:60px; left:0; right:0; bottom:28px; overflow:hidden; cursor:grab; }
+        #imgMvWrap.mv-dragging { cursor:grabbing; }
+        .im-mv-grid { display:grid; gap:2px; padding:2px; width:100%; height:100%; transform-origin:center center; will-change:transform; }
+        .im-mv-cell { position:relative; cursor:pointer; overflow:hidden; background:#0f172a; border:2px solid #334155; transition:border-color 0.15s; }
         .im-mv-cell:hover { border-color:#64748b; }
         .im-mv-cell.im-mv-active { border-color:#3abff8; box-shadow:0 0 0 1px #3abff8; }
         .im-mv-cell img { width:100%; height:100%; display:block; object-fit:contain; background:#0f172a; }
@@ -524,7 +525,7 @@
   </div>
   <span class="im-nav im-prev" onclick="event.stopPropagation();moveImg(-1)">&#8249;</span>
   <div id="imgModalWrap"><img id="imgModalImg" src="" alt=""></div>
-  <div id="imgMvWrap" onclick="event.stopPropagation();if(_mMultiView&&event.target===this)toggleImgMultiView()"></div>
+  <div id="imgMvWrap" onclick="event.stopPropagation()"></div>
   <span class="im-nav im-next" onclick="event.stopPropagation();moveImg(1)">&#8250;</span>
   <div class="im-info" id="imgPageInfo"></div>
 </div>
@@ -6858,6 +6859,47 @@
     var _modalCropGen=0;
     var _mMultiView=false;
     var _mPlatform='mania';
+    var _mvZoom=1.0, _mvTX=0, _mvTY=0;
+    var _mvDrag={active:false,sx:0,sy:0,ox:0,oy:0};
+    var _mvDragMoved=false, _mvEventsInit=false;
+    function _applyMvTransform(){
+        var grid=document.querySelector('#imgMvWrap .im-mv-grid');
+        if(grid) grid.style.transform='scale('+_mvZoom+') translate('+_mvTX+'px,'+_mvTY+'px)';
+    }
+    function _initMvEvents(){
+        if(_mvEventsInit) return;
+        _mvEventsInit=true;
+        var wrap=document.getElementById('imgMvWrap');
+        wrap.addEventListener('wheel',function(e){
+            if(!_mMultiView) return;
+            e.preventDefault();
+            var factor=e.deltaY<0?1.12:0.89;
+            _mvZoom=Math.max(0.4,Math.min(8,_mvZoom*factor));
+            _applyMvTransform();
+        },{passive:false});
+        wrap.addEventListener('mousedown',function(e){
+            if(e.button!==0) return;
+            _mvDrag.active=true; _mvDragMoved=false;
+            _mvDrag.sx=e.clientX; _mvDrag.sy=e.clientY;
+            _mvDrag.ox=_mvTX; _mvDrag.oy=_mvTY;
+            wrap.classList.add('mv-dragging');
+            e.stopPropagation();
+        });
+        document.addEventListener('mousemove',function(e){
+            if(!_mvDrag.active) return;
+            var dx=e.clientX-_mvDrag.sx, dy=e.clientY-_mvDrag.sy;
+            if(Math.abs(dx)>4||Math.abs(dy)>4) _mvDragMoved=true;
+            _mvTX=_mvDrag.ox+dx/_mvZoom; _mvTY=_mvDrag.oy+dy/_mvZoom;
+            _applyMvTransform();
+        });
+        document.addEventListener('mouseup',function(){
+            if(_mvDrag.active){
+                _mvDrag.active=false;
+                var w=document.getElementById('imgMvWrap');
+                if(w) w.classList.remove('mv-dragging');
+            }
+        });
+    }
 
     function openImgModal(keyOrArr,idx){
         var urls=(typeof keyOrArr==='string')?window[keyOrArr]:keyOrArr;
@@ -6919,9 +6961,12 @@
     function toggleImgMultiView(){
         _mMultiView=!_mMultiView;
         _mZoom=1.0;_mTX=0;_mTY=0;
+        if(_mMultiView){_mvZoom=1.0;_mvTX=0;_mvTY=0;}
         _updateModal();
+        if(_mMultiView) _initMvEvents();
     }
     function _imgMvSelect(i){
+        if(_mvDragMoved){_mvDragMoved=false;return;}
         _mIdx=i;_mMultiView=false;_mZoom=1.0;_mTX=0;_mTY=0;
         _updateModal();
     }
@@ -6959,9 +7004,8 @@
         _applyTransform();
     }
     function closeImgModal(e){
-        if(e&&e.target&&e.target.id!=='imgModal'&&!e.target.classList.contains('im-close')) return;
-        // 멀티뷰 상태에서 배경 클릭 → 단일 뷰로 복귀 (모달 닫기 아님)
-        if(_mMultiView && e && e.target && e.target.id==='imgModal'){ toggleImgMultiView(); return; }
+        // 배경 클릭으로는 닫지 않음 — X 버튼 또는 ESC만
+        if(e&&e.target&&!e.target.classList.contains('im-close')) return;
         document.getElementById('imgModal').classList.remove('open');
         document.removeEventListener('keydown',_modalKey);
     }
