@@ -9112,26 +9112,36 @@
 
     var _watchAlertMinimized = false;
     var _watchBlinkTimer = null;
-    var _tabBlinkLabels = {};   // type → label
-    function _startTabBlink(label, count, type) {
-        _tabBlinkLabels[type || 'default'] = label || '';
-        var activeLabels = Object.values(_tabBlinkLabels);
+    var _tabBlinkLabels = {};
+    var _tabTitleTimer  = null;
+    function _doTitleBlink(activeLabels) {
+        if (_tabTitleTimer) { clearInterval(_tabTitleTimer); _tabTitleTimer = null; }
+        if (activeLabels.length === 0) {
+            document.title = 'IMI PRO';
+            if (window.electronAPI) {
+                if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
+                if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false, []);
+            }
+            return;
+        }
         if (window.electronAPI) {
             if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(true);
             if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, activeLabels);
         }
+        var bt = activeLabels.length === 1
+            ? ['🚨 ' + activeLabels[0] + ' 감지', 'IMI PRO']
+            : activeLabels.map(function(l){ return '🚨 ' + l + ' 감지'; });
+        var bi = 0;
+        document.title = bt[0];
+        _tabTitleTimer = setInterval(function(){ document.title = bt[bi++ % bt.length]; }, 900);
+    }
+    function _startTabBlink(label, count, type) {
+        _tabBlinkLabels[type || 'default'] = label || '';
+        _doTitleBlink(Object.values(_tabBlinkLabels));
     }
     function _stopTabBlink(type) {
         delete _tabBlinkLabels[type || 'default'];
-        var activeLabels = Object.values(_tabBlinkLabels);
-        if (window.electronAPI) {
-            if (activeLabels.length === 0) {
-                if (window.electronAPI.flashFrame) window.electronAPI.flashFrame(false);
-                if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false, []);
-            } else {
-                if (window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(true, activeLabels);
-            }
-        }
+        _doTitleBlink(Object.values(_tabBlinkLabels));
     }
 
     function _startWatchBlink() {
