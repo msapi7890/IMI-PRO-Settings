@@ -8739,6 +8739,16 @@
         document.getElementById('termsMatchInfo').textContent = (_termsMatchIdx+1)+'/'+marks.length+' 일치';
     }
 
+    // 창 크기에 맞게 전체 비율 자동 조정 (기준: 1400px → zoom 0.9)
+    function _applyBodyZoom() {
+        var z = Math.min(0.9, Math.max(0.55, 0.9 * window.innerWidth / 1400));
+        document.body.style.zoom   = z;
+        document.body.style.width  = 'calc(100vw / ' + z + ')';
+        document.body.style.height = 'calc(100vh / ' + z + ')';
+    }
+    window.addEventListener('resize', _applyBodyZoom);
+    _applyBodyZoom();
+
     window.onload = function(){
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
