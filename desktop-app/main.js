@@ -110,7 +110,7 @@ function createWindow() {
         height: 900,
         minWidth:  960,
         minHeight: 600,
-        title: 'IMI PRO',
+        title: 'IMI PRO v' + app.getVersion(),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -323,13 +323,14 @@ ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flash
 let _titleBlinkTimer = null;
 ipcMain.on('blink-title', (_, { on, labels }) => {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+    const baseTitle = 'IMI PRO v' + app.getVersion();
     if (!on || !labels || labels.length === 0) {
-        if (win) win.setTitle('IMI PRO');
+        if (win) win.setTitle(baseTitle);
         return;
     }
-    // 1개면 "🚨 라벨" ↔ "IMI PRO", 2개면 "🚨 비거래" ↔ "🚨 사기글" 번갈아
+    // 1개면 "🚨 라벨 감지" ↔ "IMI PRO v버전", 2개면 둘 번갈아
     const titles = labels.length === 1
-        ? ['🚨 ' + labels[0] + ' 감지', 'IMI PRO']
+        ? ['🚨 ' + labels[0] + ' 감지', baseTitle]
         : labels.map(l => '🚨 ' + l + ' 감지');
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
