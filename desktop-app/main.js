@@ -124,6 +124,9 @@ function createWindow() {
     win = new BrowserWindow(opts);
     win.loadURL(APP_URL);
 
+    // 페이지 document.title 변경이 작업표시줄 너비에 영향주지 않도록 고정
+    win.on('page-title-updated', (e) => { e.preventDefault(); });
+
     // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
     win.webContents.setWindowOpenHandler(({ url }) => {
         shell.openExternal(url);
