@@ -176,7 +176,7 @@ function createWindow() {
     win.webContents.on('before-input-event', (event, input) => {
         if (input.type !== 'keyDown') return;
         if (input.key === 'F5' || (input.control && input.key === 'r')) {
-            win.webContents.reload();
+            win.webContents.reloadIgnoringCache();
         }
     });
 
@@ -363,12 +363,20 @@ ipcMain.on('blink-title', (_, { on, labels }) => {
 });
 
 // ── 앱 시작 ───────────────────────────────────────────────
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+    // 버전 변경 시 캐시 초기화 (구버전 index.html 캐시 방지)
+    const ses = require('electron').session.fromPartition('persist:imipro');
+    const s   = loadSettings();
+    if (s.lastCachedVersion !== app.getVersion()) {
+        try { await ses.clearCache(); } catch(_) {}
+        s.lastCachedVersion = app.getVersion();
+        saveSettings(s);
+    }
+
     buildAppMenu();
     createWindow();
     createTray();
 
-    const s = loadSettings();
     app.setLoginItemSettings({ openAtLogin: !!s.openAtLogin, path: app.getPath('exe') });
 
     connectSSE();
