@@ -5066,8 +5066,11 @@
     function _schedDualTxt(parts, faded){
         var c0 = faded ? _schedValColorFaded(parts[0]) : _schedValColor(parts[0]);
         var c1 = faded ? _schedValColorFaded(parts[1]) : _schedValColor(parts[1]);
-        return '<span style="display:block;font-size:9px;font-weight:900;line-height:1.2;color:'+c0+';">'+parts[0]+'</span>'+
-               '<span style="display:block;font-size:9px;font-weight:900;line-height:1.2;color:'+c1+';">'+parts[1]+'</span>';
+        return '<span style="font-size:9px;">'+
+               '<span style="color:'+c0+';font-weight:900;">'+parts[0]+'</span>'+
+               '<span style="color:rgba(150,150,150,0.6);font-weight:400;"> / </span>'+
+               '<span style="color:'+c1+';font-weight:900;">'+parts[1]+'</span>'+
+               '</span>';
     }
 
     function _schedApplyCell(gIdx, staffId, day){
