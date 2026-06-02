@@ -2095,25 +2095,19 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
 
 </div>
 
-<h3>② Windows 알림 허용 방법</h3>
-<p>별도 토글 없이 Windows 알림이 허용되어 있으면, 감지 시 다른 화면을 보고 있어도 <strong>Windows 우측 하단에 자동으로 팝업 알림</strong>이 뜹니다.</p>
+<h3>② Windows 푸시 알림 — 별도 설정 불필요</h3>
+<p>IMI PRO는 설치된 앱으로 OS에 자동 등록됩니다. 프로그램이 실행 중이면 감지 즉시 <strong>Windows 우측 하단에 자동으로 팝업 알림</strong>이 뜨며, 별도 허용 설정이 필요 없습니다.</p>
 
-<!-- Chrome 알림 목업 -->
+<!-- 알림 목업 -->
 <div style="display:flex;justify-content:flex-end;margin:10px 0 6px;">
   <div style="width:300px;background:#1f2937;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.5);border:1px solid #374151;font-family:'Segoe UI',sans-serif;">
-    <!-- 상단 바 -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:#111827;border-bottom:1px solid #374151;">
       <div style="display:flex;align-items:center;gap:5px;">
         <div style="width:12px;height:12px;border-radius:2px;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);flex-shrink:0;"></div>
         <span style="font-size:10px;color:#9ca3af;">IMI PRO&nbsp;·&nbsp;지금</span>
-        <span style="font-size:9px;color:#6b7280;">^</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;color:#6b7280;cursor:pointer;">⚙</span>
-        <span style="font-size:14px;color:#6b7280;cursor:pointer;line-height:1;">×</span>
-      </div>
+      <span style="font-size:14px;color:#6b7280;cursor:pointer;line-height:1;">×</span>
     </div>
-    <!-- 알림 내용 -->
     <div style="padding:10px 12px;display:flex;align-items:flex-start;gap:10px;">
       <div style="width:32px;height:32px;border-radius:4px;background:linear-gradient(135deg,#0284c7,#3abff8,#db2877);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;">✦</div>
       <div>
@@ -2124,11 +2118,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   </div>
 </div>
 <div class="tip" style="margin-bottom:12px;">감지된 키워드·건수가 표시됩니다. 클릭하면 IMI PRO 창으로 이동합니다.</div>
-<div class="steps">
-  <div class="step"><div class="snum">1</div><div class="sbody">Windows <strong>설정</strong> → <strong>시스템</strong> → <strong>알림 및 작업</strong></div></div>
-  <div class="step"><div class="snum">2</div><div class="sbody">목록에서 <strong>IMI PRO</strong> 찾기</div></div>
-  <div class="step"><div class="snum">3</div><div class="sbody">알림 허용 <span style="color:#22c55e;font-weight:900;">ON</span> 으로 변경</div></div>
-</div>
+<div class="warn" style="margin-bottom:0;">알림이 안 뜨는 경우: Windows <strong>설정 → 시스템 → 알림 및 작업</strong>에서 <strong>IMI PRO</strong> 알림이 꺼져 있는지 확인하세요.</div>
 </section>
 
 <!-- ═══ 14. 긴급공지 ═══ -->
@@ -2252,7 +2242,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
     <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 알림 팝업이 안 떠요</div>
-    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">Windows 설정 → 시스템 → 알림 및 작업 → <strong>IMI PRO</strong> → 알림 허용 확인</div>
+    <div style="padding:0 14px 11px;font-size:12px;line-height:1.8;border-top:1px solid #334155;">IMI PRO 프로그램이 실행 중인지 확인하세요. 알림은 프로그램이 켜져 있으면 자동으로 발송됩니다.<br>그래도 안 뜨면: Windows 설정 → 시스템 → 알림 및 작업 → <strong>IMI PRO</strong> → 알림 허용 확인</div>
   </div>
   <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;overflow:hidden;">
     <div style="padding:11px 14px;font-size:12px;font-weight:900;color:#3abff8;cursor:pointer;">Q. 실수로 필터 제외했어요</div>
