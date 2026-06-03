@@ -45,7 +45,9 @@ function buildAppMenu() {
                     : '🔍 업데이트 확인',
                 click: () => {
                     showWindow();
-                    if (lastUpdateStatus) {
+                    if (_updateReady && autoUpdater) {
+                        autoUpdater.quitAndInstall(true, true);
+                    } else if (lastUpdateStatus) {
                         if (win) win.webContents.send('update-status', lastUpdateStatus);
                     } else if (autoUpdater) {
                         autoUpdater.checkForUpdates().catch(() => {});
@@ -105,7 +107,7 @@ function appDisplayVersion() {
     return v.endsWith('.0') ? v.slice(0, -2) : v;
 }
 
-// ── 타이틀 깜빡임 핵심 함수 ───────────────────────────────
+// ── 타이틀 / 작업표시줄 깜빡임 핵심 함수 ─────────────────────
 let _titleBlinkTimer = null;
 function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
@@ -114,12 +116,16 @@ function _updateTitleBlink() {
     const ver      = appDisplayVersion();
     const base     = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
     const alertTxt = '🚨 IMI PRO v' + ver;
-    if (labels.length === 0) { if (win) win.setTitle(base); return; }
-    let idx = 0;
+    if (labels.length === 0) {
+        if (win) { win.setTitle(base); win.flashFrame(false); }
+        return;
+    }
+    // 타이틀은 🚨 고정 (폭 변화 없음), flashFrame으로 주황 깜빡임
+    if (win) win.setTitle(alertTxt);
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        win.setTitle(idx++ % 2 === 0 ? alertTxt : base);
-    }, 900);
+        win.flashFrame(true); // 주황 깜빡임 반복
+    }, 1500);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
