@@ -120,12 +120,13 @@ function _updateTitleBlink() {
         if (win) { win.setTitle(base); win.flashFrame(false); }
         return;
     }
-    // 타이틀은 🚨 고정 (폭 변화 없음), flashFrame으로 주황 깜빡임
-    if (win) win.setTitle(alertTxt);
+    if (win) win.flashFrame(true);
+    let idx = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        win.flashFrame(true); // 주황 깜빡임 반복
-    }, 1500);
+        win.setTitle(idx++ % 2 === 0 ? alertTxt : base);
+        win.flashFrame(true);
+    }, 900);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
