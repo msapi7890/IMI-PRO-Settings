@@ -808,7 +808,7 @@
         </div>
         <!-- 스탬프 입력 툴바 (두 번째 행으로 이동) -->
         <div id="schedStampToolbar" style="display:flex;align-items:center;gap:6px;padding:5px 18px;border-bottom:1px solid var(--border-ui);flex-shrink:0;flex-wrap:wrap;">
-            <span style="font-size:10.5px;font-weight:700;opacity:0.45;white-space:nowrap;">✏️ 클릭·드래그로 입력 <span style="font-size:9px;">(같은 버튼 다시 클릭 = 삭제 · Ctrl+클릭 = 두 개 등록)</span>:</span>
+            <span style="font-size:10.5px;font-weight:700;opacity:0.45;white-space:nowrap;">✏️ 클릭·드래그로 입력 <span style="font-size:9px;">(같은 버튼 재클릭 = 삭제 · Ctrl+클릭 = 두 개 등록 · 셀 더블클릭 = 직접입력)</span>:</span>
             <button id="stamp_휴무" onclick="setScheduleStamp('휴무')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #ef4444;background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">휴무</button>
             <button id="stamp_9시" onclick="setScheduleStamp('9시')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #eab308;background:rgba(234,179,8,0.12);color:#eab308;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">9시</button>
             <button id="stamp_12시" onclick="setScheduleStamp('12시')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #d946ef;background:rgba(217,70,239,0.12);color:#d946ef;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">12시</button>
@@ -822,6 +822,12 @@
             <button id="stamp_출장" onclick="setScheduleStamp('출장')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #0ea5e9;background:rgba(14,165,233,0.12);color:#0ea5e9;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">출장</button>
             <button id="stamp_육아" onclick="setScheduleStamp('육아')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #ec4899;background:rgba(236,72,153,0.12);color:#ec4899;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">육아</button>
             <button id="stamp_제외" onclick="setScheduleStamp('제외')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #6b7280;background:rgba(107,114,128,0.12);color:#6b7280;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">✕제외</button>
+            <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 8px;border-radius:7px;border:1.5px dashed #475569;background:rgba(255,255,255,0.02);">
+              <input id="customStampInp" type="text" maxlength="10" placeholder="직접입력"
+                style="width:56px;background:none;border:none;color:#e2e8f0;font-size:11px;font-weight:700;outline:none;"
+                onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v)setScheduleStamp(v);}">
+              <button onclick="var v=document.getElementById('customStampInp').value.trim();if(v)setScheduleStamp(v);" style="padding:2px 7px;border-radius:5px;border:1px solid #475569;background:rgba(255,255,255,0.08);color:#e2e8f0;font-size:10px;font-weight:900;cursor:pointer;line-height:1;">✓</button>
+            </div>
         </div>
         <!-- 테이블 영역 -->
         <div style="flex:1;overflow:hidden;min-height:0;padding:12px 14px;">
@@ -5035,13 +5041,20 @@
     function _onCellDblClick(gIdx, staffId, d) {
         if (window._schedViewMode === 'week' || _schedStamp) return;
         var key = _schedCellKey(gIdx, staffId, d);
-        var curVal = _schedCells[key] || '';
-        var newVal = prompt('내용 직접 입력 (예: 예비군, 병가 등):', curVal);
-        if (newVal !== null) {
-            _schedStamp = newVal.trim();
-            _schedApplyCell(gIdx, staffId, d);
-            setScheduleStamp('');
-        }
+        var curVal = (_schedCells[key]||'').split('|')[0];
+        var cell = document.getElementById('scell_'+key);
+        _showCellInlineEdit(cell, curVal, function(newVal){
+            if(newVal===null) return;
+            var path=_schedFbRoot()+_schedYear+'/'+_schedMonth+'/cells/'+key;
+            if(newVal){
+                _schedCells[key]=newVal;
+                db.ref(path).set(newVal);
+            } else {
+                delete _schedCells[key];
+                db.ref(path).remove();
+            }
+            if(cell) _applySchedCellStyle(cell, newVal, d);
+        });
     }
     
     function _schedValColor(v){
@@ -5073,6 +5086,56 @@
         if(v==='육아') return 'rgba(236,72,153,0.5)';
         if(v==='제외') return 'rgba(107,114,128,0.5)';
         return 'rgba(140,140,140,0.5)';
+    }
+    function _schedPrefixTxt(val, faded){
+        var known=['교육','출장','육아','휴무','연차','반차','안식','9시','12시','15시','17시'];
+        for(var i=0;i<known.length;i++){
+            var kw=known[i];
+            if(val.startsWith(kw)&&val.length>kw.length){
+                var col=faded?_schedValColorFaded(kw):_schedValColor(kw);
+                var sfxCol=faded?'rgba(255,255,255,0.4)':'#fff';
+                return '<span style="color:'+col+';font-weight:900;">'+kw+'</span>'+
+                       '<span style="color:'+sfxCol+';font-weight:900;">'+val.slice(kw.length)+'</span>';
+            }
+        }
+        return '<span style="color:'+(faded?'rgba(200,200,200,0.5)':'#e2e8f0')+';font-weight:800;">'+val+'</span>';
+    }
+    function _showCellInlineEdit(cell, curVal, callback){
+        var rect=cell.getBoundingClientRect();
+        var overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;inset:0;z-index:99999;';
+        var top=rect.bottom+4; if(top+80>window.innerHeight) top=rect.top-88;
+        var left=Math.max(rect.left,4);
+        var box=document.createElement('div');
+        box.style.cssText='position:absolute;top:'+top+'px;left:'+left+'px;'+
+            'background:#1e293b;border:2px solid #3abff8;border-radius:9px;'+
+            'padding:8px 10px;display:flex;flex-direction:column;gap:6px;'+
+            'box-shadow:0 4px 24px rgba(0,0,0,0.6);min-width:140px;z-index:100000;';
+        var inp=document.createElement('input');
+        inp.value=curVal; inp.placeholder='교육1차, 예비군...';
+        inp.style.cssText='background:#0f172a;border:1.5px solid #334155;border-radius:6px;'+
+            'color:#e2e8f0;font-size:12px;font-weight:700;padding:5px 9px;outline:none;'+
+            'width:100%;box-sizing:border-box;';
+        var btnRow=document.createElement('div');
+        btnRow.style.cssText='display:flex;gap:6px;';
+        var btnOk=document.createElement('button');
+        btnOk.textContent='완료';
+        btnOk.style.cssText='flex:1;background:#3abff8;color:#0f172a;border:none;border-radius:6px;'+
+            'padding:5px 0;font-size:11px;font-weight:900;cursor:pointer;';
+        var btnDel=document.createElement('button');
+        btnDel.textContent='삭제';
+        btnDel.style.cssText='flex:1;background:rgba(239,68,68,0.15);color:#ef4444;'+
+            'border:1px solid #ef4444;border-radius:6px;padding:5px 0;font-size:11px;font-weight:900;cursor:pointer;';
+        function doOk(){ document.body.removeChild(overlay); callback(inp.value.trim()); }
+        function doDel(){ document.body.removeChild(overlay); callback(''); }
+        function doCancel(){ document.body.removeChild(overlay); callback(null); }
+        btnOk.onclick=doOk; btnDel.onclick=doDel;
+        overlay.onclick=function(e){ if(e.target===overlay) doCancel(); };
+        inp.onkeydown=function(e){ if(e.key==='Enter') doOk(); if(e.key==='Escape') doCancel(); };
+        btnRow.appendChild(btnOk); btnRow.appendChild(btnDel);
+        box.appendChild(inp); box.appendChild(btnRow);
+        overlay.appendChild(box); document.body.appendChild(overlay);
+        setTimeout(function(){ inp.focus(); inp.select(); },30);
     }
     function _schedDualTxt(parts, faded){
         var c0 = faded ? _schedValColorFaded(parts[0]) : _schedValColor(parts[0]);
@@ -5181,8 +5244,8 @@
             if(vspan) vspan.innerHTML='15시';
             cell.style.background=baseBg; cell.style.color='#06b6d4'; cell.style.fontWeight='900';
         } else {
-            if(vspan) vspan.innerHTML=val;
-            cell.style.background=baseBg; cell.style.color='var(--text-main)'; cell.style.fontWeight='800';
+            if(vspan) vspan.innerHTML=_schedPrefixTxt(val, false);
+            cell.style.background=baseBg; cell.style.color=''; cell.style.fontWeight='';
         }
     }
     function _schedSaveName(gKey, staffId, val){
@@ -5633,7 +5696,7 @@
                         else if(val==='출장'){color=isCur?'#0ea5e9':'rgba(14,165,233,0.5)';fw='900';txt='출장';}
                         else if(val==='육아'){color=isCur?'#ec4899':'rgba(236,72,153,0.5)';fw='900';txt='육아';}
                         else if(val==='제외'){color=isCur?'#6b7280':'rgba(107,114,128,0.4)';fw='900';txt='<span style="font-size:15px;opacity:0.55;">✕</span>';}
-                        else if(val){ color=isCur?'var(--text-main)':'rgba(140,140,140,0.5)'; fw='800'; txt=val; }
+                        else if(val){ color=''; fw=''; txt=_schedPrefixTxt(val,!isCur); }
 
                         var foldColor=memo?'#ef4444':'rgba(130,130,130,0.13)';
                         if (!isCur && memo) foldColor = 'rgba(239,68,68,0.4)';
