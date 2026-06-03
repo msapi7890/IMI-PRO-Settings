@@ -819,6 +819,9 @@
             <button id="stamp_반차" onclick="setScheduleStamp('반차')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #f97316;background:rgba(249,115,22,0.12);color:#f97316;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">반차</button>
             <button id="stamp_안식" onclick="setScheduleStamp('안식')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #14b8a6;background:rgba(20,184,166,0.12);color:#14b8a6;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">안식</button>
             <button id="stamp_교육" onclick="setScheduleStamp('교육')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #2563eb;background:rgba(37,99,235,0.12);color:#2563eb;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">교육</button>
+            <button id="stamp_출장" onclick="setScheduleStamp('출장')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #0ea5e9;background:rgba(14,165,233,0.12);color:#0ea5e9;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">출장</button>
+            <button id="stamp_육아" onclick="setScheduleStamp('육아')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #ec4899;background:rgba(236,72,153,0.12);color:#ec4899;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">육아</button>
+            <button id="stamp_제외" onclick="setScheduleStamp('제외')" style="padding:4px 11px;border-radius:7px;border:1.5px solid #6b7280;background:rgba(107,114,128,0.12);color:#6b7280;font-size:11px;font-weight:900;cursor:pointer;transition:all 0.15s;">✕제외</button>
         </div>
         <!-- 테이블 영역 -->
         <div style="flex:1;overflow:hidden;min-height:0;padding:12px 14px;">
@@ -4893,8 +4896,8 @@
     function setScheduleStamp(val){
         if(val && val===_schedStamp){ val=''; } /* 같은 버튼 재클릭 → 해제 */
         _schedStamp = val || '';
-        var btnIds = ['stamp_휴무','stamp_9시','stamp_12시','stamp_15시','stamp_17시','stamp_연차','stamp_반차','stamp_안식','stamp_교육'];
-        var btnVals = ['휴무','9시','12시','15시','17시','연차','반차','안식','교육'];
+        var btnIds = ['stamp_휴무','stamp_9시','stamp_12시','stamp_15시','stamp_17시','stamp_연차','stamp_반차','stamp_안식','stamp_교육','stamp_출장','stamp_육아','stamp_제외'];
+        var btnVals = ['휴무','9시','12시','15시','17시','연차','반차','안식','교육','출장','육아','제외'];
         btnIds.forEach(function(id, i){
             var btn = document.getElementById(id);
             if(!btn) return;
@@ -5051,6 +5054,9 @@
         if(v==='9시')  return '#eab308';
         if(v==='15시') return '#06b6d4';
         if(v==='교육') return '#2563eb';
+        if(v==='출장') return '#0ea5e9';
+        if(v==='육아') return '#ec4899';
+        if(v==='제외') return '#6b7280';
         return 'var(--text-main)';
     }
     function _schedValColorFaded(v){
@@ -5063,6 +5069,9 @@
         if(v==='9시')  return 'rgba(234,179,8,0.5)';
         if(v==='15시') return 'rgba(6,182,212,0.5)';
         if(v==='교육') return 'rgba(37,99,235,0.5)';
+        if(v==='출장') return 'rgba(14,165,233,0.5)';
+        if(v==='육아') return 'rgba(236,72,153,0.5)';
+        if(v==='제외') return 'rgba(107,114,128,0.5)';
         return 'rgba(140,140,140,0.5)';
     }
     function _schedDualTxt(parts, faded){
@@ -5156,6 +5165,15 @@
         } else if(val==='교육'){
             if(vspan) vspan.innerHTML='교육';
             cell.style.background=baseBg; cell.style.color='#2563eb'; cell.style.fontWeight='900';
+        } else if(val==='출장'){
+            if(vspan) vspan.innerHTML='출장';
+            cell.style.background=baseBg; cell.style.color='#0ea5e9'; cell.style.fontWeight='900';
+        } else if(val==='육아'){
+            if(vspan) vspan.innerHTML='육아';
+            cell.style.background=baseBg; cell.style.color='#ec4899'; cell.style.fontWeight='900';
+        } else if(val==='제외'){
+            if(vspan) vspan.innerHTML='<span style="font-size:15px;font-weight:900;opacity:0.55;">✕</span>';
+            cell.style.background='rgba(107,114,128,0.08)'; cell.style.color='#6b7280'; cell.style.fontWeight='900';
         } else if(val==='9시'){
             if(vspan) vspan.innerHTML='9시';
             cell.style.background=baseBg; cell.style.color='#eab308'; cell.style.fontWeight='900';
@@ -5612,6 +5630,9 @@
                         else if(val==='9시'){color=isCur?'#eab308':'rgba(234,179,8,0.5)';fw='900';txt='9시';}
                         else if(val==='15시'){color=isCur?'#06b6d4':'rgba(6,182,212,0.5)';fw='900';txt='15시';}
                         else if(val==='교육'){color=isCur?'#2563eb':'rgba(37,99,235,0.5)';fw='900';txt='교육';}
+                        else if(val==='출장'){color=isCur?'#0ea5e9':'rgba(14,165,233,0.5)';fw='900';txt='출장';}
+                        else if(val==='육아'){color=isCur?'#ec4899':'rgba(236,72,153,0.5)';fw='900';txt='육아';}
+                        else if(val==='제외'){color=isCur?'#6b7280':'rgba(107,114,128,0.4)';fw='900';txt='<span style="font-size:15px;opacity:0.55;">✕</span>';}
                         else if(val){ color=isCur?'var(--text-main)':'rgba(140,140,140,0.5)'; fw='800'; txt=val; }
 
                         var foldColor=memo?'#ef4444':'rgba(130,130,130,0.13)';
@@ -5659,7 +5680,7 @@
                 } else {
                     ids.forEach(function(staffId,ci){
                         var lb2=ci===0?lb:'';
-                        var hwCnt=0, yCnt=0, bCnt=0, anCnt=0, edCnt=0;
+                        var hwCnt=0, yCnt=0, bCnt=0, anCnt=0, edCnt=0, naCnt=0;
                         for(var dd_idx=0; dd_idx<targetDays.length; dd_idx++){
                             var tDay=targetDays[dd_idx];
                             var k = _schedCellKey(gIdx,staffId,tDay.d);
@@ -5677,13 +5698,14 @@
                             else if(_vf==='반차') bCnt++;
                             else if(_vf==='안식') anCnt++;
                             else if(_vf==='교육') edCnt++;
+                            else if(_vf==='육아') naCnt++;
                         }
-                        var total = hwCnt + yCnt + bCnt * 0.5 + anCnt;
+                        var total = hwCnt + yCnt + bCnt * 0.5 + anCnt + naCnt;
                         var totalStr = total > 0 ? total+'일' : '—';
                         var hasBan = bCnt > 0;
                         var bg = total > 0 ? 'rgba(239,68,68,0.15)' : 'var(--bg-body)';
                         var col = total > 0 ? '#ef4444' : 'rgba(140,140,140,0.4)';
-                        var tip = total > 0 ? ('휴무'+hwCnt+'·연차'+yCnt+(hasBan?'·반차'+bCnt+'(×0.5)':'')+(anCnt?'·안식'+anCnt:'')) : '';
+                        var tip = total > 0 ? ('휴무'+hwCnt+'·연차'+yCnt+(hasBan?'·반차'+bCnt+'(×0.5)':'')+(anCnt?'·안식'+anCnt:'')+(naCnt?'·육아'+naCnt:'')) : '';
                         html+='<td title="'+tip+'" style="'+cs+lb2+'width:'+SWpct+';height:'+(footH/2.2)+'px;text-align:center;vertical-align:middle;'+
                             'background:'+bg+';color:'+col+';'+
                             'font-weight:900;font-size:10px;padding:0;white-space:nowrap;line-height:1;cursor:'+(tip?'help':'default')+';">'+
@@ -7917,7 +7939,7 @@
         for(var c=0;c<headers.length;c++){if(headers[c]==='날짜'||headers[c]==='일'){dateCol=c;break;}}
         /* 날짜 헤더 없으면 첫 셀이 숫자인 데이터행 여부로 판단 */
         if(dateCol<0){for(var r2=staffHdrIdx+1;r2<Math.min(rows.length,staffHdrIdx+5);r2++){if(/^[1-9]\d?$/.test(((rows[r2]||[])[0]||'').trim())){dateCol=0;break;}}}
-        var KNOWN_VAL={휴무:1,연차:1,반차:1,안식:1,교육:1,'9시':1,'12시':1,'15시':1,'17시':1};
+        var KNOWN_VAL={휴무:1,연차:1,반차:1,안식:1,교육:1,'9시':1,'12시':1,'15시':1,'17시':1,출장:1,육아:1,제외:1};
         /* 테이블 HTML */
         var html='<table style="border-collapse:collapse;font-size:10.5px;white-space:nowrap;width:100%;">';
         rows.forEach(function(row,ri){
@@ -7946,7 +7968,7 @@
                     var gc2=_GCOL[_PASTE_GRP[cell]]||'#888';
                     content='<span style="color:'+gc2+';font-weight:900;">'+cell+'</span>';
                 } else if(isDataRow&&KNOWN_VAL[cell]){
-                    var vc={'휴무':'#ef4444','연차':'#f59e0b','반차':'#f97316','안식':'#8b5cf6','교육':'#2563eb','9시':'#eab308','12시':'#d946ef','15시':'#06b6d4','17시':'#22c55e'}[cell]||'#6b7280';
+                    var vc={'휴무':'#ef4444','연차':'#f59e0b','반차':'#f97316','안식':'#8b5cf6','교육':'#2563eb','9시':'#eab308','12시':'#d946ef','15시':'#06b6d4','17시':'#22c55e','출장':'#0ea5e9','육아':'#ec4899','제외':'#6b7280'}[cell]||'#6b7280';
                     content='<span style="background:'+vc+'22;color:'+vc+';padding:1px 5px;border-radius:5px;font-weight:900;font-size:9.5px;">'+cell+'</span>';
                 }
                 if(isTimeHdr||isGrpHdr||isStaffHdr)tdStyle+='font-weight:700;';
@@ -8040,7 +8062,7 @@
         Object.keys(staffGroupUpdates).forEach(function(gKey){
             updates[_schedFbRoot()+'staff_by_month/'+year+'/'+month+'/'+gKey]=staffGroupUpdates[gKey];
         });
-        var KNOWN={'휴무':1,'연차':1,'반차':1,'안식':1,'교육':1,'9시':1,'12시':1,'15시':1,'17시':1};
+        var KNOWN={'휴무':1,'연차':1,'반차':1,'안식':1,'교육':1,'9시':1,'12시':1,'15시':1,'17시':1,'출장':1,'육아':1,'제외':1};
         for(var r=staffHdrIdx+1;r<rows.length;r++){
             var row=rows[r];
             var day;
