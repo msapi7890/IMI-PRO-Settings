@@ -153,7 +153,7 @@ function createWindow() {
     // 페이지 title 변경 완전 차단 — 항상 고정 타이틀 유지
     win.on('page-title-updated', (e) => {
         e.preventDefault();
-        win.setTitle('IMI PRO v' + appDisplayVersion());
+        // 타이틀은 _updateTitleBlink가 전담 — 페이지 title 변경만 차단
     });
 
     // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
@@ -171,6 +171,7 @@ function createWindow() {
 
     win.once('ready-to-show', () => {
         win.show();
+        _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
