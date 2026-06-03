@@ -120,12 +120,11 @@ function _updateTitleBlink() {
         if (win) { win.setTitle(base); win.flashFrame(false); }
         return;
     }
-    if (win) win.flashFrame(true);
+    if (win) win.flashFrame(true); // 포커스 시 Windows가 자동 정지
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
         win.setTitle(idx++ % 2 === 0 ? alertTxt : base);
-        win.flashFrame(true);
     }, 900);
 }
 
