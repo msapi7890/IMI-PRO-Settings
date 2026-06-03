@@ -9059,6 +9059,8 @@
     _applyBodyZoom();
 
     window.onload = function(){
+        // 페이지 로드 시 main.js 깜빡임 상태 초기화
+        if (window.electronAPI && window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false, []);
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
         _loadGlobalTodayOnly();
