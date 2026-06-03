@@ -109,14 +109,15 @@ function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
-    const base = 'IMI PRO v' + appDisplayVersion();
+    /* 두 타이틀 모두 충분히 길게 → 항상 truncate → 버튼 너비 고정 */
+    const ver   = appDisplayVersion();
+    const base  = 'IMI PRO v' + ver + ' — 실행 중';
+    const alert = '🚨 감지 | IMI PRO v' + ver;
     if (labels.length === 0) { if (win) win.setTitle(base); return; }
-    /* 🚨 IMI PRO ↔ IMI PRO 만 토글 — 너비 변동 최소화 */
     let idx = 0;
-    const titles = [base, '🚨 ' + base];
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        win.setTitle(titles[idx++ % 2]);
+        win.setTitle(idx++ % 2 === 0 ? alert : base);
     }, 900);
 }
 
