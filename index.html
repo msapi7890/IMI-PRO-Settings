@@ -347,26 +347,20 @@
         body.light-mode .memo-sec-hdr h3 { color: #374151; }
         body.green-mode .memo-sec-hdr h3 { color: #1e3a1e; }
     /* ── 플립 시계 ── */
-    .fc-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;}
-    .fc-date{font-size:12px;font-weight:900;opacity:0.6;letter-spacing:0.06em;white-space:nowrap;color:var(--text-main);}
-    .fc-row{display:flex;align-items:center;gap:4px;}
-    .fc-sep{font-size:20px;font-weight:900;opacity:0.5;color:var(--text-main);line-height:1;margin:0 2px;padding-bottom:4px;}
-    /* 카드: 30×40px, 절반 20px */
-    .fc-d{width:28px;height:40px;position:relative;perspective:150px;}
-    .fc-upper,.fc-lower,.fc-ft,.fc-fb{position:absolute;left:0;width:100%;height:20px;overflow:hidden;background:#111827;box-sizing:border-box;}
-    .fc-upper{top:0;border-radius:5px 5px 0 0;border-bottom:1.5px solid rgba(0,0,0,0.7);}
-    .fc-lower{bottom:0;border-radius:0 0 5px 5px;}
-    .fc-ft{top:0;border-radius:5px 5px 0 0;border-bottom:1.5px solid rgba(0,0,0,0.7);transform-origin:bottom center;z-index:2;backface-visibility:hidden;}
-    .fc-fb{bottom:0;border-radius:0 0 5px 5px;transform-origin:top center;transform:rotateX(90deg);z-index:2;backface-visibility:hidden;}
-    /* 숫자: font-size=28, line-height=40 → (40-28)/2=6px 패딩 → 정확히 절반 클리핑 */
-    .fc-upper .fc-n,.fc-ft .fc-n{position:absolute;top:0;left:0;right:0;text-align:center;font-size:28px;font-weight:900;line-height:40px;color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;}
-    .fc-lower .fc-n,.fc-fb .fc-n{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:28px;font-weight:900;line-height:40px;color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;}
-    @keyframes _fcFT{0%{transform:rotateX(0deg)}100%{transform:rotateX(-90deg)}}
-    @keyframes _fcFB{0%{transform:rotateX(90deg)}100%{transform:rotateX(0deg)}}
-    .fc-ft.go{animation:_fcFT 0.22s ease-in forwards;}
-    .fc-fb.go{animation:_fcFB 0.22s ease-out 0.22s forwards;}
-    body.light-mode .fc-upper,body.light-mode .fc-lower,body.light-mode .fc-ft,body.light-mode .fc-fb{background:#334155;}
-    body.green-mode .fc-upper,body.green-mode .fc-lower,body.green-mode .fc-ft,body.green-mode .fc-fb{background:#1e3a1e;}
+    .fc-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;user-select:none;}
+    .fc-date{font-size:13px;font-weight:900;opacity:0.6;letter-spacing:0.05em;white-space:nowrap;color:var(--text-main);}
+    .fc-row{display:flex;align-items:center;gap:3px;}
+    .fc-sep{font-size:14px;font-weight:900;opacity:0.5;color:var(--text-main);line-height:1;margin:0 1px;}
+    .fc-d{width:16px;height:20px;overflow:hidden;position:relative;background:#1e293b;border-radius:4px;}
+    .fc-n{position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:900;line-height:20px;color:#f1f5f9;}
+    .fc-n.cur{top:0;}
+    .fc-n.nxt{top:100%;}
+    @keyframes _fcOut{0%{top:0}100%{top:-100%}}
+    @keyframes _fcIn{0%{top:100%}100%{top:0}}
+    .fc-n.out{animation:_fcOut 0.18s ease-in forwards;}
+    .fc-n.in{animation:_fcIn 0.18s ease-out forwards;}
+    body.light-mode .fc-d{background:#334155;}
+    body.green-mode .fc-d{background:#1e3a1e;}
     </style>
     <script src="terms.js"></script>
 </head>
@@ -8811,20 +8805,14 @@
     })();
 
     /* ── 플립 시계 ── */
-    var _fcPrev={}, _fcFlipping={};
+    var _fcPrev={}, _fcBusy={};
     function _fcMake(id){
-        return '<div class="fc-d" id="'+id+'">'
-            +'<div class="fc-upper"><div class="fc-n">0</div></div>'
-            +'<div class="fc-lower"><div class="fc-n">0</div></div>'
-            +'<div class="fc-ft"><div class="fc-n">0</div></div>'
-            +'<div class="fc-fb"><div class="fc-n">0</div></div>'
-            +'</div>';
+        return '<div class="fc-d" id="'+id+'"><div class="fc-n cur">0</div></div>';
     }
     function _fcInit(){
         var el=document.getElementById('liveClock');
         if(!el||el.querySelector('.fc-wrap')) return;
-        el.innerHTML=
-            '<div class="fc-wrap">'
+        el.innerHTML='<div class="fc-wrap">'
             +'<div class="fc-date" id="fcDate"></div>'
             +'<div class="fc-row">'
             +_fcMake('fc0')+_fcMake('fc1')
@@ -8835,26 +8823,19 @@
             +'</div></div>';
     }
     function _fcSet(id, ch){
-        if(_fcPrev[id]===ch||_fcFlipping[id]) return;
-        var prev=_fcPrev[id]||'0';
-        _fcPrev[id]=ch; _fcFlipping[id]=true;
-        var el=document.getElementById(id);
-        if(!el){ _fcFlipping[id]=false; return; }
-        var upper=el.querySelector('.fc-upper .fc-n');
-        var lower=el.querySelector('.fc-lower .fc-n');
-        var ft=el.querySelector('.fc-ft'); var fb=el.querySelector('.fc-fb');
-        lower.textContent=ch;
-        ft.querySelector('.fc-n').textContent=prev;
-        fb.querySelector('.fc-n').textContent=ch;
-        ft.classList.remove('go'); fb.classList.remove('go');
-        void ft.offsetWidth;
-        ft.classList.add('go'); fb.classList.add('go');
+        if(_fcPrev[id]===ch||_fcBusy[id]) return;
+        _fcPrev[id]=ch; _fcBusy[id]=true;
+        var el=document.getElementById(id); if(!el){_fcBusy[id]=false;return;}
+        var cur=el.querySelector('.fc-n.cur');
+        var nxt=document.createElement('div');
+        nxt.className='fc-n in'; nxt.textContent=ch;
+        el.appendChild(nxt);
+        cur.classList.add('out');
         setTimeout(function(){
-            upper.textContent=ch;
-            ft.classList.remove('go'); fb.classList.remove('go');
-            ft.querySelector('.fc-n').textContent=ch;
-            _fcFlipping[id]=false;
-        },450);
+            cur.remove();
+            nxt.classList.remove('in'); nxt.classList.add('cur');
+            _fcBusy[id]=false;
+        },200);
     }
     function updateClock(){
         _fcInit();
