@@ -182,6 +182,15 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
+    // 포커스 시 깜빡임 정지, 포커스 해제 시 재시작
+    win.on('focus', () => {
+        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+        win.flashFrame(false);
+        const ver = appDisplayVersion();
+        win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
+    });
+    win.on('blur', () => { _updateTitleBlink(); });
+
     // F5 / Ctrl+R 새로고침 단축키 복원
     win.webContents.on('before-input-event', (event, input) => {
         if (input.type !== 'keyDown') return;
