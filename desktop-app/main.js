@@ -111,7 +111,7 @@ function _updateTitleBlink() {
     const labels  = [...new Set(merged)];
     const ver      = appDisplayVersion();
     const base     = 'IMI PRO v' + ver;
-    const alertTxt = '🚨 ' + labels.join('·') + ' 감지';
+    const alertTxt = '🚨 비거래 감지';
     if (labels.length === 0) { if (win) win.setTitle(base); return; }
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
