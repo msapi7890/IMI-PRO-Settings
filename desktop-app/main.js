@@ -110,8 +110,8 @@ function _updateTitleBlink() {
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
     const ver      = appDisplayVersion();
-    const base     = 'IMI PRO v' + ver;
-    const alertTxt = '🚨 비거래 감지';
+    const base     = 'IMI PRO v' + ver + ' 🟢';
+    const alertTxt = 'IMI PRO v' + ver + ' 🚨';
     if (labels.length === 0) { if (win) win.setTitle(base); return; }
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
