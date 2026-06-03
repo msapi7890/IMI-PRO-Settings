@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, Notification, shell, dialog } = require('electron');
 
+
 // ── 단일 인스턴스 잠금 ────────────────────────────────────
 if (!app.requestSingleInstanceLock()) {
     app.quit();
@@ -178,8 +179,11 @@ function createWindow() {
     // F5 / Ctrl+R 새로고침 단축키 복원
     win.webContents.on('before-input-event', (event, input) => {
         if (input.type !== 'keyDown') return;
-        if (input.key === 'F5' || (input.control && input.key === 'r')) {
+        if (input.key === 'F5' || (input.control && (input.key === 'r' || input.key === 'R'))) {
             win.webContents.reloadIgnoringCache();
+        }
+        if (input.key === 'F12' || (input.control && input.shift && (input.key === 'i' || input.key === 'I'))) {
+            win.webContents.toggleDevTools();
         }
     });
 
