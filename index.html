@@ -347,18 +347,28 @@
         body.light-mode .memo-sec-hdr h3 { color: #374151; }
         body.green-mode .memo-sec-hdr h3 { color: #1e3a1e; }
     /* ── 플립 시계 ── */
-    .fc-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;user-select:none;}
-    .fc-date{font-size:13px;font-weight:900;opacity:0.7;letter-spacing:0.04em;white-space:nowrap;color:var(--text-main);}
+    .fc-wrap{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+    .fc-date{font-size:14px;font-weight:900;opacity:0.7;letter-spacing:0.04em;white-space:nowrap;color:var(--text-main);}
     .fc-row{display:flex;align-items:center;gap:3px;}
-    .fc-sep{font-size:18px;font-weight:900;opacity:0.6;color:var(--text-main);line-height:1;margin:0 1px;padding-top:1px;}
-    .fc-d{width:22px;height:30px;perspective:160px;position:relative;}
-    .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:none;}
-    .fc-front,.fc-back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:5px;background:#1a2540;font-size:20px;font-weight:900;color:#e2e8f0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-    .fc-back{transform:rotateX(-180deg);}
-    @keyframes _fcFlip{0%{transform:rotateX(0deg)}100%{transform:rotateX(-180deg)}}
-    .fc-card.flipping{animation:_fcFlip 0.35s ease-in-out forwards;}
-    body.light-mode .fc-front,body.light-mode .fc-back{background:#334155;}
-    body.green-mode .fc-front,body.green-mode .fc-back{background:#2d4a2d;}
+    .fc-sep{font-size:18px;font-weight:900;opacity:0.6;color:var(--text-main);line-height:1;margin:0 1px;}
+    .fc-d{width:20px;height:30px;position:relative;perspective:120px;}
+    /* 상단/하단 고정 표시 */
+    .fc-upper,.fc-lower{position:absolute;left:0;width:100%;height:15px;overflow:hidden;background:#1a2540;}
+    .fc-upper{top:0;border-radius:4px 4px 0 0;border-bottom:1px solid rgba(0,0,0,0.5);}
+    .fc-lower{bottom:0;border-radius:0 0 4px 4px;}
+    .fc-upper .fc-n{position:absolute;top:0;left:0;right:0;text-align:center;font-size:20px;font-weight:900;line-height:30px;color:#e2e8f0;}
+    .fc-lower .fc-n{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:20px;font-weight:900;line-height:30px;color:#e2e8f0;}
+    /* 플리핑 패널 */
+    .fc-ft{position:absolute;top:0;left:0;width:100%;height:15px;overflow:hidden;background:#1a2540;border-radius:4px 4px 0 0;border-bottom:1px solid rgba(0,0,0,0.5);transform-origin:bottom center;z-index:2;}
+    .fc-fb{position:absolute;bottom:0;left:0;width:100%;height:15px;overflow:hidden;background:#1a2540;border-radius:0 0 4px 4px;transform-origin:top center;transform:rotateX(90deg);z-index:2;}
+    .fc-ft .fc-n{position:absolute;top:0;left:0;right:0;text-align:center;font-size:20px;font-weight:900;line-height:30px;color:#e2e8f0;}
+    .fc-fb .fc-n{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:20px;font-weight:900;line-height:30px;color:#e2e8f0;}
+    @keyframes _fcFT{0%{transform:rotateX(0deg)}100%{transform:rotateX(-90deg)}}
+    @keyframes _fcFB{0%{transform:rotateX(90deg)}100%{transform:rotateX(0deg)}}
+    .fc-ft.go{animation:_fcFT 0.2s ease-in forwards;}
+    .fc-fb.go{animation:_fcFB 0.2s ease-out 0.2s forwards;}
+    body.light-mode .fc-upper,body.light-mode .fc-lower,body.light-mode .fc-ft,body.light-mode .fc-fb{background:#334155;}
+    body.green-mode .fc-upper,body.green-mode .fc-lower,body.green-mode .fc-ft,body.green-mode .fc-fb{background:#2d4a2d;}
     </style>
     <script src="terms.js"></script>
 </head>
@@ -8803,13 +8813,14 @@
     })();
 
     /* ── 플립 시계 ── */
-    var _fcPrev={};
+    var _fcPrev={}, _fcFlipping={};
     function _fcMake(id){
         return '<div class="fc-d" id="'+id+'">'
-            +'<div class="fc-card">'
-            +'<div class="fc-front">0</div>'
-            +'<div class="fc-back">0</div>'
-            +'</div></div>';
+            +'<div class="fc-upper"><div class="fc-n">0</div></div>'
+            +'<div class="fc-lower"><div class="fc-n">0</div></div>'
+            +'<div class="fc-ft"><div class="fc-n">0</div></div>'
+            +'<div class="fc-fb"><div class="fc-n">0</div></div>'
+            +'</div>';
     }
     function _fcInit(){
         var el=document.getElementById('liveClock');
@@ -8825,24 +8836,27 @@
             +_fcMake('fc4')+_fcMake('fc5')
             +'</div></div>';
     }
-    var _fcFlipping={};
     function _fcSet(id, ch){
         if(_fcPrev[id]===ch||_fcFlipping[id]) return;
-        _fcPrev[id]=ch;
+        var prev=_fcPrev[id]||'0';
+        _fcPrev[id]=ch; _fcFlipping[id]=true;
         var el=document.getElementById(id);
-        if(!el) return;
-        var card=el.querySelector('.fc-card');
-        var front=el.querySelector('.fc-front');
-        var back=el.querySelector('.fc-back');
-        back.textContent=ch;
-        _fcFlipping[id]=true;
-        card.classList.add('flipping');
+        if(!el){ _fcFlipping[id]=false; return; }
+        var upper=el.querySelector('.fc-upper .fc-n');
+        var lower=el.querySelector('.fc-lower .fc-n');
+        var ft=el.querySelector('.fc-ft'); var fb=el.querySelector('.fc-fb');
+        lower.textContent=ch;
+        ft.querySelector('.fc-n').textContent=prev;
+        fb.querySelector('.fc-n').textContent=ch;
+        ft.classList.remove('go'); fb.classList.remove('go');
+        void ft.offsetWidth;
+        ft.classList.add('go'); fb.classList.add('go');
         setTimeout(function(){
-            card.classList.remove('flipping');
-            front.textContent=ch;
-            back.textContent=ch;
+            upper.textContent=ch;
+            ft.classList.remove('go'); fb.classList.remove('go');
+            ft.querySelector('.fc-n').textContent=ch;
             _fcFlipping[id]=false;
-        },360);
+        },450);
     }
     function updateClock(){
         _fcInit();
