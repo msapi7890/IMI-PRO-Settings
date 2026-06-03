@@ -9204,8 +9204,19 @@
         switchMode('mania'); updateFontSize(_savedFont); loadMemos(); switchChatTab(1);
         // 레이아웃 완전 정착 후 이미지 크기 재계산 (초기 chatBox.clientWidth=0 문제 해결)
         setTimeout(function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); }, 200);
+        setTimeout(function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); }, 800);
         if(localStorage.getItem('tickerCollapsed')==='1') toggleTicker();
         window.addEventListener('resize', function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); });
+        // chatBox 크기 변동 시 이미지 크기 자동 재계산
+        (function(){
+            var cb = document.getElementById('chatBox');
+            if(!cb || !window.ResizeObserver) return;
+            var _lastW = 0;
+            new ResizeObserver(function(){
+                var w = cb.clientWidth;
+                if(w > 0 && w !== _lastW){ _lastW = w; updateFontSize(parseInt(document.getElementById('fontSlider').value)); }
+            }).observe(cb);
+        })();
         // 채팅창 휠 스크롤 세분화 (기본 스크롤보다 작은 고정 단계)
         (function(){
             var cb = document.getElementById('chatBox');
