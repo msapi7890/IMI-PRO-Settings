@@ -9710,20 +9710,14 @@
 
         window.electronAPI.onUpdateStatus(function(data){
             if(data.type === 'downloading'){
-                overlay.style.display = 'flex';
-                icon.textContent  = '🔄';
-                title.textContent = '업데이트 다운로드 중' + (data.version ? ' (v'+data.version+')' : '') + '...';
-                sub.textContent   = '앱을 그냥 사용하셔도 됩니다. 다운로드 완료 후 재시작 버튼이 나타납니다.';
-                var p = data.percent || 0;
-                bar.style.width   = p + '%';
-                pct.textContent   = p + '%';
-                restBtn.style.display = 'none';
-                if(note) note.style.display = '';
+                /* 다운로드 중엔 오버레이 숨김 — 메뉴 배지만 표시 */
+                overlay.style.display = 'none';
             } else if(data.type === 'downloaded'){
+                /* 완료됐을 때만 오버레이 표시 */
                 overlay.style.display = 'flex';
                 icon.textContent  = '✅';
-                title.textContent = '업데이트 완료! (v'+data.version+')';
-                sub.textContent   = '재시작하면 새 버전이 바로 적용됩니다.';
+                title.textContent = '업데이트 준비 완료 (v'+data.version+')';
+                sub.textContent   = '지금 바로 재시작하거나, 다음에 껐다 켜도 자동 적용됩니다.';
                 bar.style.width   = '100%';
                 pct.textContent   = '100%';
                 restBtn.style.display = 'block';
