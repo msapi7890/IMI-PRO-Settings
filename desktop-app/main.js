@@ -109,10 +109,10 @@ function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
-    /* 두 타이틀 모두 충분히 길게 → 항상 truncate → 버튼 너비 고정 */
-    const ver   = appDisplayVersion();
-    const base  = 'IMI PRO v' + ver + ' — 실행 중';
-    const alert = '🚨 감지 | IMI PRO v' + ver;
+    const NB   = ' '; // non-breaking space — Windows가 trim 안 함
+    const ver  = appDisplayVersion();
+    const base  = 'IMI PRO v' + ver + NB + NB + NB; // 🚨+space 너비 보정
+    const alert = '🚨 IMI PRO v' + ver;
     if (labels.length === 0) { if (win) win.setTitle(base); return; }
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
