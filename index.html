@@ -9337,25 +9337,13 @@
         _doTitleBlink(Object.values(_tabBlinkLabels));
     }
 
-    // watchHeaderTab 가시성 감지 → 비거래 탭 열릴 때 자동 깜빡임 시작
-    (function(){
-        function _checkWatchTabBlink() {
-            var tab = document.getElementById('watchHeaderTab');
-            if (tab && tab.style.display === 'flex') {
-                _startTabBlink('비거래', 0, 'watch');
-            }
+    // 비거래 탭 상태 주기적 감시 → 탭 보이면 깜빡임 보장
+    setInterval(function() {
+        var tab = document.getElementById('watchHeaderTab');
+        if (tab && tab.style.display === 'flex') {
+            if (!_tabBlinkLabels['watch']) _startTabBlink('비거래', 0, 'watch');
         }
-        window.addEventListener('load', function(){
-            var tab = document.getElementById('watchHeaderTab');
-            if (!tab) return;
-            _checkWatchTabBlink();
-            new MutationObserver(function(muts) {
-                muts.forEach(function(m) {
-                    if (m.attributeName === 'style') _checkWatchTabBlink();
-                });
-            }).observe(tab, { attributes: true, attributeFilter: ['style'] });
-        });
-    })();
+    }, 500);
 
     function _startWatchBlink() {
         if(_watchBlinkTimer) return;
