@@ -9337,11 +9337,17 @@
         _doTitleBlink(Object.values(_tabBlinkLabels));
     }
 
-    // 비거래 탭 상태 주기적 감시 → 탭 보이면 깜빡임 보장
+    // 비거래 탭 상태 주기적 감시 → 탭 보이면 깜빡임, 없으면 멈춤
+    var _autoWatchBlink = false;
     setInterval(function() {
         var tab = document.getElementById('watchHeaderTab');
-        if (tab && tab.style.display === 'flex') {
-            if (!_tabBlinkLabels['watch']) _startTabBlink('비거래', 0, 'watch');
+        var visible = !!(tab && tab.style.display === 'flex');
+        if (visible && !_autoWatchBlink) {
+            _autoWatchBlink = true;
+            _startTabBlink('비거래', 0, 'watch');
+        } else if (!visible && _autoWatchBlink) {
+            _autoWatchBlink = false;
+            _stopTabBlink('watch');
         }
     }, 500);
 
