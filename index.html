@@ -699,6 +699,11 @@
                 <input type="range" id="cropEditorBotSlider" min="2" max="100" value="100" oninput="updateCropPreview()" style="width:100%;margin-top:5px;accent-color:var(--active-focus-color);">
             </label>
         </div>
+        <div id="cropEditorPageNav" style="display:none;align-items:center;justify-content:center;gap:12px;flex-shrink:0;">
+            <button onclick="_cropEditorPrevPage()" style="padding:3px 10px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;font-size:13px;">◀</button>
+            <span id="cropEditorPageLabel" style="font-size:11px;font-weight:900;color:var(--active-focus-color);min-width:40px;text-align:center;"></span>
+            <button onclick="_cropEditorNextPage()" style="padding:3px 10px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-main);cursor:pointer;font-size:13px;">▶</button>
+        </div>
         <div style="flex:1;overflow-y:auto;min-height:100px;">
             <div id="cropEditorPreview" style="position:relative;border:2px solid var(--border-ui);border-radius:10px;overflow:hidden;line-height:0;">
                 <img id="cropEditorImg" style="width:100%;display:block;" onload="updateCropPreview()">
@@ -6055,14 +6060,47 @@
             + 'object-fit:cover;object-position:0 '+posP+'%;';
     }
 
+    var _cropEditorPageIdx = 0;
+    function _cropEditorGetUrls() {
+        var d = window._currentCropData || {};
+        return (d.imgUrls && d.imgUrls.length) ? d.imgUrls : (d.imgUrl ? [d.imgUrl] : []);
+    }
+    function _cropEditorUpdatePageNav() {
+        var urls = _cropEditorGetUrls();
+        var nav = document.getElementById('cropEditorPageNav');
+        var lbl = document.getElementById('cropEditorPageLabel');
+        if(!nav) return;
+        if(urls.length > 1) {
+            nav.style.display = 'flex';
+            if(lbl) lbl.textContent = (_cropEditorPageIdx + 1) + ' / ' + urls.length;
+        } else {
+            nav.style.display = 'none';
+        }
+    }
+    function _cropEditorPrevPage() {
+        if(_cropEditorPageIdx <= 0) return;
+        _cropEditorPageIdx--;
+        document.getElementById('cropEditorImg').src = _cropEditorGetUrls()[_cropEditorPageIdx] || '';
+        _cropEditorUpdatePageNav();
+    }
+    function _cropEditorNextPage() {
+        var urls = _cropEditorGetUrls();
+        if(_cropEditorPageIdx >= urls.length - 1) return;
+        _cropEditorPageIdx++;
+        document.getElementById('cropEditorImg').src = urls[_cropEditorPageIdx] || '';
+        _cropEditorUpdatePageNav();
+    }
     function openCropEditor() {
         var d = window._currentCropData || {};
-        if(!d.imgUrl){ alert('이미지가 있는 항목에서만 사용할 수 있습니다.'); return; }
+        var urls = _cropEditorGetUrls();
+        if(!urls.length){ alert('이미지가 있는 항목에서만 사용할 수 있습니다.'); return; }
         var modal = document.getElementById('cropEditorModal');
         if(!modal) return;
-        document.getElementById('cropEditorImg').src = d.imgUrl;
+        _cropEditorPageIdx = 0;
+        document.getElementById('cropEditorImg').src = urls[0];
         document.getElementById('cropEditorTopSlider').value = d.cropTop || 0;
         document.getElementById('cropEditorBotSlider').value = (d.cropBottom !== undefined) ? d.cropBottom : 100;
+        _cropEditorUpdatePageNav();
         updateCropPreview();
         modal.classList.remove('hidden');
     }
@@ -6259,7 +6297,7 @@
                 var _cT=(range&&range.cropTop!=null)?Number(range.cropTop):0;
                 var _cB=(range&&range.cropBottom!=null)?Number(range.cropBottom):100;
                 var _cPS=(range&&range.start!=null)?Number(range.start):null;
-                window._currentCropData={dbPath:dbPath,cropTop:_cT,cropBottom:_cB,pageStart:_cPS,imgUrl:urls[0]||''};
+                window._currentCropData={dbPath:dbPath,cropTop:_cT,cropBottom:_cB,pageStart:_cPS,imgUrl:urls[0]||'',imgUrls:urls};
                 var kwHtml=buildKeywordBar(title);
                 var pgHtml='';
                 var _pgLabel=function(i,tot){ return _cPS ? 'p.'+(+_cPS+i) : (i+1)+'/'+tot; };
