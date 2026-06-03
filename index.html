@@ -9203,7 +9203,11 @@
                     var d = snap.val();
                     if(!d || _shownAlerts[snap.key]) return;
                     if(d.seen || d.done) return;
-                    if((d.at||0) < _startAt - 300000) return; // 5분 이전 알림 무시
+                    if((d.at||0) < _startAt - 300000) {
+                        // 5분 이전 알림 — 팝업은 띄우지 않되 타이틀 깜빡임은 유지
+                        if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
+                        return;
+                    }
                     _shownAlerts[snap.key] = true;
                     db.ref('imi_watch_alerts/'+snap.key+'/seen').set(true);
                     _showWatchAlert(d, snap.key);
@@ -9253,6 +9257,7 @@
                 .map(function(e){ return e[1]; });
             _syncWatchBanner();
         });
+
     };
 
     var _watchAlertMinimized = false;
