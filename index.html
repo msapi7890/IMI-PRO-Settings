@@ -9355,7 +9355,7 @@
     setInterval(function() {
         if (!window.electronAPI || !window.electronAPI.blinkTitle) return;
         var tab = document.getElementById('watchHeaderTab');
-        var visible = !!(tab && tab.style.display === 'flex');
+        var visible = !!(tab && tab.offsetParent !== null && tab.innerHTML.trim() !== '');
         if (visible && !_autoWatchBlink) {
             _autoWatchBlink = true;
             window.electronAPI.blinkTitle(true, ['비거래']);
