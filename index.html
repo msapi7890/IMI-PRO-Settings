@@ -9337,6 +9337,26 @@
         _doTitleBlink(Object.values(_tabBlinkLabels));
     }
 
+    // watchHeaderTab 가시성 감지 → 비거래 탭 열릴 때 자동 깜빡임 시작
+    (function(){
+        function _checkWatchTabBlink() {
+            var tab = document.getElementById('watchHeaderTab');
+            if (tab && tab.style.display === 'flex') {
+                _startTabBlink('비거래', 0, 'watch');
+            }
+        }
+        window.addEventListener('load', function(){
+            var tab = document.getElementById('watchHeaderTab');
+            if (!tab) return;
+            _checkWatchTabBlink();
+            new MutationObserver(function(muts) {
+                muts.forEach(function(m) {
+                    if (m.attributeName === 'style') _checkWatchTabBlink();
+                });
+            }).observe(tab, { attributes: true, attributeFilter: ['style'] });
+        });
+    })();
+
     function _startWatchBlink() {
         if(_watchBlinkTimer) return;
         var on = false;
