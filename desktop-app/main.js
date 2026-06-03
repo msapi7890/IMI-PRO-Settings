@@ -109,15 +109,14 @@ function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
-    const NB   = ' '; // non-breaking space — Windows가 trim 안 함
-    const ver  = appDisplayVersion();
-    const base  = 'IMI PRO v' + ver + NB + NB + NB; // 🚨+space 너비 보정
-    const alert = '🚨 IMI PRO v' + ver;
+    const ver      = appDisplayVersion();
+    const base     = 'IMI PRO v' + ver;
+    const alertTxt = '🚨 ' + labels.join('·') + ' 감지';
     if (labels.length === 0) { if (win) win.setTitle(base); return; }
     let idx = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        win.setTitle(idx++ % 2 === 0 ? alert : base);
+        win.setTitle(idx++ % 2 === 0 ? alertTxt : base);
     }, 900);
 }
 
