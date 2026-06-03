@@ -146,16 +146,10 @@ function createWindow() {
     win = new BrowserWindow(opts);
     win.loadURL(APP_URL);
 
-    // 블링크 타이틀(🚨)과 기본 타이틀만 허용, 나머지 페이지 자체 title 변경은 차단
-    win.on('page-title-updated', (e, title) => {
+    // 페이지 title 변경 완전 차단 — 항상 고정 타이틀 유지
+    win.on('page-title-updated', (e) => {
         e.preventDefault();
-        const base = 'IMI PRO v' + appDisplayVersion();
-        if (title && title.startsWith('🚨')) {
-            win.setTitle(title);          // 감지 깜빡임
-        } else if (!title || title === 'IMI PRO' || title === base) {
-            win.setTitle(base);           // 기본 타이틀 (버전 포함)
-        }
-        // 그 외 페이지 임의 title → 무시 (현재 title 유지)
+        win.setTitle('IMI PRO v' + appDisplayVersion());
     });
 
     // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
