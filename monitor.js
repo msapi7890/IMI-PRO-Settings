@@ -500,11 +500,13 @@ function startMonitoringEngine() {
     _monIntervalId = setInterval(_doMonitorCheck, _monIntervalMin * 60000);
     updateMonitorStatusDisplay();
     _updateHdrDot();
+    if(window.electronAPI) window.electronAPI.send('monitor-active', true);
 }
 
 function stopMonitoringEngine() {
     clearInterval(_monIntervalId); _monIntervalId = null; _monIsActive = false;
     updateMonitorStatusDisplay(); _updateHdrDot();
+    if(window.electronAPI) window.electronAPI.send('monitor-active', false);
 }
 
 function setMonitorInterval(min) {
