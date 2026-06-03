@@ -109,11 +109,15 @@ function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
-    /* 타이틀 텍스트는 고정 — 길이 변화로 작업표시줄 너비 변동 방지 */
     const base = 'IMI PRO v' + appDisplayVersion();
-    if (win) win.setTitle(base);
-    /* 감지 시 flashFrame으로 작업표시줄 주의 효과만 사용 */
-    if (win) win.flashFrame(labels.length > 0);
+    if (labels.length === 0) { if (win) win.setTitle(base); return; }
+    /* 🚨 IMI PRO ↔ IMI PRO 만 토글 — 너비 변동 최소화 */
+    let idx = 0;
+    const titles = [base, '🚨 ' + base];
+    _titleBlinkTimer = setInterval(() => {
+        if (!win) return;
+        win.setTitle(titles[idx++ % 2]);
+    }, 900);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
