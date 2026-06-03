@@ -9240,9 +9240,14 @@
                 _alertsRef.on('child_added', function(snap){
                     var d = snap.val();
                     if(!d || _shownAlerts[snap.key]) return;
-                    if(d.seen || d.done) return;
+                    if(d.done) return;
+                    if(d.seen) {
+                        // 이미 표시됐지만 미처리 — 깜빡임만 유지
+                        if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
+                        return;
+                    }
                     if((d.at||0) < _startAt - 300000) {
-                        // 5분 이전 알림 — 팝업은 띄우지 않되 타이틀 깜빡임은 유지
+                        // 5분 이전 새 알림 — 팝업 없이 깜빡임만
                         if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
                         return;
                     }
