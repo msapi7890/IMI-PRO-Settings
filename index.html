@@ -9350,16 +9350,13 @@
         _doTitleBlink(Object.values(_tabBlinkLabels));
     }
 
-    // 비거래 탭 상태 주기적 감시 → IPC 직접 호출 (_tabBlinkLabels 스코프 우회)
+    // 비거래 탭 사라지면 깜빡임 정지 (시작은 새 알림 감지 시에만)
     var _autoWatchBlink = false;
     setInterval(function() {
         if (!window.electronAPI || !window.electronAPI.blinkTitle) return;
         var tab = document.getElementById('watchHeaderTab');
         var visible = !!(tab && tab.offsetParent !== null && tab.innerHTML.trim() !== '');
-        if (visible && !_autoWatchBlink) {
-            _autoWatchBlink = true;
-            window.electronAPI.blinkTitle(true, ['비거래']);
-        } else if (!visible && _autoWatchBlink) {
+        if (!visible && _autoWatchBlink) {
             _autoWatchBlink = false;
             window.electronAPI.blinkTitle(false, []);
         }
@@ -9467,7 +9464,7 @@
         // watchPopup ON → 하단 팝업만 표시
         if(_notifPrefs && _notifPrefs.watchPopup){
             if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',itemCount:data.count||0,itemRows:data.itemRows||[]});
-            if(typeof _startTabBlink==='function') _startTabBlink('비거래',data.count||0,'watch');
+            if(window.electronAPI && window.electronAPI.blinkTitle) { _autoWatchBlink = true; window.electronAPI.blinkTitle(true, ['비거래']); }
             // 상단바 탭 배지 표시
             var wTab = document.getElementById('watchHeaderTab');
             if(wTab) {
@@ -9500,8 +9497,11 @@
         } else {
             _stopWatchBlink();
         }
-        // 브라우저 탭 제목 + 작업표시줄 깜빡임
-        if(typeof _startTabBlink === 'function') _startTabBlink('비거래', count, 'watch');
+        // 작업표시줄 깜빡임 — 새 비거래 감지 시 1회 시작
+        if(window.electronAPI && window.electronAPI.blinkTitle) {
+            _autoWatchBlink = true;
+            window.electronAPI.blinkTitle(true, ['비거래']);
+        }
 
         // 패널 내용 초기화
         panel.innerHTML = '';

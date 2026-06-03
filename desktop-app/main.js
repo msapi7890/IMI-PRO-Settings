@@ -120,12 +120,7 @@ function _updateTitleBlink() {
         if (win) { win.setTitle(base); win.flashFrame(false); }
         return;
     }
-    if (win) win.flashFrame(true); // 포커스 시 Windows가 자동 정지
-    let idx = 0;
-    _titleBlinkTimer = setInterval(() => {
-        if (!win) return;
-        win.setTitle(idx++ % 2 === 0 ? alertTxt : base);
-    }, 900);
+    if (win) { win.setTitle(alertTxt); win.flashFrame(true); }
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -182,14 +177,13 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시 깜빡임 정지, 포커스 해제 시 재시작
+    // 포커스 시 깜빡임 정지 (blur 재시작 없음 — 새 비거래 올 때만 다시 시작)
     win.on('focus', () => {
-        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
         win.flashFrame(false);
         const ver = appDisplayVersion();
-        win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
+        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
+        win.setTitle(hasAlert ? '🚨 IMI PRO v' + ver : (monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver));
     });
-    win.on('blur', () => { _updateTitleBlink(); });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
     win.webContents.on('before-input-event', (event, input) => {
