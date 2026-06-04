@@ -2437,7 +2437,8 @@
 
     async function _listDbPages(mode){
         try{
-            var data = await _authFetch('manual_pages_b64/'+mode+'.json');
+            // shallow=true: 키값만 받아 전체 base64 이미지 다운로드 방지
+            var data = await _authFetch('manual_pages_b64/'+mode+'.json?shallow=true');
             if(data && typeof data==='object'){
                 return Object.keys(data)
                     .map(function(k){ return parseInt(k.replace('p',''),10); })
