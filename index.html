@@ -2634,6 +2634,12 @@
         h += '<input id="mfEditFEnd" type="number" placeholder="끝" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;">';
         h += '</div>';
 
+        // 이후 항목 자동 밀기 체크박스
+        h += '<label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;cursor:pointer;user-select:none;">';
+        h += '<input type="checkbox" id="mfEditAutoShift" style="width:13px;height:13px;accent-color:#f59e0b;cursor:pointer;">';
+        h += '<span style="font-size:10px;color:#94a3b8;">페이지 범위 늘어날 때 이후 항목 자동 밀기</span>';
+        h += '</label>';
+
         // 키워드
         h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;margin-bottom:3px;">키워드 <span style="font-weight:400;color:#475569;">(쉼표 구분)</span></div>';
         h += '<input id="mfEditFKws" placeholder="예: 개명, 이름변경, 명의변경" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:10px;">';
@@ -3581,11 +3587,30 @@
         if(!start||!end||start>end){ alert('페이지 범위가 올바르지 않습니다.'); return; }
 
         var oldTitle = (_mfCurrentEditData||{}).title||'';
+        var oldEnd   = (_mfCurrentEditData||{}).end||0;
+        var autoShift = !!(document.getElementById('mfEditAutoShift')||{}).checked;
+        var shiftDiff = end - oldEnd; // 양수면 페이지 늘어난 것
         var btn = document.getElementById('mfEditSaveBtn');
         if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
 
         await _authFetch('manual_page_ranges/'+mode+'/'+_mfCurrentEditKey+'.json','PATCH',
             {title:newTitle, category:cat, start:start, end:end, keywords:kws});
+
+        // 이후 항목 자동 밀기
+        if(autoShift && shiftDiff > 0){
+            var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
+            if(allRaw && typeof allRaw==='object'){
+                for(var _k in allRaw){
+                    if(_k === _mfCurrentEditKey) continue;
+                    var _r = allRaw[_k];
+                    var _hit = false;
+                    var _ns = _r.start||0, _ne = _r.end||0;
+                    if(_ns > oldEnd){ _ns += shiftDiff; _hit = true; }
+                    if(_ne > oldEnd){ _ne += shiftDiff; _hit = true; }
+                    if(_hit) await _authFetch('manual_page_ranges/'+mode+'/'+_k+'.json','PATCH',{start:_ns, end:_ne});
+                }
+            }
+        }
 
         // 검색 인덱스 갱신 (제목 바뀌면 이전 키 삭제 후 새 키 등록)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
