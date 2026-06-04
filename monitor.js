@@ -936,7 +936,8 @@ function _showMonitorFlash(s) {
         cardHdr.innerHTML = '<span style="font-size:12px;font-weight:900;color:#ef4444;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🚨 '+_esc(s.ruleName||'감지')
             +(s.ruleKeyword?'&nbsp;<span style="color:#f87171;font-size:10px;">· "'+_esc(s.ruleKeyword)+'"</span>':'')
             +'</span>'
-            +'<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;">'+(s.itemCount||0)+'개</span>';
+            +'<span style="font-size:10px;color:#94a3b8;font-weight:700;flex-shrink:0;margin-right:6px;">'+(s.itemCount||0)+'개</span>'
+            +'<button data-bulk-exclude="1" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid #f87171;color:#f87171;background:none;cursor:pointer;flex-shrink:0;white-space:nowrap;">전체 제외</button>';
         card.appendChild(cardHdr);
         card.setAttribute('data-fraud-card','1');
 
@@ -1116,6 +1117,16 @@ function _subscribeFlashState() {
 }
 _subscribeBlocked();
 _subscribeFlashState();
+
+// 전체 필터제외 버튼 — 이벤트 위임 (fraudDropPanel 카드 헤더)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-bulk-exclude]');
+    if (!btn) return;
+    var card = btn.closest('[data-fraud-card]');
+    if (!card) return;
+    var bkBtns = card.querySelectorAll('[data-bk]:not([disabled])');
+    bkBtns.forEach(function(b) { b.click(); });
+});
 
 // 필터제외 버튼 — 이벤트 위임 (fraudDropPanel 내)
 document.addEventListener('click', function(e) {
