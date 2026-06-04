@@ -7201,23 +7201,26 @@
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
             if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
             document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
-            var cols=_mPlatform==='bay'?Math.min(_mUrls.length,3):2;
+            // 현재 로드된 이미지 비율로 가로/세로 판별 (플랫폼 무관)
+            var _mvImg=document.getElementById('imgModalImg');
+            var _isPortrait=_mvImg&&_mvImg.naturalWidth>0&&_mvImg.naturalHeight>_mvImg.naturalWidth;
+            var cols=_isPortrait?2:3; // 가로형 3열(3x2), 세로형 2열(2x3)
             var rows=Math.ceil(_mUrls.length/cols);
-            // 매니아 3장 이상(2x2): 교차점 중앙 클러스터 / 매니아 2장(2x1): 각 셀 하단중앙 배지
-            var useCluster=(_mPlatform!=='bay' && _mUrls.length>=3);
+            // 가로형 3장 이상: 교차점 중앙 클러스터 배지 / 그 외: 셀 상단(세로) 또는 하단(가로) 배지
+            var useCluster=(!_isPortrait && _mUrls.length>=3);
             var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr);">';
             _mUrls.forEach(function(url,i){
                 html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'">'
                     +'<img src="'+url+'" onerror="this.style.display=\'none\'">';
                 if(!useCluster){
-                    var badgeStyle=(_mPlatform==='bay')
+                    var badgeStyle=_isPortrait
                         ?'top:8px;left:50%;transform:translateX(-50%);'
                         :'bottom:8px;left:50%;transform:translateX(-50%);';
                     html+='<div class="im-mv-num-badge" style="'+badgeStyle+'">'+(i+1)+'</div>';
                 }
                 html+='</div>';
             });
-            // 2x2 클러스터: grid 내부 absolute → zoom/pan 시 함께 이동
+            // 가로형 클러스터: grid 내부 absolute → zoom/pan 시 함께 이동
             if(useCluster){
                 var clusterCols=Math.min(_mUrls.length,2);
                 html+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);'
