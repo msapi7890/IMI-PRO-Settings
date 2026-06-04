@@ -9582,13 +9582,14 @@
                     if(!d || _shownAlerts[snap.key]) return;
                     if(d.done) return;
                     if(d.seen) {
-                        // 이미 표시됐지만 미처리 — 깜빡임만 유지
-                        if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
+                        // 이미 표시된 알림 — 재시작 시 깜빡임 안 함
                         return;
                     }
                     if((d.at||0) < _startAt - 300000) {
-                        // 5분 이전 새 알림 — 팝업 없이 깜빡임만
-                        if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
+                        // 5분 이전 알림 — 1시간 이내만 깜빡임 (오래된 데이터 오작동 방지)
+                        if((d.at||0) > _startAt - 3600000) {
+                            if(typeof _startTabBlink==='function') _startTabBlink('비거래', d.count||0, 'watch');
+                        }
                         return;
                     }
                     _shownAlerts[snap.key] = true;
