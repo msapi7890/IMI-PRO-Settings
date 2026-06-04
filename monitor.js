@@ -1143,6 +1143,11 @@ document.addEventListener('click', function(e) {
         btn.disabled = true;
         btn.textContent = '제외됨';
         btn.style.opacity = '0.4';
+        // 사기글 패널의 모든 항목이 제외됐으면 즉시 닫기
+        if (blockType !== 'watch' && fraudPanel && fraudPanel.contains(btn)) {
+            var remaining = fraudPanel.querySelectorAll('[data-bk]:not([disabled])');
+            if (!remaining.length) closeMonitorFlash();
+        }
     });
 });
 
