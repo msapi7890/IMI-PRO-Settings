@@ -189,8 +189,9 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시 깜빡임 정지 (blur 재시작 없음 — 새 비거래 올 때만 다시 시작)
+    // 포커스 시 이모지 교대·플래시 모두 정지
     win.on('focus', () => {
+        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
         win.flashFrame(false);
         const ver = appDisplayVersion();
         const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
