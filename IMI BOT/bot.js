@@ -408,6 +408,7 @@
                 itemCount: items.length,
                 itemRows: _rows,
                 logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', listTime: it.listTime || '' })) : null,
+                scanInterval: rule.scanInterval || 60,
                 at: _at
             }
         });

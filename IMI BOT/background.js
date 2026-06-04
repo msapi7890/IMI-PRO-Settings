@@ -482,7 +482,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // OS 토스트는 chrome.notifications — Firebase 불필요, 오프라인에서도 즉시 발송
         if (msg.path === '/monitor_flash_state' && msg.data && msg.data.active) {
             if (msg.data.ruleType !== 'watch') {
-                showOsNotif('fraud', msg.data);
+                const _rId = msg.data.ruleId || '_';
+                const _intervalMs = (msg.data.scanInterval || 60) * 1000;
+                const _isNew = Array.isArray(msg.data.logItemRows) && msg.data.logItemRows.length > 0;
+                const _elapsed = Date.now() - (_osNotifLastAt[_rId] || 0);
+                if (_isNew || _elapsed >= _intervalMs) {
+                    _osNotifLastAt[_rId] = Date.now();
+                    showOsNotif('fraud', msg.data);
+                }
             }
         }
         fireSet(msg.path, msg.data).then(async () => {
@@ -749,6 +756,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // 윈도우 OS 토스트 알림 (chrome.notifications)
+const _osNotifLastAt = {};
+
 function showOsNotif(type, data) {
     const id = 'imi_' + type;
     chrome.notifications.clear(id, function() {
