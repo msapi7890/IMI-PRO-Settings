@@ -46,7 +46,7 @@ function buildAppMenu() {
                 click: () => {
                     showWindow();
                     if (_updateReady && autoUpdater) {
-                        autoUpdater.quitAndInstall(true, true);
+                        doInstallUpdate();
                     } else if (lastUpdateStatus) {
                         if (win) win.webContents.send('update-status', lastUpdateStatus);
                     } else if (autoUpdater) {
@@ -372,10 +372,18 @@ function setupAutoUpdater() {
     setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 60 * 60 * 1000);
 }
 
+// ── 업데이트 설치 (창 먼저 완전 종료 후 인스톨러 실행) ────
+function doInstallUpdate() {
+    if (!autoUpdater) return;
+    isQuitting = true;
+    if (win) { try { win.destroy(); } catch(_) {} win = null; }
+    setTimeout(() => autoUpdater.quitAndInstall(true, true), 800);
+}
+
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
 ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed && !osNotifMuted) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
-ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(true, true); });
+ipcMain.handle('install-update',    ()                   => doInstallUpdate());
 ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });
