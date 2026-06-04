@@ -2496,14 +2496,7 @@
         h += '<button id="mfMgmtMode_bay"   onclick="_mfSetMgmtMode(\'bay\')"   style="flex:1;padding:7px;border-radius:7px;border:1.5px solid #334155;background:none;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;">📌 베이</button>';
         h += '</div>';
 
-        // 서브탭
-        h += '<div style="display:flex;gap:4px;margin-bottom:12px;background:#1e293b;border-radius:9px;padding:4px;">';
-        h += '<button id="mfRegTab_new"  onclick="_mfSetRegTab(\'new\')"  style="flex:1;padding:7px;border-radius:7px;border:none;background:#0f172a;color:#e2e8f0;font-size:11px;font-weight:900;cursor:pointer;">➕ 신규 등록</button>';
-        h += '<button id="mfRegTab_edit" onclick="_mfSetRegTab(\'edit\')" style="flex:1;padding:7px;border-radius:7px;border:none;background:none;color:#475569;font-size:11px;font-weight:900;cursor:pointer;">✏️ 항목 수정</button>';
-        h += '</div>';
-
-        // ── 신규 등록 패널 ──
-        h += '<div id="mfRegPanel_new">';
+        // ── 신규 등록 ──
 
         // STEP 1: PDF 업로드 + 렌더링
         h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;margin-bottom:10px;">';
@@ -2579,21 +2572,12 @@
         h += '</div>';
         h += '</div>'; // mfEntryPanel
 
-        h += '</div>'; // mfRegPanel_new
-
-        // ── 수정 패널 ──
-        h += '<div id="mfRegPanel_edit" style="display:none;">';
-
-        // 검색
-        h += '<div style="margin-bottom:8px;">';
-        h += '<input id="mfEditSearch" oninput="_mfEditFilter()" placeholder="🔍 이름 또는 키워드 검색..." style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;">';
+        // ── 항목 수정 폼 (등록된 항목 목록에서 수정 버튼 클릭 시 표시) ──
+        h += '<div id="mfEditForm" style="display:none;background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #f59e0b;margin-bottom:10px;">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+        h += '<div style="font-size:11px;font-weight:900;color:#f59e0b;">✏️ 항목 수정</div>';
+        h += '<button onclick="document.getElementById(\'mfEditForm\').style.display=\'none\'" style="padding:3px 8px;border-radius:5px;background:none;border:1px solid #334155;color:#64748b;font-size:10px;cursor:pointer;">닫기</button>';
         h += '</div>';
-
-        // 항목 카드 목록
-        h += '<div id="mfEditItemList" style="max-height:190px;overflow-y:auto;margin-bottom:10px;"></div>';
-
-        // 편집 폼 (항목 선택 후 표시)
-        h += '<div id="mfEditForm" style="display:none;background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #f59e0b;">';
 
         // 이미지 미리보기
         h += '<div id="mfEditPreviewWrap" style="display:none;margin-bottom:12px;text-align:center;">';
@@ -2647,11 +2631,11 @@
         h += '</div>'; // mfEditExtraPanel
 
         h += '</div>'; // mfEditForm
-        h += '</div>'; // mfRegPanel_edit
 
         // ── 등록된 항목 목록 ──
         h += '<div style="background:#0f172a;border-radius:10px;padding:14px;border:1.5px solid #1e293b;">';
         h += '<div style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">📋 등록된 항목 목록</div>';
+        h += '<input id="mfRangeSearch" oninput="_mfRangeFilter()" placeholder="🔍 이름 검색..." style="width:100%;padding:6px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:8px;box-sizing:border-box;">';
         h += '<div id="mfRangeList" style="max-height:230px;overflow-y:auto;"></div>';
         h += '</div>';
 
@@ -2736,7 +2720,6 @@
             btn.style.color      = active ? '#e2e8f0' : '#475569';
             panel.style.display  = active ? '' : 'none';
         });
-        if(tab==='edit') _mfEditLoadList();
     }
 
     function _mfFillEntryCat(mode){
@@ -3525,17 +3508,19 @@
             }catch(e){ previewWrap.style.display='none'; }
         }
 
-        // 폼 표시 + 목록 하이라이트 갱신
+        // 폼 표시
         var formEl = document.getElementById('mfEditForm');
         if(formEl) formEl.style.display = '';
         var progEl = document.getElementById('mfEditProgress');
         if(progEl) progEl.textContent = '';
         var extraPnl = document.getElementById('mfEditExtraPanel');
         if(extraPnl) extraPnl.style.display = 'none';
+    }
 
-        // 목록에서 선택된 항목 하이라이트
-        var q = ((document.getElementById('mfEditSearch')||{}).value||'').trim();
-        _mfEditLoadList(q);
+    function _mfEditFromList(key){
+        _mfSelectEditItem(key);
+        var formEl = document.getElementById('mfEditForm');
+        if(formEl) formEl.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
 
     async function _mfSaveEditItem(){
@@ -3579,10 +3564,8 @@
         _mfCurrentEditData = Object.assign({},_mfCurrentEditData,{title:newTitle,category:cat,start:start,end:end,keywords:kws});
         _mfEditCache = null;
         _mfLoadRanges(mode);
-        var q = ((document.getElementById('mfEditSearch')||{}).value||'').trim();
-        _mfEditLoadList(q, true);
 
-        if(btn){ btn.disabled=false; btn.textContent='✅ 저장 완료!'; setTimeout(function(){ btn.textContent='💾 저장'; },2000); }
+        if(btn){ btn.disabled=false; btn.textContent='✅ 저장 완료!'; setTimeout(function(){ btn.textContent='💾 저장'; var f=document.getElementById('mfEditForm'); if(f) f.style.display='none'; },1500); }
     }
 
     async function _mfSaveAllPending(){
@@ -3791,6 +3774,19 @@
         _mfRegisteredRanges = entries.map(function(e){ return {start:e[1].start||0, end:e[1].end||0}; });
         _mfUpdateNavBadge();
         _mfRenderPageThumbs();
+        window._mfRangeEntries = entries; // 필터링용 캐시
+        _mfRenderRangeRows(entries, mode);
+    }
+    function _mfRangeFilter(){
+        var q = ((document.getElementById('mfRangeSearch')||{}).value||'').trim().toLowerCase();
+        var entries = window._mfRangeEntries || [];
+        var filtered = q ? entries.filter(function(e){ return (e[1].title||e[0]).toLowerCase().includes(q); }) : entries;
+        _mfRenderRangeRows(filtered, _mfMgmtMode);
+    }
+    function _mfRenderRangeRows(entries, mode){
+        var listEl = document.getElementById('mfRangeList');
+        if(!listEl) return;
+        if(!entries.length){ listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">검색 결과가 없습니다.</div>'; return; }
         var h='';
         entries.forEach(function(e){
             var key=e[0], r=e[1], title=r.title||key;
@@ -3800,6 +3796,7 @@
             h+='<div style="font-size:11px;font-weight:700;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escHtml(title)+catBadge+'</div>';
             h+='<div style="font-size:10px;color:#475569;margin-top:1px;">p.'+r.start+' ~ p.'+r.end+'</div>';
             h+='</div>';
+            h+='<button onclick="_mfEditFromList(\''+escHtml(key)+'\')" style="padding:4px 8px;border-radius:6px;background:none;border:1px solid #f59e0b;color:#f59e0b;font-size:10px;cursor:pointer;flex-shrink:0;">수정</button>';
             h+='<button onclick="_mfDeleteRange(\''+mode+'\',\''+escHtml(key)+'\',\''+escHtml(title)+'\')" style="padding:4px 8px;border-radius:6px;background:none;border:1px solid #334155;color:#ef4444;font-size:10px;cursor:pointer;flex-shrink:0;">삭제</button>';
             h+='</div>';
         });
@@ -3817,7 +3814,6 @@
         if(_mfCurrentEditKey===key){ _mfCurrentEditKey=null; _mfCurrentEditData=null; var f=document.getElementById('mfEditForm'); if(f) f.style.display='none'; }
         _mfEditCache = null;
         _mfLoadRanges(mode);
-        _mfEditLoadList(undefined, true);
     }
 
     async function _mfResetAll(){
