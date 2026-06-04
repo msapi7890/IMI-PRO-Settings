@@ -2674,7 +2674,18 @@
         h += '</div>';
 
         if(isAdm){
-            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #0369a1;">';
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:12px;border:1px solid #334155;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;">📄 페이지 삽입 — 이후 항목 일괄 밀기</div>';
+            h += '<div style="font-size:9px;color:#475569;margin-bottom:8px;">지정 페이지부터 모든 항목의 범위를 N페이지씩 뒤로 이동합니다</div>';
+            h += '<div style="display:flex;gap:6px;margin-bottom:6px;">';
+            h += '<div style="flex:1;"><div style="font-size:9px;color:#64748b;margin-bottom:3px;">기준 페이지 (이 페이지부터 밀기)</div>';
+            h += '<input type="number" id="mfShiftFrom" min="1" placeholder="예: 60" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;box-sizing:border-box;"></div>';
+            h += '<div style="width:60px;"><div style="font-size:9px;color:#64748b;margin-bottom:3px;">페이지 수</div>';
+            h += '<input type="number" id="mfShiftCount" min="1" value="1" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;box-sizing:border-box;"></div>';
+            h += '</div>';
+            h += '<button onclick="_mfShiftPages()" style="padding:7px 0;border-radius:7px;background:none;border:1px solid #475569;color:#94a3b8;font-size:11px;font-weight:900;cursor:pointer;width:100%;">📄 페이지 밀기 실행</button>';
+            h += '</div>';
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
             h += '<button id="mfSyncIndexBtn" onclick="_mfSyncSearchIndex()" style="padding:7px 0;border-radius:7px;background:#0369a1;color:#bae6fd;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">🔄 검색 인덱스 전체 동기화</button>';
@@ -3846,6 +3857,43 @@
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         if(idx && idx[title] !== undefined) delete idx[title];
         if(_mfCurrentEditKey===key){ _mfCurrentEditKey=null; _mfCurrentEditData=null; var f=document.getElementById('mfEditForm'); if(f) f.style.display='none'; }
+        _mfEditCache = null;
+        _mfLoadRanges(mode);
+    }
+
+    async function _mfShiftPages(){
+        var fromPage = parseInt((document.getElementById('mfShiftFrom')||{}).value||'0');
+        var shiftBy  = parseInt((document.getElementById('mfShiftCount')||{}).value||'1');
+        if(!fromPage || fromPage < 1){ alert('기준 페이지를 입력해주세요.'); return; }
+        if(!shiftBy  || shiftBy  < 1){ alert('밀 페이지 수를 입력해주세요.'); return; }
+        var mode = _mfMgmtMode;
+        var label = mode === 'bay' ? '아이템베이(BAY)' : '아이템매니아(IMI)';
+        if(!confirm('['+label+'] '+fromPage+'페이지부터 모든 항목을 '+shiftBy+'페이지 뒤로 밀겠습니다.\n계속하시겠습니까?')) return;
+
+        var btn = document.querySelector('button[onclick="_mfShiftPages()"]');
+        if(btn){ btn.disabled=true; btn.textContent='처리 중...'; }
+
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(!raw||typeof raw!=='object'){ alert('항목을 불러올 수 없습니다.'); if(btn){btn.disabled=false;btn.textContent='📄 페이지 밀기 실행';} return; }
+
+        var updates = {};
+        var changed = 0;
+        Object.entries(raw).forEach(function(e){
+            var key = e[0], r = e[1];
+            var newR = Object.assign({}, r);
+            var hit = false;
+            if((r.start||0) >= fromPage){ newR.start = (r.start||0) + shiftBy; hit = true; }
+            if((r.end  ||0) >= fromPage){ newR.end   = (r.end  ||0) + shiftBy; hit = true; }
+            if(hit){ updates[key] = newR; changed++; }
+        });
+
+        if(!changed){ alert('기준 페이지('+fromPage+') 이상인 항목이 없습니다.'); if(btn){btn.disabled=false;btn.textContent='📄 페이지 밀기 실행';} return; }
+
+        for(var k in updates){
+            await _authFetch('manual_page_ranges/'+mode+'/'+k+'.json','PATCH',{start:updates[k].start, end:updates[k].end});
+        }
+
+        if(btn){ btn.disabled=false; btn.textContent='✅ 완료 ('+changed+'건)'; setTimeout(function(){ btn.textContent='📄 페이지 밀기 실행'; },2500); }
         _mfEditCache = null;
         _mfLoadRanges(mode);
     }
