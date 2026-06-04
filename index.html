@@ -3503,7 +3503,7 @@
         var startEl= document.getElementById('mfEditFStart');
         var endEl  = document.getElementById('mfEditFEnd');
         var kwsEl  = document.getElementById('mfEditFKws');
-        if(titEl)  titEl.value  = raw.title    || '';
+        if(titEl)  titEl.value  = raw.title || key.replace(/_/g,' ') || '';
         if(startEl)startEl.value= raw.start    || '';
         if(endEl)  endEl.value  = raw.end      || '';
         if(kwsEl)  kwsEl.value  = raw.keywords || '';
