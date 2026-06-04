@@ -7145,7 +7145,8 @@
     var _mvZoom=1.0, _mvTX=0, _mvTY=0;
     var _mvDrag={active:false,sx:0,sy:0,ox:0,oy:0};
     var _mvDragMoved=false, _mvEventsInit=false;
-    var _mvIsPortrait=false; // 세로형 여부 (스크롤 모드 제어용)
+    var _mvIsPortrait=false;
+    var _mvPage=0; // 현재 멀티뷰 페이지 (0-based)
     function _applyMvTransform(){
         var grid=document.querySelector('#imgMvWrap .im-mv-grid');
         if(grid) grid.style.transform='scale('+_mvZoom+') translate('+_mvTX+'px,'+_mvTY+'px)';
@@ -7154,17 +7155,16 @@
         if(_mvEventsInit) return;
         _mvEventsInit=true;
         var wrap=document.getElementById('imgMvWrap');
-        // 확대/축소 — 세로형 스크롤 모드에선 휠은 자연 스크롤로
+        // 확대/축소
         wrap.addEventListener('wheel',function(e){
-            if(_mvIsPortrait) return; // 세로형: 기본 스크롤 허용
             e.preventDefault();
             var factor=e.deltaY<0?1.13:0.88;
             _mvZoom=Math.max(0.3,Math.min(10,_mvZoom*factor));
             _applyMvTransform();
         },{passive:false});
-        // 드래그 팬 — 세로형 스크롤 모드에선 비활성
+        // 드래그 팬 (페이지네이션 버튼 클릭은 드래그 제외)
         wrap.addEventListener('pointerdown',function(e){
-            if(e.button!==0||_mvIsPortrait) return;
+            if(e.button!==0||e.target.tagName==='BUTTON') return;
             _mvDrag.active=true; _mvDragMoved=false;
             _mvDrag.sx=e.clientX; _mvDrag.sy=e.clientY;
             _mvDrag.ox=_mvTX; _mvDrag.oy=_mvTY;
@@ -7222,55 +7222,43 @@
             document.querySelectorAll('#imgModal .im-nav').forEach(function(n){n.style.display='none';});
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
             if(mvBtn){mvBtn.style.background='rgba(59,130,246,0.65)';mvBtn.style.borderColor='#3abff8';mvBtn.style.opacity='1';}
-            document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
             // 현재 이미지 비율로 가로/세로 판별
             var _mvImg=document.getElementById('imgModalImg');
             _mvIsPortrait=_mvImg&&_mvImg.naturalWidth>0&&_mvImg.naturalHeight>_mvImg.naturalWidth;
-            var html;
-            if(_mvIsPortrait){
-                // 세로형: 1열, 각 행 33vh, 스크롤 가능 (1×3 배치)
-                mvWrap.style.overflowY='auto';
-                mvWrap.style.cursor='default';
-                html='<div class="im-mv-grid" style="grid-template-columns:1fr;grid-template-rows:repeat('+_mUrls.length+',33vh);height:auto;">';
-                _mUrls.forEach(function(url,i){
-                    html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'">'
-                        +'<img src="'+url+'" onerror="this.style.display=\'none\'">'
-                        +'<div class="im-mv-num-badge" style="top:8px;left:50%;transform:translateX(-50%);">'+(i+1)+'</div>'
-                        +'</div>';
-                });
-                html+='</div>';
-            } else {
-                // 가로형: 3열, 화면에 꽉 채움 (3×2 배치)
-                mvWrap.style.overflowY='hidden';
-                mvWrap.style.cursor='grab';
-                var cols=3;
-                var rows=Math.ceil(_mUrls.length/cols);
-                var useCluster=_mUrls.length>=3;
-                html='<div class="im-mv-grid" style="grid-template-columns:repeat(3,1fr);grid-template-rows:repeat('+rows+',1fr);">';
-                _mUrls.forEach(function(url,i){
-                    html+='<div class="im-mv-cell'+(i===_mIdx?' im-mv-active':'')+'">'
-                        +'<img src="'+url+'" onerror="this.style.display=\'none\'">';
-                    if(!useCluster) html+='<div class="im-mv-num-badge" style="bottom:8px;left:50%;transform:translateX(-50%);">'+(i+1)+'</div>';
-                    html+='</div>';
-                });
-                if(useCluster){
-                    var clusterCols=Math.min(_mUrls.length,2);
-                    html+='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;grid-template-columns:repeat('+clusterCols+',38px);gap:4px;z-index:10001;pointer-events:none;">';
-                    _mUrls.forEach(function(url,i){ html+='<div class="im-mv-num-badge" style="position:static;">'+(i+1)+'</div>'; });
-                    html+='</div>';
-                }
+            var perPage=_mvIsPortrait?3:4; // 세로형 1×3, 가로형 2×2
+            var totalPages=Math.ceil(_mUrls.length/perPage);
+            // _mvPage가 현재 이미지를 포함하는 페이지로 자동 이동
+            if(_mvPage*perPage>_mIdx||(_mvPage+1)*perPage<=_mIdx) _mvPage=Math.floor(_mIdx/perPage);
+            _mvPage=Math.max(0,Math.min(_mvPage,totalPages-1));
+            var startIdx=_mvPage*perPage;
+            var pageUrls=_mUrls.slice(startIdx,startIdx+perPage);
+            document.getElementById('imgPageInfo').innerText=_mUrls.length+'장 전체';
+            // 그리드 구성
+            var gridCols=_mvIsPortrait?1:2;
+            var gridRows=_mvIsPortrait?3:2;
+            var badgePos=_mvIsPortrait?'top:8px;':'bottom:8px;';
+            var gridH=totalPages>1?'calc(100% - 44px)':'100%';
+            var html='<div class="im-mv-grid" style="grid-template-columns:repeat('+gridCols+',1fr);grid-template-rows:repeat('+gridRows+',1fr);height:'+gridH+';">';
+            pageUrls.forEach(function(url,i){
+                var gi=startIdx+i;
+                html+='<div class="im-mv-cell'+(gi===_mIdx?' im-mv-active':'')+'" onclick="_imgMvSelect('+gi+')">'
+                    +'<img src="'+url+'" onerror="this.style.display=\'none\'">'
+                    +'<div class="im-mv-num-badge" style="'+badgePos+'left:50%;transform:translateX(-50%);">'+(gi+1)+'</div>'
+                    +'</div>';
+            });
+            html+='</div>';
+            // 페이지네이션 바 (2페이지 이상일 때)
+            if(totalPages>1){
+                var btnStyle='padding:5px 14px;border-radius:6px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;font-size:12px;font-weight:900;cursor:pointer;';
+                html+='<div style="height:44px;display:flex;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,0.6);flex-shrink:0;" onpointerdown="event.stopPropagation()">';
+                html+='<button onclick="_mvPrevPage()" style="'+btnStyle+(_mvPage===0?'opacity:0.3;':'')+'">◀ 이전</button>';
+                html+='<span style="font-size:11px;color:#94a3b8;font-weight:700;">'+(_mvPage+1)+' / '+totalPages+'</span>';
+                html+='<button onclick="_mvNextPage()" style="'+btnStyle+(_mvPage===totalPages-1?'opacity:0.3;':'')+'">다음 ▶</button>';
                 html+='</div>';
             }
             mvWrap.innerHTML=html;
-            // 세로형: 현재 선택 이미지로 자동 스크롤
-            if(_mvIsPortrait){
-                var activeEl=mvWrap.querySelector('.im-mv-active');
-                if(activeEl) setTimeout(function(){ activeEl.scrollIntoView({block:'center'}); },50);
-            }
         } else {
             mvWrap.style.display='none';
-            mvWrap.style.overflowY='hidden'; // 세로형 스크롤 모드 복원
-            _mvIsPortrait=false;
             singleWrap.style.display='';
             document.getElementById('imgModal').style.backdropFilter=''; // 단일뷰: backdrop-filter 복원
             document.querySelectorAll('.im-zoom-btn').forEach(function(b){b.style.visibility='';});
@@ -7288,9 +7276,17 @@
     function toggleImgMultiView(){
         _mMultiView=!_mMultiView;
         _mZoom=1.0;_mTX=0;_mTY=0;
-        if(_mMultiView){_mvZoom=1.0;_mvTX=0;_mvTY=0;}
+        if(_mMultiView){_mvZoom=1.0;_mvTX=0;_mvTY=0;_mvPage=0;}
         _updateModal();
         if(_mMultiView) _initMvEvents();
+    }
+    function _mvPrevPage(){
+        if(_mvPage>0){_mvPage--;_mvZoom=1.0;_mvTX=0;_mvTY=0;_updateModal();}
+    }
+    function _mvNextPage(){
+        var perPage=_mvIsPortrait?3:4;
+        var totalPages=Math.ceil(_mUrls.length/perPage);
+        if(_mvPage<totalPages-1){_mvPage++;_mvZoom=1.0;_mvTX=0;_mvTY=0;_updateModal();}
     }
     function _imgMvSelect(i){
         if(_mvDragMoved){_mvDragMoved=false;return;}
