@@ -6065,16 +6065,9 @@
             return e[1] && (e[1].category||'일반')===cat;
         }).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
         if(!matched.length){ botD.innerHTML='<span>📂 <strong>'+escHtml(cat)+'</strong> 카테고리에 등록된 항목이 없습니다.</span>'; return; }
-        var use3col = matched.length >= 3;
-        var wrapStyle = use3col
-            ? 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;'
-            : '';
-        var cardStyle = use3col ? 'transform:none;text-align:center;padding:9px 6px;font-size:12px;' : '';
-        var h='<strong>📂 '+escHtml(cat)+' ('+matched.length+'건):</strong>';
-        h += use3col ? '<div style="'+wrapStyle+'">' : '<div class="choice-card-wrap">';
+        var h='<strong>📂 '+escHtml(cat)+' ('+matched.length+'건):</strong><div class="choice-card-wrap">';
         matched.forEach(function(e){
-            h+="<button class='choice-card' style='"+cardStyle+"' onclick='showContentById(\""+e[1].title.replace(/\"/g,'&quot;')+"\")'>"
-                +(use3col?'':' ▶ ')+escHtml(e[1].title||e[0])+"</button>";
+            h+="<button class='choice-card' onclick='showContentById(\""+e[1].title.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(e[1].title||e[0])+"</button>";
         });
         h+='</div>';
         botD.innerHTML=h;
