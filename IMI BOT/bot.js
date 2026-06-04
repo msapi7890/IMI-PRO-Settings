@@ -476,6 +476,16 @@
             logRows = toLog.length > 0 ? toLog : null;
         }
 
+        // 비거래: TID 없는 항목만 있으면 Firebase 쓰기 자체를 건너뜀 (비용 절감)
+        if (rule.type === 'watch' && !combined.some(it => it.tid)) {
+            const t = new Date().toLocaleTimeString('ko-KR');
+            setStatus(`TID 미확인 — 알림 스킵 (${t})`, '#64748b');
+            document.getElementById('_imi_box').style.borderColor = '#3abff8';
+            document.getElementById('_imi_items').innerHTML = '';
+            setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
+            return;
+        }
+
         sendAlert(combined, logRows);
         if (rule.type === 'watch') {
             _clearLoggedKeys();
