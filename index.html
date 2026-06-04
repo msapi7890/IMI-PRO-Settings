@@ -1466,7 +1466,10 @@
         <div id="chatRoom1" style="flex:1;display:flex;flex-direction:column;min-height:0;">
             <div id="apiKeyWarningBar" style="display:none;padding:8px 14px;background:#7f1d1d;border-bottom:2px solid #ef4444;font-size:11px;font-weight:900;color:#fca5a5;text-align:center;flex-shrink:0;">⚠ AI 기능이 현재 비활성 상태입니다 — 관리자에게 문의해주세요</div>
             <div id="chatBox"></div>
-            <div class="chat-input-area">
+            <div class="chat-input-area" style="position:relative;">
+                <!-- 카테고리 팝업 -->
+                <div id="catMenuPopup" style="display:none;position:absolute;bottom:calc(100% + 6px);left:15px;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:14px;padding:10px;box-shadow:0 4px 24px rgba(0,0,0,0.35);z-index:9999;min-width:160px;max-width:240px;"></div>
+                <button id="catMenuBtn" onclick="_toggleCatMenu()" title="카테고리 검색" style="flex-shrink:0;padding:9px 13px;border-radius:20px;border:2.5px solid var(--border-ui);background:var(--bg-body);color:var(--text-main);font-size:15px;cursor:pointer;transition:0.15s;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">📂</button>
                 <input type="text" id="userInput" class="bordered-input shadow-sm" placeholder="질문을 입력하세요...">
                 <button onclick="ask()" id="askBtn" class="px-12 py-3 rounded-xl font-black text-white shadow-lg transition active:scale-95">전송</button>
             </div>
@@ -6012,6 +6015,48 @@
 
     function normalizeKey(k){ return k.replace(/[.#$\[\]\/]/g,'_'); }
 
+    // ── 카테고리 버튼 ──
+    function _toggleCatMenu(){
+        var popup = document.getElementById('catMenuPopup');
+        if(!popup) return;
+        if(popup.style.display !== 'none'){ popup.style.display='none'; return; }
+        var cats = currentMode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        var btnStyle = 'display:block;width:100%;text-align:left;padding:7px 12px;border-radius:8px;border:none;background:none;color:var(--text-main);font-size:13px;font-weight:700;cursor:pointer;';
+        popup.innerHTML = '<div style="font-size:10px;font-weight:900;color:var(--active-focus-color);margin-bottom:7px;padding:0 2px;">📂 카테고리 검색</div>'
+            + cats.map(function(c){
+                return '<button style="'+btnStyle+'" onmouseover="this.style.background=\'var(--border-ui)\'" onmouseout="this.style.background=\'none\'" onclick="_catMenuSelect(\''+c.replace(/'/g,"\\'")+'\')">'
+                    + escHtml(c) + '</button>';
+            }).join('');
+        popup.style.display = 'block';
+        // 팝업 외부 클릭 시 닫기
+        setTimeout(function(){
+            document.addEventListener('click', function _closeCat(e){
+                if(!document.getElementById('catMenuPopup').contains(e.target) && e.target.id!=='catMenuBtn'){
+                    document.getElementById('catMenuPopup').style.display='none';
+                    document.removeEventListener('click',_closeCat);
+                }
+            });
+        }, 10);
+    }
+    function _catMenuSelect(cat){
+        document.getElementById('catMenuPopup').style.display='none';
+        var inp = document.getElementById('userInput');
+        if(inp){ inp.value=cat; }
+        ask();
+    }
+    function _searchByCategory(cat, botD, idx){
+        var ranges = currentMode==='mania' ? MANUAL_RANGES : BAY_MANUAL_RANGES;
+        var titles = currentMode==='mania' ? Object.keys(MANUAL_INDEX||{}) : Object.keys(BAY_MANUAL_INDEX||{});
+        var matched = Object.entries(ranges).filter(function(e){
+            return e[1] && (e[1].category||'일반')===cat;
+        }).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
+        if(!matched.length){ botD.innerHTML='<span>📂 <strong>'+escHtml(cat)+'</strong> 카테고리에 등록된 항목이 없습니다.</span>'; return; }
+        var h='<strong>📂 '+escHtml(cat)+' ('+matched.length+'건):</strong><div class="choice-card-wrap">';
+        matched.forEach(function(e){ h+="<button class='choice-card' onclick='showContentById(\""+e[1].title.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(e[1].title||e[0])+"</button>"; });
+        h+='</div>';
+        botD.innerHTML=h;
+    }
+
     var _lastAskTime = 0;
     async function ask(){
         var inp=document.getElementById('userInput');
@@ -6046,7 +6091,15 @@
             }
         }
 
-        // 카테고리 검색 (매니아 전용: 일반/충전/결제/사고)
+        // 카테고리 검색 — 버튼 또는 직접 입력 모두 처리
+        var _allCats = currentMode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        if(_allCats.indexOf(q)>=0){
+            _searchByCategory(q, botD, idx);
+            document.getElementById('chatBox').scrollTop=99999;
+            return;
+        }
+
+        // 카테고리 검색 (매니아 전용: 일반/충전/결제/사고) — 하위호환
         if(currentMode==='mania'&&(kw==='일반'||kw==='충전'||kw==='결제'||kw==='사고')){
             var _catLabel = kw==='충전'?'충전':kw==='결제'?'결제':kw;
             var _catList=titles.filter(function(t){
