@@ -6031,7 +6031,7 @@
         }catch(e){}
         var cats = currentMode==='mania' ? _MANIA_CATS : _BAY_CATS;
         var btnStyle = 'display:block;width:100%;text-align:left;padding:7px 12px;border-radius:8px;border:none;background:none;color:var(--text-main);font-size:13px;font-weight:700;cursor:pointer;';
-        popup.innerHTML = '<div style="font-size:10px;font-weight:900;color:var(--active-focus-color);margin-bottom:7px;padding:0 2px;">📂 카테고리 검색</div>'
+        popup.innerHTML = '<div style="font-size:10px;font-weight:900;color:var(--active-focus-color);margin-bottom:7px;padding:0 2px;">🏷️ 카테고리 검색</div>'
             + cats.map(function(c){
                 return '<button style="'+btnStyle+'" onmouseover="this.style.background=\'var(--border-ui)\'" onmouseout="this.style.background=\'none\'" onclick="_catMenuSelect(\''+c.replace(/'/g,"\\'")+'\')">'
                     + escHtml(c) + '</button>';
