@@ -7283,8 +7283,7 @@
             var gridRows=_mvIsPortrait?1:2;
             var perPage=gridCols*gridRows;
             var totalPages=Math.ceil(_mUrls.length/perPage);
-            // _mvPage가 현재 이미지를 포함하는 페이지로 자동 이동
-            if(_mvPage*perPage>_mIdx||(_mvPage+1)*perPage<=_mIdx) _mvPage=Math.floor(_mIdx/perPage);
+            // 범위 초과만 클램프 (명시적 페이지 이동 시 자동 리셋 방지)
             _mvPage=Math.max(0,Math.min(_mvPage,totalPages-1));
             var startIdx=_mvPage*perPage;
             var pageUrls=_mUrls.slice(startIdx,startIdx+perPage);
@@ -7327,7 +7326,14 @@
     function toggleImgMultiView(){
         _mMultiView=!_mMultiView;
         _mZoom=1.0;_mTX=0;_mTY=0;
-        if(_mMultiView){_mvZoom=1.0;_mvTX=0;_mvTY=0;_mvPage=0;}
+        if(_mMultiView){
+            _mvZoom=1.0;_mvTX=0;_mvTY=0;
+            // 진입 시에만 현재 이미지 포함 페이지로 이동
+            var _img=document.getElementById('imgModalImg');
+            var _isP=_img&&_img.naturalWidth>0&&_img.naturalHeight>_img.naturalWidth;
+            var _pp=_isP?3:4;
+            _mvPage=Math.floor(_mIdx/_pp);
+        }
         _updateModal();
         if(_mMultiView) _initMvEvents();
     }
