@@ -408,6 +408,20 @@
                 <span onclick="_showLockRegister()" style="color:#3abff8;cursor:pointer;font-weight:700;">회원가입 신청</span>
             </div>
         </div>
+        <!-- 비밀번호 자동 초기화 뷰 (5회 실패) -->
+        <div id="lockAutoResetView" style="display:none;">
+            <div style="text-align:center;margin-bottom:14px;">
+                <div style="font-size:32px;margin-bottom:6px;">🔓</div>
+                <div style="font-size:13px;font-weight:900;color:#f87171;margin-bottom:4px;">비밀번호 5회 오류</div>
+                <div style="font-size:11px;color:#64748b;">임시 비밀번호가 자동 발급됐습니다</div>
+            </div>
+            <div style="background:#0f172a;border-radius:10px;padding:16px;text-align:center;border:1.5px solid #f59e0b;margin-bottom:14px;">
+                <div style="font-size:11px;color:#64748b;margin-bottom:8px;">임시 비밀번호</div>
+                <div id="lockAutoTmpPw" style="font-size:24px;font-weight:900;color:#f59e0b;letter-spacing:0.15em;font-family:monospace;"></div>
+                <div style="font-size:10px;color:#475569;margin-top:8px;line-height:1.6;">위 비밀번호로 로그인 후<br>새 비밀번호로 변경하세요</div>
+            </div>
+            <button onclick="_showLockLogin()" style="width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#0284c7,#3abff8);color:#fff;font-size:14px;font-weight:900;cursor:pointer;" onmouseover="this.style.opacity=0.82" onmouseout="this.style.opacity=1">← 로그인 화면으로</button>
+        </div>
         <!-- 회원가입 뷰 -->
         <div id="lockRegisterView" style="display:none;">
             <input type="text" id="lockRegName" placeholder="이름 (2자 이상)" autocomplete="off"
@@ -1698,7 +1712,7 @@
 
     // 화면 전환 헬퍼
     function _showLockView(id){
-        ['lockLoginView','lockRegisterView','lockRegDoneView','lockLoadingView','lockChangeView','lockFindPwView'].forEach(function(v){
+        ['lockLoginView','lockRegisterView','lockRegDoneView','lockLoadingView','lockChangeView','lockFindPwView','lockAutoResetView'].forEach(function(v){
             var el=document.getElementById(v); if(el) el.style.display='none';
         });
         var el=document.getElementById(id); if(el) el.style.display='';
@@ -1767,7 +1781,27 @@
                 : '존재하지 않는 이름입니다';
             errEl.style.display=''; return;
         }
-        if(user.pw_hash !== hash){ errEl.textContent='비밀번호가 올바르지 않습니다'; errEl.style.display=''; document.getElementById('lockPwInput').value=''; return; }
+        if(user.pw_hash !== hash){
+            var _failKey = 'imi_fail_' + _ukey(name);
+            var _fails = parseInt(localStorage.getItem(_failKey)||'0') + 1;
+            if(_fails >= 5){
+                localStorage.removeItem(_failKey);
+                var _chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                var _tmpPw=Array.from({length:6},function(){return _chars[Math.floor(Math.random()*_chars.length)];}).join('');
+                var _tmpHash=await _sha256(_tmpPw);
+                await _authFetch('imi_users/'+_ukey(name)+'/pw_hash.json','PUT',_tmpHash);
+                await _authFetch('imi_users/'+_ukey(name)+'/pw_changed_at.json','PUT',0);
+                var el=document.getElementById('lockAutoTmpPw'); if(el) el.textContent=_tmpPw;
+                _showLockView('lockAutoResetView');
+            } else {
+                localStorage.setItem(_failKey, _fails);
+                errEl.textContent='비밀번호가 올바르지 않습니다 ('+_fails+'/5)';
+                errEl.style.display='';
+                document.getElementById('lockPwInput').value='';
+            }
+            return;
+        }
+        localStorage.removeItem('imi_fail_' + _ukey(name)); // 로그인 성공 시 초기화
         if(!user.approved){ errEl.textContent='승인 대기 중입니다. 관리자의 승인을 기다려 주세요.'; errEl.style.display=''; return; }
         // 아이디·비밀번호 기억
         var chk=document.getElementById('lockRememberChk');
