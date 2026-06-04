@@ -3987,6 +3987,11 @@
             var bR2 = await _authFetch('manual_page_ranges/bay.json');
             if(mR  && typeof mR  === 'object') MANUAL_RANGES     = mR;
             if(bR2 && typeof bR2 === 'object') BAY_MANUAL_RANGES = bR2;
+            // 커스텀 카테고리 로드 (카테고리 버튼에서 즉시 사용)
+            var mc = await _authFetch('manual_cats/mania.json');
+            var bc = await _authFetch('manual_cats/bay.json');
+            if(mc && Array.isArray(mc) && mc.length) _MANIA_CATS = mc;
+            if(bc && Array.isArray(bc) && bc.length) _BAY_CATS   = bc;
         }catch(e){ /* Firebase 실패 시 HTML 하드코딩 값 유지 */ }
     }
 
