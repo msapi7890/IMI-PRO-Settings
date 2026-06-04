@@ -334,8 +334,9 @@
         body.green-mode .notice-card-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
         body.green-mode .reset-btn { color: #1e3a1e; }
 
-        /* ── 비거래 드롭패널 테마 연동 ── */
+        /* ── 비거래/사기글 드롭패널 테마 연동 ── */
         #watchDropPanel { background: var(--bg-card) !important; }
+        #fraudDropPanel { background: var(--bg-card) !important; }
 
         /* ── hover 배경 전환 버튼 공통 ── */
         .accent-hover-btn { transition: background 0.15s, color 0.15s, border-color 0.15s !important; color: var(--text-main) !important; }
@@ -1408,7 +1409,7 @@
 
 <!-- 비거래/사기글 드롭패널 — 헤더 아래 fixed, 원래 팝업 크기(500px) -->
 <div id="watchDropPanel" style="position:fixed;top:var(--header-h);left:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid transparent;margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,0.18);"></div>
-<div id="fraudDropPanel" style="position:fixed;top:var(--header-h);right:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid transparent;margin-top:2px;"></div>
+<div id="fraudDropPanel" style="position:fixed;top:var(--header-h);right:0;width:500px;max-height:0;overflow:hidden;z-index:5000;transition:max-height 0.28s ease;border-radius:0 0 12px 12px;background:var(--bg-card);border:2px solid transparent;margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,0.18);"></div>
 
 <main class="flex flex-1 overflow-hidden">
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
