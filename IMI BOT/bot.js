@@ -236,15 +236,8 @@
 
             // 제목 요소 먼저 추출 → 키워드는 제목에서만 매칭 (가격·날짜 칼럼 오탐 방지)
             const titleEl = el.querySelector('.subject, .kind_title, .item_title, .title, .col_title, td:nth-child(2)');
-            const title = titleEl
-                ? (() => {
-                    const raw = Array.from(titleEl.childNodes)
-                        .filter(n => n.nodeType === Node.TEXT_NODE)
-                        .map(n => n.textContent.trim()).filter(Boolean).join(' ');
-                    return (raw || titleEl.innerText.split('\n')[0]).trim();
-                })()
-                : text.substring(0, 40) + '...';
-            const kwText = titleEl ? (titleEl.innerText || titleEl.textContent || '').replace(/\s+/g, ' ').trim() : text;
+            const kwText = (titleEl ? (titleEl.innerText || titleEl.textContent || '') : text).replace(/\s+/g, ' ').trim();
+            const title = kwText || text.substring(0, 40) + '...';
             // 비거래(watch)는 카테고리 직접 접속 → 전체 행 텍스트로 매칭 (사기글은 제목 열만)
             const matchText = (rule.type === 'watch') ? text : kwText;
             // 점·공백·콤마 등 특수문자 제거 후 매칭 (자.쿰, 자 쿰, 9검6,7 등 우회 패턴 감지)
