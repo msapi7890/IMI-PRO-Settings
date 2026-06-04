@@ -10034,9 +10034,6 @@
             });
             panel._doneRef = doneRef; panel._doneListener = doneListener;
         } else {
-            var doneBtn2 = document.createElement('button');
-            doneBtn2.textContent = '처리완료';
-            doneBtn2.style.cssText = 'width:100%;margin-top:4px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
             var _closeNoTids = function(){
                 if(panel.innerHTML === '') return;
                 if(alertKey) db.ref('imi_watch_alerts/'+alertKey+'/done').set(true);
@@ -10048,14 +10045,34 @@
                 if(typeof _stopTabBlink === 'function') _stopTabBlink('watch');
                 if(typeof _syncWatchBanner === 'function') _syncWatchBanner();
             };
+            // itemRows 있으면 내용 표시 (TID 추출 실패해도 제목/가격은 보여줌)
+            if(itemRows.length > 0){
+                itemRows.forEach(function(r){
+                    var row = document.createElement('div');
+                    row.style.cssText = 'background:var(--bg-card);border:2px solid rgba(34,197,94,0.5);border-radius:8px;padding:7px 10px;';
+                    if(r.t){
+                        var titleD = document.createElement('div');
+                        titleD.style.cssText = 'font-size:12px;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                        titleD.textContent = r.t;
+                        row.appendChild(titleD);
+                    }
+                    if(r.p){
+                        var priceD = document.createElement('div');
+                        priceD.style.cssText = 'font-size:11px;color:#ef4444;font-weight:900;margin-top:2px;';
+                        priceD.textContent = Number(r.p).toLocaleString()+'원';
+                        row.appendChild(priceD);
+                    }
+                    tidContainer.appendChild(row);
+                });
+            }
+            var doneBtn2 = document.createElement('button');
+            doneBtn2.textContent = '처리완료';
+            doneBtn2.style.cssText = 'width:100%;margin-top:6px;padding:7px;background:#22c55e;color:#000;border:none;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer;';
             doneBtn2.onclick = _closeNoTids;
             tidContainer.appendChild(doneBtn2);
-            // tids 없는 알림 — 5초 후 자동 닫힘
-            var _noTidsAutoClose = setTimeout(_closeNoTids, 5000);
-            // Firebase done 변경 시 즉시 닫힘 (다른 클라이언트에서 처리완료 누른 경우)
             if(alertKey){
                 db.ref('imi_watch_alerts/'+alertKey+'/done').on('value', function(snap){
-                    if(snap.val()){ clearTimeout(_noTidsAutoClose); _closeNoTids(); }
+                    if(snap.val()){ _closeNoTids(); }
                 });
             }
         }
