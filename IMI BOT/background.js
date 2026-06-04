@@ -492,14 +492,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     const nowW = Date.now();
                     const rowsW = (msg.data.itemRows || []);
                     const tidsW = rowsW.map(r => r.tid || '').filter(Boolean);
-                    // tid 추출 실패 시 알림 스킵 (tid 없으면 처리 불가 + 반복 팝업 방지)
                     if (tidsW.length === 0) return;
                     firePush('/imi_watch_alerts', {
                         tids:     tidsW,
                         itemRows: rowsW.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
                         label:    msg.data.label   || msg.data.ruleName    || '',
                         keyword:  msg.data.keyword || msg.data.ruleKeyword || '',
-                        count:    tidsW.length,
+                        count:    rowsW.length,
                         at:       nowW,
                         seen:     false
                     }).catch(() => {});
