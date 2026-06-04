@@ -1308,6 +1308,8 @@ function _loadLogByType(fullDay, isWatch) {
         blockedList.forEach(function(item) {
             var k = typeof item === 'object' ? (item.key || '') : item;
             if (k) blockedSet[k] = true;
+            // TID로도 인덱싱 (key 불일치 대비)
+            if (typeof item === 'object' && item.tid) blockedSet[item.tid] = true;
         });
 
         histRef.once('value', function(snap) {
@@ -1349,7 +1351,7 @@ function _loadLogByType(fullDay, isWatch) {
                 var rows = (d.itemRows || []).map(function(it) {
                     var rawKey = it.key || (it.t || '').substring(0, 30).trim();
                     var bk = _esc(rawKey);
-                    var isBlocked = blockedSet[rawKey];
+                    var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                     var titleAttr = _esc(it.t || '');
                     var tidAttr = _esc(it.tid || '');
                     var listTime = it.listTime || '';
@@ -1437,7 +1439,7 @@ function _loadLogByType(fullDay, isWatch) {
                     var rows = (d.itemRows || []).map(function(it) {
                         var rawKey = it.key || (it.t || '').substring(0, 30).trim();
                         var bk = _esc(rawKey);
-                        var isBlocked = blockedSet[rawKey];
+                        var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                         var titleAttr = _esc(it.t || '');
                         var tidAttr   = _esc(it.tid || '');
                         var listTime  = it.listTime || '';
