@@ -276,7 +276,7 @@ function showWindow() {
 // ── 네이티브 알림 ─────────────────────────────────────────
 function showNativeNotif(title, body) {
     if (!Notification.isSupported()) return;
-    const opts = { title, body, silent: false };
+    const opts = { title, body, silent: false, timeoutType: 'never' };
     const icon = iconPath();
     if (icon) opts.icon = icon;
     const notif = new Notification(opts);
