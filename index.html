@@ -6050,9 +6050,12 @@
     }
     function _catMenuSelect(cat){
         document.getElementById('catMenuPopup').style.display='none';
-        var inp = document.getElementById('userInput');
-        if(inp){ inp.value=cat; }
-        ask();
+        var lid = 'L' + Date.now();
+        addMsg('', 'bot', lid);
+        var botD = document.getElementById(lid).querySelector('.bubble');
+        var idx = currentMode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
+        _searchByCategory(cat, botD, idx);
+        document.getElementById('chatBox').scrollTop = 99999;
     }
     function _searchByCategory(cat, botD, idx){
         var ranges = currentMode==='mania' ? MANUAL_RANGES : BAY_MANUAL_RANGES;
