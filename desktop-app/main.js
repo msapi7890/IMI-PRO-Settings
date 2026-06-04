@@ -372,12 +372,13 @@ function setupAutoUpdater() {
     setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 60 * 60 * 1000);
 }
 
-// ── 업데이트 설치 (창 먼저 완전 종료 후 인스톨러 실행) ────
+// ── 업데이트 설치 (앱 완전 종료 → autoInstallOnAppQuit 로 설치) ────
 function doInstallUpdate() {
     if (!autoUpdater) return;
     isQuitting = true;
     if (win) { try { win.destroy(); } catch(_) {} win = null; }
-    setTimeout(() => autoUpdater.quitAndInstall(true, true), 800);
+    // quitAndInstall 대신 app.quit() — autoInstallOnAppQuit:true 가 앱 완전 종료 후 인스톨러 실행
+    app.quit();
 }
 
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
