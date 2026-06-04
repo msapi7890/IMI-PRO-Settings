@@ -113,14 +113,24 @@ function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
     const labels  = [...new Set(merged)];
-    const ver      = appDisplayVersion();
-    const base     = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
-    const alertTxt = '🚨 IMI PRO v' + ver;
+    const ver  = appDisplayVersion();
+    const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
     if (labels.length === 0) {
         if (win) { win.setTitle(base); win.flashFrame(false); }
         return;
     }
-    if (win) { win.setTitle(alertTxt); win.flashFrame(true); }
+    // 감지 시 🚨 ↔ 기본 타이틀 900ms 깜빡임
+    if (win) win.flashFrame(true);
+    const titles = labels.length === 1
+        ? ['🚨 ' + labels[0] + ' 감지', base]
+        : labels.map(l => '🚨 ' + l + ' 감지');
+    let idx = 0;
+    if (win) win.setTitle(titles[0]);
+    _titleBlinkTimer = setInterval(() => {
+        if (!win) return;
+        win.setTitle(titles[idx % titles.length]);
+        idx++;
+    }, 900);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -153,10 +163,15 @@ function createWindow() {
     win = new BrowserWindow(opts);
     win.loadURL(APP_URL);
 
-    // 페이지 title 변경 완전 차단 — 항상 고정 타이틀 유지
-    win.on('page-title-updated', (e) => {
+    // 페이지 title 변경 — 🟢/🔴/🚨 이모지 타이틀만 통과, 나머지 차단
+    win.on('page-title-updated', (e, title) => {
         e.preventDefault();
-        // 타이틀은 _updateTitleBlink가 전담 — 페이지 title 변경만 차단
+        const ver = 'IMI PRO v' + appDisplayVersion();
+        if (!title) return;
+        if (title.startsWith('🚨') || title.startsWith('🟢') || title.startsWith('🔴')) {
+            // 버전이 없으면 기본 버전 텍스트로 교체
+            win.setTitle(title.includes('IMI PRO') ? title : title + ' ' + ver);
+        }
     });
 
     // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
