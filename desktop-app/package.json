@@ -1,6 +1,6 @@
 {
   "name": "imi-pro",
-  "version": "26.6.37",
+  "version": "26.6.38",
   "description": "IMI PRO Desktop",
   "main": "main.js",
   "scripts": {
@@ -32,12 +32,10 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
       "shortcutName": "IMI PRO",
-      "deleteAppDataOnUninstall": false,
-      "allowElevation": true
+      "deleteAppDataOnUninstall": false
     },
     "publish": {
       "provider": "github",
