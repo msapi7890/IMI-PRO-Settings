@@ -3877,10 +3877,10 @@
                 _mfUpdateNavBadge();
                 try{
                     var page     = await pdfDoc.getPage(i);
-                    var viewport = page.getViewport({scale:1.2}); // 메모리 절약
+                    var viewport = page.getViewport({scale:2.0}); // 고화질 렌더링
                     canvas.width=viewport.width; canvas.height=viewport.height;
                     await page.render({canvasContext:ctx,viewport:viewport}).promise;
-                    var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.80); });
+                    var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.92); });
                     var dlUrl = await _savePageToDb(mode, _manualPage, blob);
                     window._mfPageUrls.push({page:_manualPage, url:dlUrl});
                     // 캔버스 메모리 해제
