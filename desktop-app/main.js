@@ -119,18 +119,8 @@ function _updateTitleBlink() {
         if (win) { win.setTitle(base); win.flashFrame(false); }
         return;
     }
-    // 감지 시 🚨 ↔ 기본 타이틀 900ms 깜빡임
-    if (win) win.flashFrame(true);
-    const titles = labels.length === 1
-        ? ['🚨 ' + labels[0] + ' 감지', base]
-        : labels.map(l => '🚨 ' + l + ' 감지');
-    let idx = 0;
-    if (win) win.setTitle(titles[0]);
-    _titleBlinkTimer = setInterval(() => {
-        if (!win) return;
-        win.setTitle(titles[idx % titles.length]);
-        idx++;
-    }, 900);
+    // 감지 시 🚨 고정 + 작업표시줄 플래시
+    if (win) { win.setTitle('🚨 IMI PRO v' + ver); win.flashFrame(true); }
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
