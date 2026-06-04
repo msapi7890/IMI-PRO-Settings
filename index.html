@@ -6067,7 +6067,9 @@
         if(!matched.length){ botD.innerHTML='<span>📂 <strong>'+escHtml(cat)+'</strong> 카테고리에 등록된 항목이 없습니다.</span>'; return; }
         var h='<strong>📂 '+escHtml(cat)+' ('+matched.length+'건):</strong><div class="choice-card-wrap">';
         matched.forEach(function(e){
-            h+="<button class='choice-card' onclick='showContentById(\""+e[1].title.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(e[1].title||e[0])+"</button>";
+            var _t = (e[1].title||e[0]||'').replace(/\"/g,'&quot;');
+            if(!_t) return;
+            h+="<button class='choice-card' onclick='showContentById(\""+_t+"\")'>▶ "+escHtml(e[1].title||e[0])+"</button>";
         });
         h+='</div>';
         botD.innerHTML=h;
