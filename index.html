@@ -2550,8 +2550,13 @@
         h += '<input type="text" id="mfEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '<div style="display:flex;gap:4px;">';
         h += '<select id="mfEntryCat" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
-        h += '<button onclick="_mfAddCat()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>';
+        h += '<button onclick="_mfToggleCatAdd()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>';
         h += '<button onclick="_mfDelCat()" title="선택 카테고리 삭제" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#ef4444;font-size:12px;cursor:pointer;">🗑</button>';
+        h += '</div>';
+        h += '<div id="mfCatAddWrap" style="display:none;gap:4px;margin-top:2px;">';
+        h += '<input type="text" id="mfCatAddInput" placeholder="카테고리 이름 입력 후 Enter" onkeydown="if(event.key===\'Enter\')_mfConfirmAddCat();if(event.key===\'Escape\')_mfCancelAddCat();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #22c55e;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
+        h += '<button onclick="_mfConfirmAddCat()" style="padding:6px 12px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">추가</button>';
+        h += '<button onclick="_mfCancelAddCat()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>';
         h += '</div>';
         h += '<div style="display:flex;gap:6px;align-items:center;">';
         h += '<span style="font-size:11px;color:#64748b;flex-shrink:0;">페이지</span>';
@@ -2751,18 +2756,33 @@
         await _authFetch('manual_cats/'+mode+'.json','PUT',cats);
     }
 
-    async function _mfAddCat(){
-        var name = prompt('추가할 카테고리 이름:', '');
-        if(!name || !name.trim()) return;
-        name = name.trim();
+    function _mfToggleCatAdd(){
+        var wrap = document.getElementById('mfCatAddWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){ var inp = document.getElementById('mfCatAddInput'); if(inp){ inp.value=''; inp.focus(); } }
+    }
+
+    async function _mfConfirmAddCat(){
+        var inp = document.getElementById('mfCatAddInput');
+        if(!inp) return;
+        var name = inp.value.trim();
+        if(!name){ inp.focus(); return; }
         var mode = _mfMgmtMode;
         var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
-        if(cats.indexOf(name) >= 0){ alert('이미 있는 카테고리입니다.'); return; }
+        if(cats.indexOf(name) >= 0){ alert('이미 있는 카테고리입니다.'); inp.focus(); return; }
         cats.push(name);
         await _mfSaveCats(mode);
         _mfFillEntryCat(mode);
         var sel = document.getElementById('mfEntryCat');
         if(sel) sel.value = name;
+        _mfCancelAddCat();
+    }
+
+    function _mfCancelAddCat(){
+        var wrap = document.getElementById('mfCatAddWrap');
+        if(wrap) wrap.style.display = 'none';
     }
 
     async function _mfDelCat(){
