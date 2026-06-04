@@ -209,8 +209,11 @@ function createWindow() {
         }
     });
 
-    // 페이지 로드 완료 시 미처 못 받은 업데이트 상태 재전송
+    // 페이지 로드 완료 시 깜빡임 상태 초기화 + 업데이트 상태 재전송
     win.webContents.on('did-finish-load', () => {
+        _rendererBlinkLabels = [];
+        Object.keys(_sseBlinkLabels).forEach(k => delete _sseBlinkLabels[k]);
+        _updateTitleBlink();
         if (lastUpdateStatus) {
             win.webContents.send('update-status', lastUpdateStatus);
         }
