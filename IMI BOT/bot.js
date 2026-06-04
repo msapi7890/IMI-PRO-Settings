@@ -285,13 +285,17 @@
             }
 
             if (!href) {
-                const allEls = [el, ...Array.from(el.querySelectorAll('[onclick],[data-id],[data-no],[data-seq]'))];
+                const allEls = [el, ...Array.from(el.querySelectorAll('[onclick],[data-id],[data-no],[data-seq],[data-tid]'))];
                 for (const e of allEls) {
                     const oc = e.getAttribute('onclick') || '';
+                    const tidOc = oc.match(/[?&]tid=(\d+)/i);
+                    if (tidOc) { href = location.origin + '/sell/application.html?tid=' + tidOc[1] + '&pinit=2'; break; }
                     const m = oc.match(/application[^'"]*[?&]id=(\d+)/i)
                            || oc.match(/[?&]id=(\d+)/i)
                            || oc.match(/['"(](\d{4,})['")/]/);
                     if (m) { href = location.origin + '/sell/application.html?id=' + m[1] + '&pinit=2'; break; }
+                    const dtid = e.getAttribute('data-tid');
+                    if (dtid && /^\d+$/.test(dtid)) { href = location.origin + '/sell/application.html?tid=' + dtid + '&pinit=2'; break; }
                     const did = e.getAttribute('data-id') || e.getAttribute('data-no') || e.getAttribute('data-seq');
                     if (did && /^\d{3,}$/.test(did)) { href = location.origin + '/sell/application.html?id=' + did + '&pinit=2'; break; }
                 }
@@ -306,7 +310,7 @@
             // href·data-tid 모두 실패 시: 오늘 날짜 시작 TID 패턴을 DOM 속성 전체에서 탐색
             if (!tid) {
                 const todayPfx = (() => { const d = new Date(); return String(d.getFullYear()) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0'); })();
-                const re = new RegExp('\\b(' + todayPfx + '\\d{7,8})\\b');
+                const re = new RegExp('\\b(' + todayPfx + '\\d{6,10})\\b');
                 const allNodes = [el, ...Array.from(el.querySelectorAll('*'))];
                 outer: for (const node of allNodes) {
                     for (const attr of Array.from(node.attributes || [])) {
