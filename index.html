@@ -2548,7 +2548,11 @@
         h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">썸네일 클릭 → 시작 페이지 자동 입력. 항목별로 범위 지정 후 추가하세요.</div>';
         h += '<div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;">';
         h += '<input type="text" id="mfEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
-        h += '<select id="mfEntryCat" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
+        h += '<div style="display:flex;gap:4px;">';
+        h += '<select id="mfEntryCat" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
+        h += '<button onclick="_mfAddCat()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>';
+        h += '<button onclick="_mfDelCat()" title="선택 카테고리 삭제" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#ef4444;font-size:12px;cursor:pointer;">🗑</button>';
+        h += '</div>';
         h += '<div style="display:flex;gap:6px;align-items:center;">';
         h += '<span style="font-size:11px;color:#64748b;flex-shrink:0;">페이지</span>';
         h += '<input type="number" id="mfEntryFrom" min="1" placeholder="시작" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
@@ -2703,7 +2707,7 @@
         // 불러오기 버튼 텍스트 초기화
         var loadBtn = document.getElementById('mfLoadThumbsBtn');
         if(loadBtn){ loadBtn.disabled=false; loadBtn.textContent='📷 저장된 이미지 불러오기'; }
-        _mfFillEntryCat(mode);
+        _mfLoadCats(mode); // Firebase에서 카테고리 로드 후 select 갱신
         _mfFillEditSel(mode);
         _mfLoadRanges(mode);
         _mfEditCache = null; // 모드 전환 시 항목 수정 캐시 초기화
@@ -2727,7 +2731,52 @@
         var sel = document.getElementById('mfEntryCat');
         if(!sel) return;
         var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
-        sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'">'+escHtml(c)+'</option>'; }).join('');
+        var cur = sel.value;
+        sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'"'+(c===cur?' selected':'')+'>'+escHtml(c)+'</option>'; }).join('');
+    }
+
+    async function _mfLoadCats(mode){
+        try{
+            var saved = await _authFetch('manual_cats/'+mode+'.json');
+            if(saved && Array.isArray(saved) && saved.length){
+                if(mode==='mania') _MANIA_CATS = saved;
+                else _BAY_CATS = saved;
+            }
+        }catch(e){}
+        _mfFillEntryCat(mode);
+    }
+
+    async function _mfSaveCats(mode){
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        await _authFetch('manual_cats/'+mode+'.json','PUT',cats);
+    }
+
+    async function _mfAddCat(){
+        var name = prompt('추가할 카테고리 이름:', '');
+        if(!name || !name.trim()) return;
+        name = name.trim();
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        if(cats.indexOf(name) >= 0){ alert('이미 있는 카테고리입니다.'); return; }
+        cats.push(name);
+        await _mfSaveCats(mode);
+        _mfFillEntryCat(mode);
+        var sel = document.getElementById('mfEntryCat');
+        if(sel) sel.value = name;
+    }
+
+    async function _mfDelCat(){
+        var sel = document.getElementById('mfEntryCat');
+        if(!sel || !sel.value) return;
+        var val = sel.value;
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        if(cats.length <= 1){ alert('카테고리가 1개 이하일 때는 삭제할 수 없습니다.'); return; }
+        if(!confirm('"'+val+'" 카테고리를 삭제할까요?')) return;
+        var idx = cats.indexOf(val);
+        if(idx >= 0) cats.splice(idx, 1);
+        await _mfSaveCats(mode);
+        _mfFillEntryCat(mode);
     }
 
     async function _mfFillEditSel(mode){
@@ -3782,16 +3831,16 @@
             var pdfDoc   = await pdfjsLib.getDocument({data:arrayBuf}).promise;
             numPages = pdfDoc.numPages;
             if(prog) prog.textContent = 'PDF 파싱 완료 (총 '+numPages+'페이지) — 이미지 변환 시작...';
-            var _lastPage = numPages; // 실제 마지막으로 처리된 PDF 페이지
-            var _total = numPages - startFrom + 1; // 렌더링할 페이지 수
+            var _lastPage = numPages; // 완료된 PDF 페이지 수
+            var _total = numPages;
             var canvas = document.createElement('canvas');
             var ctx    = canvas.getContext('2d');
-            // startFrom부터 시작 — 이미 업로드된 앞 페이지는 건너뜀 (이어올리기 지원)
-            for(var i=startFrom;i<=numPages;i++){
+            // pdfPage=1~numPages 순서로 변환, 저장 시 manualPage = startFrom + pdfPage - 1
+            for(var i=1;i<=numPages;i++){
                 if(_mfCancelRender){ _lastPage = i-1; break; }
-                var _done = i - startFrom + 1;
-                _mfConvertStatus = _done + ' / ' + _total;
-                var _ph = '이미지 변환 중 p.'+i+' ('+_done+'/'+_total+')... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
+                var _manualPage = startFrom + i - 1; // 실제 매뉴얼 페이지 번호
+                _mfConvertStatus = i + ' / ' + _total;
+                var _ph = '이미지 변환 중 p.'+_manualPage+' ('+i+'/'+_total+')... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
                 _mfProgressHtml = _ph;
                 // 항상 현재 DOM 직접 조회 (모달 재빌드 후에도 최신 엘리먼트에 반영)
                 var _liveP = document.getElementById('mfNewProgress');
@@ -3803,9 +3852,8 @@
                     canvas.width=viewport.width; canvas.height=viewport.height;
                     await page.render({canvasContext:ctx,viewport:viewport}).promise;
                     var blob = await new Promise(function(resolve){ canvas.toBlob(function(b){resolve(b);},'image/jpeg',0.80); });
-                    var pageNum   = String(i).padStart(3,'0'); // i가 곧 시스템 페이지 번호
-                    var dlUrl = await _savePageToDb(mode, i, blob);
-                    window._mfPageUrls.push({page:i, url:dlUrl});
+                    var dlUrl = await _savePageToDb(mode, _manualPage, blob);
+                    window._mfPageUrls.push({page:_manualPage, url:dlUrl});
                     // 캔버스 메모리 해제
                     ctx.clearRect(0,0,canvas.width,canvas.height);
                     blob = null;
@@ -3825,7 +3873,7 @@
         _mfIsConverting = false;
         _mfConvertStatus = '';
         _mfUpdateNavBadge();
-        var _renderedCount = numPages >= startFrom ? numPages - startFrom + 1 : 0;
+        var _renderedCount = _lastPage; // 완료된 PDF 페이지 수 = 저장된 매뉴얼 페이지 수
         if(failedPages.length){
             _mfProgressHtml = '⚠ '+_renderedCount+'페이지 중 '+failedPages.length+'개 실패 — 나머지 완료';
             if(prog) prog.textContent = _mfProgressHtml;
