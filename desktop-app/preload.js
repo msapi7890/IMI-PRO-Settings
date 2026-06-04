@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onUpdateStatus:      (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
     setMonitorDisabled:  (val) => ipcRenderer.send('set-monitor-disabled', val),
     setOsNotifMuted:     (val) => ipcRenderer.send('set-os-notif-muted', val),
+    closeNotification:   () => ipcRenderer.send('close-notification'),
     flashFrame:          (val) => ipcRenderer.send('flash-frame', val),
     blinkTitle:          (on, labels) => ipcRenderer.send('blink-title', { on: !!on, labels: Array.isArray(labels) ? labels : (labels ? [labels] : []) }),
     send:                (ch, val) => ipcRenderer.send(ch, val),

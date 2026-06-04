@@ -1066,6 +1066,7 @@ function _stopTabBlink(id) {
 }
 
 function _hideMonitorFlashLocal() {
+    if (window.electronAPI && window.electronAPI.closeNotification) window.electronAPI.closeNotification();
     _removeChatBorderFlash();
     if (window._monFlashTimer) { clearTimeout(window._monFlashTimer); window._monFlashTimer = null; }
     if (window._overlayFlashInterval) { clearInterval(window._overlayFlashInterval); window._overlayFlashInterval = null; }

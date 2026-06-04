@@ -274,6 +274,8 @@ function showWindow() {
 }
 
 // ── 네이티브 알림 ─────────────────────────────────────────
+let _activeNotif = null;
+
 function showNativeNotif(title, body) {
     if (!Notification.isSupported()) return;
     const opts = { title, body, silent: false, timeoutType: 'never' };
@@ -281,7 +283,13 @@ function showNativeNotif(title, body) {
     if (icon) opts.icon = icon;
     const notif = new Notification(opts);
     notif.on('click', showWindow);
+    notif.on('close', () => { if (_activeNotif === notif) _activeNotif = null; });
+    _activeNotif = notif;
     notif.show();
+}
+
+function closeNativeNotif() {
+    if (_activeNotif) { try { _activeNotif.close(); } catch(_) {} _activeNotif = null; }
 }
 
 // ── Firebase SSE 리스너 (탐지 알림) ───────────────────────
@@ -368,6 +376,7 @@ function setupAutoUpdater() {
 ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed && !osNotifMuted) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
 ipcMain.handle('install-update',    ()                   => { if (autoUpdater) autoUpdater.quitAndInstall(true, true); });
+ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });
 ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flashFrame(!!val); });
