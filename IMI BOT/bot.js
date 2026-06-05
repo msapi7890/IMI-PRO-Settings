@@ -496,6 +496,22 @@
             document.getElementById('_imi_box').style.borderColor = '#3abff8';
             setTimeout(() => { if (!isRunning) return; submitSearch(); }, intervalMs);
         } else {
+            // 3초 재감지: 감지된 TID 없어지면 팝업 자동 닫기 (알림 없이 조용히)
+            const _dtids = combined.map(it => it.tid).filter(Boolean);
+            if (_dtids.length > 0) {
+                let _rcCount = 0;
+                const _rcTimer = setInterval(() => {
+                    _rcCount++;
+                    if (_rcCount >= 10 || !isRunning) { clearInterval(_rcTimer); return; }
+                    const cur = scanPage();
+                    if (cur.length === 0) return; // 페이지 로딩 중 스킵
+                    const curTids = new Set(cur.map(it => it.tid).filter(Boolean));
+                    if (!_dtids.some(tid => curTids.has(tid))) {
+                        clearInterval(_rcTimer);
+                        chrome.runtime.sendMessage({ type: 'FRAUD_CLEARED', ruleId: rule.id });
+                    }
+                }, 3000);
+            }
             setTimeout(() => {
                 if (!isRunning) return;
                 document.getElementById('_imi_box').style.borderColor = '#3abff8';

@@ -13,6 +13,13 @@ window.addEventListener('message', function(e) {
             _sendToBot({ type: 'SYNC_STATUS' });
         }
     }
+    // 사기글 재감지 자동 닫기 신호
+    if (e.data.__imiBotPush && e.data.type === 'FRAUD_CLEARED') {
+        if (window._fraudCloseHandlers) {
+            var _fcFn = window._fraudCloseHandlers[e.data.ruleId || '_'];
+            if (_fcFn) _fcFn();
+        }
+    }
     // Firebase 오프라인 시 bridge 직접 푸시로 상태 수신
     if (e.data.type === 'BOT_STATUS_DIRECT' && e.data.status) {
         var s = e.data.status;
@@ -807,9 +814,16 @@ function _getNotifPrefs(){
             }, 400);
         });
 
-        // 사기글: 30초 자동 닫기
+        // 사기글: 30초 자동 닫기 + 재감지 자동 닫기 핸들러 등록
         if (!isWatch) {
             _autoCloseTimer = setTimeout(remove, 30000);
+            if (!window._fraudCloseHandlers) window._fraudCloseHandlers = {};
+            var _rid = data.ruleId || '_';
+            window._fraudCloseHandlers[_rid] = function() {
+                clearTimeout(_autoCloseTimer);
+                remove();
+                delete window._fraudCloseHandlers[_rid];
+            };
         }
     };
 }());

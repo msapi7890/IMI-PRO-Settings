@@ -485,6 +485,21 @@ fireGet('/imi_watch_banner').then(data => {
 
 // --- Message handler ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'FRAUD_CLEARED') {
+        const ruleId = msg.ruleId || '_';
+        try {
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(function(tab) {
+                    if (!tab.url) return;
+                    if (tab.url.includes('msapi7890.github.io') || tab.url.includes('127.0.0.1') || tab.url.includes('localhost')) {
+                        chrome.tabs.sendMessage(tab.id, { __imiBotPush: true, type: 'FRAUD_CLEARED', ruleId: ruleId }).catch(() => {});
+                    }
+                });
+            });
+        } catch(e) {}
+        sendResponse({ ok: true });
+        return true;
+    }
     if (msg.type === 'DEBUG_LOG') {
         console.log('[BOT]', msg.text);
         sendResponse({ ok: true });
