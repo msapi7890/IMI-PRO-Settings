@@ -4680,6 +4680,23 @@
         document.getElementById('chatBox').scrollTop = 99999;
     }
     function _searchByCategory(cat, botD, idx){
+        // 베이: BAY_CATEGORY_GROUPS 기반 (BAY_MANUAL_RANGES.category 미설정 대응)
+        if(currentMode==='bay'){
+            var _bg = BAY_CATEGORY_GROUPS[cat] || BAY_CATEGORY_GROUPS[cat.trim()] || null;
+            if(!_bg){
+                var _bk = Object.keys(BAY_CATEGORY_GROUPS).find(function(c){ return c===cat||c===cat.trim(); });
+                if(_bk) _bg = BAY_CATEGORY_GROUPS[_bk];
+            }
+            if(_bg && _bg.length){
+                var use3col2 = _bg.length >= 8;
+                var h2='<strong>🏷️ '+escHtml(cat)+' ('+_bg.length+'건):</strong>';
+                h2 += use3col2 ? '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">' : '<div class="choice-card-wrap">';
+                _bg.forEach(function(t){ h2+="<button class='choice-card' onclick='showContentById(\""+t.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(t)+"</button>"; });
+                h2+='</div>';
+                botD.innerHTML=h2;
+                return;
+            }
+        }
         var ranges = currentMode==='mania' ? MANUAL_RANGES : BAY_MANUAL_RANGES;
         var titles = currentMode==='mania' ? Object.keys(MANUAL_INDEX||{}) : Object.keys(BAY_MANUAL_INDEX||{});
         var matched = Object.entries(ranges).filter(function(e){
