@@ -987,6 +987,38 @@
     }
     function _mfCacheKey(mode, pageNum){ return 'mf_'+mode+'_'+_b64PadPage(pageNum); }
 
+    // 다른 사용자 캐시 무효화 기록을 DB에 씀 (아주 작은 텍스트)
+    async function _mfWriteCacheInvalidate(mode, pageNums){
+        try{
+            var ts = Date.now();
+            var patch = {};
+            pageNums.forEach(function(n){ patch['p'+_b64PadPage(n)] = ts; });
+            await _authFetch('cache_invalidate/'+mode+'.json','PATCH', patch);
+        }catch(e){}
+    }
+
+    // 앱 시작 시: DB 무효 목록 읽고 해당 캐시 삭제 + 7일 지난 기록 정리
+    async function _mfApplyCacheInvalidation(){
+        try{
+            var cutoff = Date.now() - 7*24*60*60*1000;
+            for(var mode of ['mania','bay']){
+                var inv = await _authFetch('cache_invalidate/'+mode+'.json');
+                if(!inv || typeof inv !== 'object') continue;
+                var expired = {};
+                var keys = Object.keys(inv);
+                for(var i=0; i<keys.length; i++){
+                    var k = keys[i];
+                    var pageNum = parseInt(k.replace('p',''), 10);
+                    if(!isNaN(pageNum)) await _mfCacheDel(_mfCacheKey(mode, pageNum));
+                    if(inv[k] < cutoff) expired[k] = null;
+                }
+                if(Object.keys(expired).length){
+                    await _authFetch('cache_invalidate/'+mode+'.json','PATCH', expired);
+                }
+            }
+        }catch(e){}
+    }
+
     async function _savePageToDb(mode, pageNum, blob){
         return new Promise(function(resolve, reject){
             var reader = new FileReader();
@@ -995,8 +1027,9 @@
                     var b64 = e.target.result.split(',')[1];
                     await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json','PUT',b64);
                     var dataUrl = 'data:image/jpeg;base64,'+b64;
-                    // 캐시 갱신 (덮어쓰기 포함)
+                    // 내 캐시 갱신 + 다른 사용자 캐시 무효 기록
                     _mfCacheSet(_mfCacheKey(mode, pageNum), dataUrl).catch(function(){});
+                    _mfWriteCacheInvalidate(mode, [pageNum]).catch(function(){});
                     resolve(dataUrl);
                 }catch(err){ reject(err); }
             };
@@ -2735,6 +2768,11 @@
 
         if(progEl) progEl.textContent = '✅ 완료! 이미지 '+done+'장 이동 · 항목 '+rangeChanged+'건 업데이트';
         if(btn){ btn.disabled=false; }
+        // 이동된 페이지 캐시 무효화 (구 위치 + 새 위치 모두)
+        var affectedPages = pages.reduce(function(acc, oldNum){
+            acc.push(oldNum); acc.push(oldNum + shiftBy); return acc;
+        }, []);
+        _mfWriteCacheInvalidate(mode, affectedPages).catch(function(){});
         _mfEditCache = null;
         _mfLoadRanges(mode);
         window._mfPageUrls = [];
@@ -2880,6 +2918,7 @@
     }
 
     async function _initManualData(){
+        _mfApplyCacheInvalidation(); // 무효 목록 확인 후 캐시 정리 (백그라운드)
         try{
             var mI  = await _authFetch('imi_manual_index/mania.json');
             var bI  = await _authFetch('imi_manual_index/bay.json');
