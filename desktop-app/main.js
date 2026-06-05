@@ -83,7 +83,14 @@ function buildAppMenu() {
                     saveSettings(s);
                     app.setLoginItemSettings({ openAtLogin: s.openAtLogin, path: app.getPath('exe') });
                 }
-            }
+            },
+            { type: 'separator' },
+            {
+                label: '📢 업데이트 알림 발송',
+                click: () => { showWindow(); if (win) win.webContents.send('open-update-notice'); }
+            },
+            { type: 'separator' },
+            { label: 'exe #'+EXE_BUILD, enabled: false }
         ]
     }]));
 }

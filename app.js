@@ -348,6 +348,10 @@
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
         // 업데이트 알림 Firebase 리스너 시작
         _startUpdateNoticeListener();
+        // 설정 메뉴(native)에서 업데이트 알림 발송 클릭 시 모달 열기
+        if(window.electronAPI && window.electronAPI.onOpenUpdateNotice){
+            window.electronAPI.onOpenUpdateNotice(function(){ _openUpdateNoticeSend(); });
+        }
         // 승인 대기 감시
         if(user.role === 'admin' || user.role === 'subadmin') _authWatchPending();
         // 로그인 후 메모 로드 (시작 시 _currentUser 없어서 스킵됐던 것 복구)
@@ -512,19 +516,8 @@
             : '';
         var rowS = 'padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;';
         h += '<div id="authInlineSettings" style="display:none;border-bottom:1px solid var(--border-ui);background:var(--bg-body);">';
-        // 버전 정보
-        var _webVer = '26.6.33';
-        var _exeBuild = '';
-        if(window.electronAPI && window.electronAPI.getExeBuild){
-            try{ _exeBuild = await window.electronAPI.getExeBuild(); }catch(e){}
-        }
-        var _verText = '웹 v'+_webVer+((_exeBuild!==''&&_exeBuild!==undefined)?' · exe #'+_exeBuild:'');
-        h += '<div style="padding:7px 16px;font-size:10px;color:#475569;border-bottom:1px solid var(--border-ui);user-select:text;">'+_verText+'</div>';
         if(_currentUser){
             h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 멤버 목록'+pendingTag+'</div>';
-        }
-        if(isAdmin){
-            h += '<div onclick="_openUpdateNoticeSend()" style="'+rowS+'color:#f59e0b;border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f4e2; 업데이트 알림 발송</div>';
         }
         h += '<div onclick="_openUserChangePw()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f511; 비밀번호 변경</div>';
         h += '<div onclick="_authLogout()" style="'+rowS+'color:#ef4444;" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f6aa; 로그아웃</div>';
