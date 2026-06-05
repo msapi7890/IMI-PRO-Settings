@@ -110,38 +110,42 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 44; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 45; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
 }
 
-// ── 타이틀 / 작업표시줄 깜빡임 핵심 함수 ─────────────────────
-let _titleBlinkTimer = null;
+// ── 타이틀 / 아이콘 / 작업표시줄 상태 핵심 함수 ─────────────
+let _iconBlinkTimer = null;
 
 function _updateTitleBlink() {
-    if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+    if (_iconBlinkTimer) { clearInterval(_iconBlinkTimer); _iconBlinkTimer = null; }
+
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
-    const labels  = [...new Set(merged)];
+    const hasAlert = merged.length > 0;
     const ver  = appDisplayVersion();
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
-    if (labels.length === 0) {
+
+    if (!hasAlert) {
+        // 평상시: 타이틀 고정, 플래시 없음, 아이콘 상태색
         if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
-        _updateWindowIcon();
+        if (win && !win.isDestroyed()) {
+            try { win.setIcon(_getColorIcon(monitorActive ? 'green' : 'red')); } catch(_) {}
+        }
         return;
     }
-    // 감지 시: 작업표시줄 고정 주황불 (깜빡임 없음) + 타이틀 🟢↔🚨 교대
+
+    // 감지 중: 타이틀 고정, 비포커스 시 주황불, 아이콘 🚨↔🟢 교대
+    if (win) win.setTitle(base); // 타이틀 고정
     if (win && !win.isFocused()) {
-        win.setProgressBar(1, { mode: 'error' }); // 고정 주황불 (flashFrame 없음)
+        win.setProgressBar(1, { mode: 'error' }); // 고정 주황불
     }
-    const alert = '🚨 IMI PRO v' + ver;
-    if (win) win.setTitle(alert);
-    let _bi = 0;
-    _titleBlinkTimer = setInterval(() => {
-        if (!win) return;
-        win.setTitle(_bi++ % 2 === 0 ? base : alert);
+    let _ii = 0;
+    _iconBlinkTimer = setInterval(() => {
+        if (!win || win.isDestroyed()) return;
+        try { win.setIcon(_getColorIcon(_ii++ % 2 === 0 ? 'alert' : 'green')); } catch(_) {}
     }, 900);
-    _updateWindowIcon();
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -258,17 +262,11 @@ function createWindow() {
         _updateWindowIcon();  // 초기 아이콘 색상 설정
     });
 
-    // 포커스 시 주황불 OFF — 미처리 알림 있으면 타이틀 교대 유지, 없으면 🟢 복귀
+    // 포커스 시: 플래시 즉시 OFF, 아이콘 교대는 유지
     win.on('focus', () => {
         win.flashFrame(false);
-        win.setProgressBar(-1);
-        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-        if (!hasAlert) {
-            if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
-            const ver = appDisplayVersion();
-            win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
-        }
-        // 알림 처리 중이면 타이틀 🟢↔🚨 교대는 계속 유지
+        win.setProgressBar(-1); // 주황불 즉시 꺼짐
+        // 아이콘 교대(_iconBlinkTimer)는 계속 유지 — 감지 해제 시 자동 정리됨
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
