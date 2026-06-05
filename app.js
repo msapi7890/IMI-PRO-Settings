@@ -7856,8 +7856,8 @@
         _makeDraggable('urgentDetailContent','urgentDetailDragHandle');
         _makeDraggable('noticeModalContent','noticeModalDragHandle');
         _injectStyle('_modalFixedSize',
-            '#noticeModalContent{height:900px!important;max-height:900px!important;overflow:hidden!important;}' +
-            '#urgentDetailContent{height:900px!important;max-height:900px!important;overflow:hidden!important;}'
+            '#noticeModalContent{width:min(95vw,1080px)!important;height:900px!important;max-height:900px!important;overflow:hidden!important;}' +
+            '#urgentDetailContent{width:min(95vw,1080px)!important;height:900px!important;max-height:900px!important;overflow:hidden!important;}'
         );
     })();
 
