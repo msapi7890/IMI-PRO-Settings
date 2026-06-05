@@ -7772,7 +7772,7 @@
         var c=document.getElementById(contentId);
         if(!c) return;
         c.style.left='50%'; c.style.top='50%'; c.style.transform='translate(-50%,-50%)';
-        c.style.width=''; c.style.height='660px'; c.style.maxHeight='86vh';
+        c.style.width=''; c.style.height='660px'; c.style.maxHeight='660px';
     }
     (function(){
         function _makeDraggable(contentId, handleId){
