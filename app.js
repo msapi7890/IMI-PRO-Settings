@@ -6669,7 +6669,8 @@
     function openUrgentHistory(){
         renderUrgentHistoryModal();
         document.getElementById('urgentHistoryModal').classList.remove('hidden');
-    }
+        _urgentFont.init();
+        _urgentFont.init();
     function closeUrgentHistory(){
         document.getElementById('urgentHistoryModal').classList.add('hidden');
     }
@@ -7131,6 +7132,7 @@
         buildAnmSidebar();
         renderAllNotices();
         document.getElementById('allNoticesModal').classList.remove('hidden');
+        _noticeFont.init();
     }
     function closeAllNoticesModal(){
         document.getElementById('allNoticesModal').classList.add('hidden');
@@ -7758,26 +7760,45 @@
     var _termsCurrentTab = 1;
     var _termsMatchIdx = 0;
 
+    // ── 모달별 폰트 크기 조절 ──────────────────────
+    function _makeModalFont(contentId, rangeId, storageKey){
+        var sz = parseInt(localStorage.getItem(storageKey)||'13');
+        var set = function(v){
+            sz = Math.min(22, Math.max(11, parseInt(v)||13));
+            localStorage.setItem(storageKey, sz);
+            var c = document.getElementById(contentId);
+            if(c) c.style.fontSize = sz+'px';
+            var r = document.getElementById(rangeId);
+            if(r) r.value = sz;
+        };
+        return { set: set, adj: function(d){ set(sz+d); }, init: function(){ set(sz); } };
+    }
+    var _urgentFont = _makeModalFont('urgentHistoryModalList','urgentFontRange','imi_urgent_font');
+    var _noticeFont = _makeModalFont('allNoticesList','noticeFontRange','imi_notice_font');
+    window._urgentFontSet = function(v){ _urgentFont.set(v); };
+    window._urgentFontAdj = function(d){ _urgentFont.adj(d); };
+    window._noticeFontSet = function(v){ _noticeFont.set(v); };
+    window._noticeFontAdj = function(d){ _noticeFont.adj(d); };
     var _termsFontSz = parseInt(localStorage.getItem('imi_terms_font')||'13');
-    function _termsFontSet(sz){
+    window._termsFontSet = function(sz){
         _termsFontSz = Math.min(22, Math.max(11, parseInt(sz)||13));
         localStorage.setItem('imi_terms_font', _termsFontSz);
         var c = document.getElementById('termsContent');
         if(c) c.style.fontSize = _termsFontSz + 'px';
         var r = document.getElementById('termsFontRange');
         if(r) r.value = _termsFontSz;
-    }
-    function _termsFontAdj(delta){ _termsFontSet(_termsFontSz + delta); }
+    };
+    window._termsFontAdj = function(delta){ window._termsFontSet(_termsFontSz + delta); };
     function openTermsModal(){
         document.getElementById('termsModal').classList.remove('hidden');
         document.getElementById('termsSearchInput').value = '';
         document.getElementById('termsMatchInfo').textContent = '';
-        _termsFontSet(_termsFontSz);
         var isBay = currentMode === 'bay';
         document.getElementById('termTab1').style.display = isBay ? 'none' : '';
         document.getElementById('termTab2').style.display = isBay ? 'none' : '';
         document.getElementById('termTab3').style.display = isBay ? '' : 'none';
         switchTermsTab(isBay ? 3 : 1);
+        window._termsFontSet(_termsFontSz);
         setTimeout(function(){document.getElementById('termsSearchInput').focus();}, 150);
     }
     function closeTermsModal(){

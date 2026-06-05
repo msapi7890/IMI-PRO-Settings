@@ -305,7 +305,10 @@
                 <div style="font-size:16px;font-weight:900;">🚨 긴급공지 전체 내역</div>
                 <div style="font-size:10px;opacity:0.5;margin-top:3px;">카드 클릭 시 상세보기 · 48시간 경과 시 티커 자동 제거 · 매니아/베이 공통</div>
             </div>
-            <button onclick="closeUrgentHistory()" style="font-size:26px;opacity:0.3;cursor:pointer;background:none;border:none;line-height:1;color:var(--text-main);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
+            <button onclick="_urgentFontAdj(-1)" title="글자 작게" style="padding:4px 7px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:11px;font-weight:900;color:var(--text-sub);line-height:1;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">A-</button>
+                <input type="range" id="urgentFontRange" min="11" max="22" value="13" style="width:72px;accent-color:#3abff8;cursor:pointer;vertical-align:middle;" oninput="_urgentFontSet(this.value)">
+                <button onclick="_urgentFontAdj(1)" title="글자 크게" style="padding:4px 7px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:13px;font-weight:900;color:var(--text-sub);line-height:1;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">A+</button>
+                <button onclick="closeUrgentHistory()" style="font-size:26px;opacity:0.3;cursor:pointer;background:none;border:none;line-height:1;color:var(--text-main);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.3">×</button>
         </div>
         <div id="urgentHistoryModalList" style="flex:1;overflow-y:auto;padding:0;display:flex;flex-direction:column;"></div>
     </div>
@@ -922,6 +925,9 @@
             </div>
             <div class="flex gap-2 items-center">
                 <input type="text" id="allNoticeSearch" oninput="renderAllNotices()" class="px-3 py-2 bordered-input text-xs w-48" placeholder="제목 / 내용 검색...">
+                <button onclick="_noticeFontAdj(-1)" title="글자 작게" style="padding:4px 7px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:11px;font-weight:900;color:var(--text-sub);line-height:1;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">A-</button>
+                <input type="range" id="noticeFontRange" min="11" max="22" value="13" style="width:72px;accent-color:#3abff8;cursor:pointer;vertical-align:middle;" oninput="_noticeFontSet(this.value)">
+                <button onclick="_noticeFontAdj(1)" title="글자 크게" style="padding:4px 7px;border-radius:7px;border:1.5px solid var(--border-ui);background:none;cursor:pointer;font-size:13px;font-weight:900;color:var(--text-sub);line-height:1;" onmouseover="this.style.borderColor='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)'">A+</button>
                 <button onclick="closeAllNoticesModal()" class="text-2xl opacity-30 hover:opacity-100 transition px-2">×</button>
             </div>
         </div>
