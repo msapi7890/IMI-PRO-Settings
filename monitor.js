@@ -125,6 +125,15 @@ function _subscribeBotStatus() {
     });
 }
 _subscribeBotStatus(); // 초기 시도 (auth 캐시 있으면 즉시 성공)
+
+/* 작업표시줄 🟢/🔴 주기적 동기화 — 타이밍 문제 방어 */
+setInterval(function() {
+    if (!window.electronAPI) return;
+    var isActive = _botStatus && _botStatus.active;
+    var isStale  = _botStatus && _botStatus.lastUpdate && (Date.now() - _botStatus.lastUpdate) > 5 * 60 * 1000;
+    window.electronAPI.send('monitor-active', !!(isActive && !isStale));
+}, 5000);
+
 firebase.auth().onAuthStateChanged(function(user) {
     if (!user) return;
     _subscribeBotStatus();
