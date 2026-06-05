@@ -102,6 +102,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
+const EXE_BUILD = 40; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -421,6 +422,7 @@ function doInstallUpdate() {
 // ── IPC (렌더러 → 메인 알림 요청) ────────────────────────
 ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed && !osNotifMuted) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
+ipcMain.handle('get-exe-build',     ()                   => EXE_BUILD);
 ipcMain.handle('install-update',    ()                   => doInstallUpdate());
 ipcMain.handle('restart-app', async () => {
     const ses2 = require('electron').session.fromPartition('persist:imipro');

@@ -512,6 +512,14 @@
             : '';
         var rowS = 'padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;';
         h += '<div id="authInlineSettings" style="display:none;border-bottom:1px solid var(--border-ui);background:var(--bg-body);">';
+        // 버전 정보
+        var _webVer = '26.6.33';
+        var _exeBuild = '';
+        if(window.electronAPI && window.electronAPI.getExeBuild){
+            try{ _exeBuild = await window.electronAPI.getExeBuild(); }catch(e){}
+        }
+        var _verText = '웹 v'+_webVer+((_exeBuild!==''&&_exeBuild!==undefined)?' · exe #'+_exeBuild:'');
+        h += '<div style="padding:7px 16px;font-size:10px;color:#475569;border-bottom:1px solid var(--border-ui);user-select:text;">'+_verText+'</div>';
         if(_currentUser){
             h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 멤버 목록'+pendingTag+'</div>';
         }
