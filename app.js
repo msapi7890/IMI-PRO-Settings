@@ -1159,10 +1159,7 @@
             h += '<input type="number" id="mfShiftCount" min="1" value="1" placeholder="밀 페이지 수" style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
             h += '</div>';
             h += '<div id="mfShiftProgress" style="font-size:10px;color:#a78bfa;margin-bottom:6px;min-height:12px;white-space:pre-wrap;"></div>';
-            h += '<div style="display:flex;gap:6px;">';
-            h += '<button onclick="_mfShiftPages()" style="flex:1;padding:6px 0;border-radius:7px;background:#1e293b;color:#a78bfa;font-size:10px;font-weight:900;border:1px solid #7c3aed;cursor:pointer;">📋 DB 항목만 밀기</button>';
-            h += '<button onclick="_mfShiftImages()" style="flex:1;padding:6px 0;border-radius:7px;background:#4c1d95;color:#ddd6fe;font-size:10px;font-weight:900;border:1px solid #7c3aed;cursor:pointer;">🖼 이미지+DB 같이 밀기</button>';
-            h += '</div>';
+            h += '<button onclick="_mfShiftImages()" style="width:100%;padding:7px 0;border-radius:7px;background:#4c1d95;color:#ddd6fe;font-size:11px;font-weight:900;border:1px solid #7c3aed;cursor:pointer;">📄 페이지 밀기 실행</button>';
             h += '</div>';
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
