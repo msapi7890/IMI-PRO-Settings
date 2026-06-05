@@ -109,6 +109,7 @@ function appDisplayVersion() {
 
 // ── 타이틀 / 작업표시줄 깜빡임 핵심 함수 ─────────────────────
 let _titleBlinkTimer = null;
+
 function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
     const merged = [..._rendererBlinkLabels, ...Object.values(_sseBlinkLabels)];
@@ -116,11 +117,14 @@ function _updateTitleBlink() {
     const ver  = appDisplayVersion();
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
     if (labels.length === 0) {
-        if (win) { win.setTitle(base); win.flashFrame(false); }
+        if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
         return;
     }
-    // 감지 시 🚨 ↔ 🟢 교대 (텍스트 고정) + 플래시
-    if (win) win.flashFrame(true);
+    // 감지 시: 한 번 flashFrame(주의 유도) + 작업표시줄 고정 빨간색 (점멸 없음)
+    if (win && !win.isFocused()) {
+        win.flashFrame(true);
+        win.setProgressBar(1, { mode: 'error' }); // 작업표시줄 버튼 고정 빨간색
+    }
     const alert = '🚨 IMI PRO v' + ver;
     if (win) win.setTitle(alert);
     let _bi = 0;
@@ -189,10 +193,11 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시 이모지 교대·플래시 모두 정지
+    // 포커스 시 플래시·빨간바 정지 (이모지 교대는 유지)
     win.on('focus', () => {
         if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
         win.flashFrame(false);
+        win.setProgressBar(-1);
         const ver = appDisplayVersion();
         const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
         win.setTitle(hasAlert ? '🚨 IMI PRO v' + ver : (monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver));
