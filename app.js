@@ -7758,10 +7758,21 @@
     var _termsCurrentTab = 1;
     var _termsMatchIdx = 0;
 
+    var _termsFontSz = parseInt(localStorage.getItem('imi_terms_font')||'13');
+    function _termsFontSet(sz){
+        _termsFontSz = Math.min(22, Math.max(11, parseInt(sz)||13));
+        localStorage.setItem('imi_terms_font', _termsFontSz);
+        var c = document.getElementById('termsContent');
+        if(c) c.style.fontSize = _termsFontSz + 'px';
+        var r = document.getElementById('termsFontRange');
+        if(r) r.value = _termsFontSz;
+    }
+    function _termsFontAdj(delta){ _termsFontSet(_termsFontSz + delta); }
     function openTermsModal(){
         document.getElementById('termsModal').classList.remove('hidden');
         document.getElementById('termsSearchInput').value = '';
         document.getElementById('termsMatchInfo').textContent = '';
+        _termsFontSet(_termsFontSz);
         var isBay = currentMode === 'bay';
         document.getElementById('termTab1').style.display = isBay ? 'none' : '';
         document.getElementById('termTab2').style.display = isBay ? 'none' : '';
