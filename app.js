@@ -8007,6 +8007,8 @@
     window._dismissUpdateNotice = function(){
         _updateNoticeDismissed = true;
         _hideUpdateNoticePopup();
+        // 다음 실행 시 자동 재시작으로 적용
+        localStorage.setItem('imi_pending_restart', '1');
     };
     window._doRestartUpdate = function(){
         _hideUpdateNoticePopup();
@@ -8214,6 +8216,12 @@
     window.onload = function(){
         // 페이지 로드 시 main.js 깜빡임 상태 초기화
         if (window.electronAPI && window.electronAPI.blinkTitle) window.electronAPI.blinkTitle(false, []);
+        // '나중에' 눌렀던 경우 → 이번 실행에서 자동 재시작으로 업데이트 적용
+        if(localStorage.getItem('imi_pending_restart') === '1' && window.electronAPI && window.electronAPI.restartApp){
+            localStorage.removeItem('imi_pending_restart');
+            window.electronAPI.restartApp();
+            return;
+        }
         var saved=localStorage.getItem('imi_theme_v2')||'light'; applyTheme(saved);
         _loadNotifPrefs();
         _loadGlobalTodayOnly();
