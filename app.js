@@ -1103,9 +1103,10 @@
         h += '<button onclick="document.getElementById(\'mfEditForm\').style.display=\'none\'" style="padding:3px 8px;border-radius:5px;background:none;border:1px solid #334155;color:#64748b;font-size:10px;cursor:pointer;">닫기</button>';
         h += '</div>';
 
-        // 이미지 미리보기
-        h += '<div id="mfEditPreviewWrap" style="display:none;margin-bottom:12px;text-align:center;">';
-        h += '<img id="mfEditPreviewImg" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:contain;border:1px solid #334155;">';
+        // 이미지 미리보기 (전체 페이지 썸네일)
+        h += '<div id="mfEditPreviewWrap" style="display:none;margin-bottom:12px;">';
+        h += '<div style="font-size:10px;color:#475569;margin-bottom:4px;" id="mfEditPreviewLabel"></div>';
+        h += '<div id="mfEditPreviewList" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding:4px 0;"></div>';
         h += '</div>';
 
         // 제목
@@ -1518,7 +1519,7 @@
             if(_fn && _fn.nodeType===3) _fn.nodeValue = '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
         }
         input.value = '';
-        if(!failed){ _mfLoadStorageThumbs(uploaded, skipped); }
+        if(!failed){ _mfLoadStorageThumbs(uploaded, skipped, startPage); }
     }
 
     async function _mfDoRender(){
@@ -1887,11 +1888,50 @@
         alert('['+mode+'] 마이그레이션 완료! '+done+'장이 DB에 저장됐습니다.');
     }
 
-    async function _mfLoadStorageThumbs(newlyUploaded, skippedCount){
+    // 이미지 클릭 시 오버레이로 크게 보기
+    window._mfImgZoom = function(src, label){
+        var ov = document.createElement('div');
+        ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+        ov.innerHTML='<div style="color:#94a3b8;font-size:11px;margin-bottom:8px;">'+label+' — 클릭해서 닫기</div>'
+            +'<img src="'+src+'" style="max-width:90vw;max-height:85vh;border-radius:10px;object-fit:contain;">';
+        ov.addEventListener('click', function(){ document.body.removeChild(ov); });
+        document.body.appendChild(ov);
+    };
+
+    // fromPage 지정 시 해당 페이지만 로드 (업로드 직후 빠른 표시용)
+    // fromPage 없으면 전체 로드 (버튼 클릭 or 중간 삽입용)
+    async function _mfLoadStorageThumbs(newlyUploaded, skippedCount, fromPage){
         var btn = document.getElementById('mfLoadThumbsBtn');
-        if(btn){ btn.disabled=true; btn.textContent='불러오는 중...'; }
         var mode = _mfMgmtMode;
+        var onlyNew = typeof fromPage === 'number' && fromPage > 0 && typeof newlyUploaded === 'number' && newlyUploaded > 0;
         try{
+            if(onlyNew){
+                // 새로 업로드한 페이지만 로드 (fromPage ~ fromPage+newlyUploaded-1)
+                var newPageUrls = [];
+                var endPage = fromPage + newlyUploaded - 1;
+                if(btn){ btn.disabled=true; btn.textContent='로딩 중... 0/'+newlyUploaded; }
+                for(var p=fromPage;p<=endPage;p++){
+                    try{
+                        var url2 = await _getPageDataUrl(mode, String(p).padStart(3,'0'));
+                        if(url2) newPageUrls.push({page:String(p).padStart(3,'0'), url:url2});
+                    }catch(e2){}
+                    if(btn) btn.textContent='로딩 중... '+(p-fromPage+1)+'/'+newlyUploaded;
+                }
+                // 기존 캐시에 추가 (중복 제거)
+                var existing = (window._mfPageUrls||[]).filter(function(x){
+                    return !newPageUrls.some(function(n){ return n.page===x.page; });
+                });
+                window._mfPageUrls = existing.concat(newPageUrls).sort(function(a,b){ return a.page < b.page ? -1 : 1; });
+                _mfRenderPageThumbs();
+                var skipTxt = skippedCount ? ' ('+skippedCount+'장 건너뜀)' : '';
+                var dbTotal = await _mfGetMaxPage(mode);
+                if(btn){ btn.disabled=false; btn.textContent='✅ '+newlyUploaded+'장 업로드됨'+skipTxt+' — DB 중 '+dbTotal+'장'; }
+                _mfLoadRanges(_mfMgmtMode);
+                return;
+            }
+
+            // 전체 로드 (버튼 클릭)
+            if(btn){ btn.disabled=true; btn.textContent='불러오는 중...'; }
             var pageNums = await _listDbPages(mode);
             if(!pageNums.length){ alert('저장된 이미지가 없습니다. PDF를 먼저 업로드해주세요.'); return; }
             window._mfPageUrls = [];
@@ -1907,8 +1947,8 @@
             var total = window._mfPageUrls.length;
             if(btn){
                 if(typeof newlyUploaded === 'number'){
-                    var skipTxt = skippedCount ? ' ('+skippedCount+'장 건너뜀)' : '';
-                    btn.textContent = '✅ '+newlyUploaded+'장 업로드됨'+skipTxt+' — DB 총 '+total+'장';
+                    var skipTxt2 = skippedCount ? ' ('+skippedCount+'장 건너뜀)' : '';
+                    btn.textContent = '✅ '+newlyUploaded+'장 업로드됨'+skipTxt2+' — DB 총 '+total+'장';
                 } else {
                     btn.textContent = '✅ '+total+'장 불러옴';
                 }
@@ -2021,15 +2061,30 @@
             catEl.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'"'+(c===(raw.category||'')?' selected':'')+'>'+escHtml(c)+'</option>'; }).join('');
         }
 
-        // 이미지 미리보기
-        var previewWrap = document.getElementById('mfEditPreviewWrap');
-        var previewImg  = document.getElementById('mfEditPreviewImg');
-        if(previewImg && previewWrap && raw.start){
-            try{
-                var url = await _getPageDataUrl(_mfMgmtMode, raw.start);
-                if(url){ previewImg.src = url; previewWrap.style.display = ''; }
-                else previewWrap.style.display='none';
-            }catch(e){ previewWrap.style.display='none'; }
+        // 이미지 미리보기 (전체 페이지 썸네일)
+        var previewWrap  = document.getElementById('mfEditPreviewWrap');
+        var previewList  = document.getElementById('mfEditPreviewList');
+        var previewLabel = document.getElementById('mfEditPreviewLabel');
+        if(previewWrap && previewList && raw.start && raw.end){
+            var _ps = parseInt(raw.start)||0, _pe = parseInt(raw.end)||_ps;
+            if(previewLabel) previewLabel.textContent = 'p.'+_ps+' ~ p.'+_pe+' ('+(_pe-_ps+1)+'장) — 클릭하면 크게 보기';
+            previewList.innerHTML = '<span style="font-size:10px;color:#475569;">이미지 로딩 중...</span>';
+            previewWrap.style.display = '';
+            (function(_s,_e){
+                (async function(){
+                    var _html = '';
+                    for(var _pg=_s;_pg<=_e;_pg++){
+                        try{
+                            var _u = await _getPageDataUrl(_mfMgmtMode, _pg);
+                            if(_u) _html += '<img src="'+_u+'" title="p.'+_pg+'" onclick="window._mfImgZoom&&window._mfImgZoom(this.src,\'p.'+_pg+'\')" '
+                                +'style="height:90px;border-radius:6px;cursor:pointer;border:1.5px solid #334155;object-fit:contain;background:#1e293b;">';
+                        }catch(e2){}
+                    }
+                    if(previewList) previewList.innerHTML = _html || '<span style="font-size:10px;color:#ef4444;">이미지 없음</span>';
+                })();
+            })(_ps,_pe);
+        } else if(previewWrap){
+            previewWrap.style.display = 'none';
         }
 
         // 폼 표시
@@ -2193,14 +2248,28 @@
         var endEl = document.getElementById('mfEditFEnd');
         if(endEl) endEl.value = endPage;
 
-        // 미리보기 이미지 갱신
-        try{
-            var url = await _getPageDataUrl(mode, startPage);
-            var previewImg = document.getElementById('mfEditPreviewImg');
-            if(previewImg && url){ previewImg.src = url; }
-            var previewWrap = document.getElementById('mfEditPreviewWrap');
-            if(previewWrap && url) previewWrap.style.display='';
-        }catch(e){}
+        // 미리보기 이미지 갱신 (새로 업로드한 전체 페이지)
+        var _pwrap2 = document.getElementById('mfEditPreviewWrap');
+        var _plist2 = document.getElementById('mfEditPreviewList');
+        var _plbl2  = document.getElementById('mfEditPreviewLabel');
+        if(_pwrap2 && _plist2){
+            if(_plbl2) _plbl2.textContent = 'p.'+startPage+' ~ p.'+endPage+' ('+(endPage-startPage+1)+'장) — 클릭하면 크게 보기';
+            _plist2.innerHTML = '<span style="font-size:10px;color:#475569;">이미지 로딩 중...</span>';
+            _pwrap2.style.display = '';
+            (function(_s,_e){
+                (async function(){
+                    var _html='';
+                    for(var _pg=_s;_pg<=_e;_pg++){
+                        try{
+                            var _u=await _getPageDataUrl(mode,_pg);
+                            if(_u) _html+='<img src="'+_u+'" title="p.'+_pg+'" onclick="window._mfImgZoom&&window._mfImgZoom(this.src,\'p.'+_pg+'\')" '
+                                +'style="height:90px;border-radius:6px;cursor:pointer;border:1.5px solid #334155;object-fit:contain;background:#1e293b;">';
+                        }catch(e2){}
+                    }
+                    if(_plist2) _plist2.innerHTML=_html||'<span style="font-size:10px;color:#ef4444;">이미지 없음</span>';
+                })();
+            })(startPage, endPage);
+        }
 
         _mfLoadRanges(mode);
 
