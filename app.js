@@ -8253,31 +8253,6 @@
             }
             setTimeout(function(){ document.body && document.body.appendChild(b); }, 1500);
         })();
-        // 배포 자동 감지 — 2분마다 ETag 체크 후 변경 시 상단 배너 표시
-        (function(){
-            var _etag = null;
-            function checkUpdate(){
-                fetch(location.href, { method:'HEAD', cache:'no-store' })
-                    .then(function(r){
-                        var tag = r.headers.get('ETag') || r.headers.get('Last-Modified');
-                        if(!tag) return;
-                        if(_etag === null){ _etag = tag; return; }
-                        if(tag !== _etag){
-                            _etag = tag;
-                            if(document.getElementById('_updateBanner')) return;
-                            var b = document.createElement('div');
-                            b.id = '_updateBanner';
-                            b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#000;text-align:center;padding:8px 16px;font-size:13px;font-weight:900;cursor:pointer;';
-                            b.innerHTML = '🔔 새 버전이 배포됐습니다. 클릭하면 새로고침됩니다. <span style="opacity:0.5;font-size:11px;">(업무 마무리 후 클릭하세요)</span>';
-                            b.onclick = function(){ location.reload(); };
-                            document.body.prepend(b);
-                            // 배너 높이만큼 body 밀어내기 (버튼 가림 방지)
-                            requestAnimationFrame(function(){ document.body.style.paddingTop = b.offsetHeight + 'px'; });
-                        }
-                    }).catch(function(){});
-            }
-            setInterval(checkUpdate, 120000);
-        })();
         // 이미지 모달 스크롤 줌 (단일뷰) — document 레벨로 걸어야 display:flex 전환 후도 확실히 동작
         document.addEventListener('wheel',function(e){
             if(!document.getElementById('imgModal').classList.contains('open')) return;
