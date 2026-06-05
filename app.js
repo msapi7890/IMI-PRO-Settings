@@ -3212,6 +3212,9 @@
     var _SCHED_COL_PALETTE = ['#ef4444','#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#6366f1','#8b5cf6','#06b6d4','#f59e0b','#78716c','#94a3b8'];
     var _prevSchedCells = {}, _prevSchedMemos = {};
     var _nextSchedCells = {}, _nextSchedMemos = {};
+    var _schedUndoStack = [];
+    var _schedFocusKey = null;
+    var _schedSelAnchorCol = null, _schedSelAnchorDay = null;
     /* ── 공휴일 데이터 2024-2030 (superkts.com 기준) ── */
     var KR_HOLIDAYS = {
         2024:{1:[1],2:[9,10,11,12],3:[1],4:[10],5:[5,6,15],6:[6],8:[15],9:[16,17,18],10:[3,9],12:[25]},
@@ -3270,6 +3273,20 @@
             closeMemoPopup(); closeColorPicker(); closeScheduleModal();
         } else if((e.ctrlKey||e.metaKey) && e.key==='c'){
             if(_schedSelStartCol!==null){ e.preventDefault(); _schedCopySelection(); }
+        } else if((e.ctrlKey||e.metaKey) && e.key==='z'){
+            e.preventDefault(); _schedUndo();
+        } else if(!_schedStamp && _schedFocusKey && !e.ctrlKey && !e.metaKey && !e.altKey){
+            if(e.key==='Delete'||e.key==='Backspace'){
+                e.preventDefault(); _schedSaveCell(_schedFocusKey, '');
+            } else if(e.key==='Enter'||e.key==='F2'){
+                e.preventDefault();
+                var _fk=_schedFocusKey, _fc=document.getElementById('scell_'+_fk);
+                if(_fc){ var _cv=(_schedCells[_fk]||'').split('|')[0]; _showCellInlineEdit(_fc,_cv,function(nv){ if(nv!==null) _schedSaveCell(_fk,nv); }); }
+            } else if(e.key.length===1){
+                e.preventDefault();
+                var _fk2=_schedFocusKey, _fc2=document.getElementById('scell_'+_fk2);
+                if(_fc2){ _showCellInlineEdit(_fc2,'',function(nv){ if(nv!==null) _schedSaveCell(_fk2,nv); }); }
+            }
         }
     }
     function _buildSchedColMap(){
@@ -3555,6 +3572,7 @@
         var tb = document.getElementById('schedStampToolbar');
         if(tb) tb.style.display = 'flex';
         _schedTabId = '';
+        _schedFocusKey = null; _schedSelAnchorCol = null; _schedSelAnchorDay = null; _schedUndoStack = [];
         _loadSchedTabs();
         _loadScheduleAll();
         document.getElementById('scheduleModal').classList.remove('hidden');
@@ -3724,7 +3742,16 @@
         if (_schedStamp) {
             _schedCtrlMode = !!(e.ctrlKey || e.metaKey);
             _schedDragStart(gIdx, staffId, d);
+        } else if (e.shiftKey && _schedSelAnchorCol !== null) {
+            var col = _schedGetColIdx(gIdx, staffId);
+            _schedSelStartCol = _schedSelAnchorCol; _schedSelStartDay = _schedSelAnchorDay;
+            _schedSelEndCol = col; _schedSelEndDay = d;
+            _schedSelecting = false;
+            _renderSchedSelection();
         } else {
+            var col2 = _schedGetColIdx(gIdx, staffId);
+            _schedSelAnchorCol = col2; _schedSelAnchorDay = d;
+            _schedFocusKey = _schedCellKey(gIdx, staffId, d);
             _schedSelBegin(gIdx, staffId, d);
         }
     }
@@ -3743,15 +3770,7 @@
         var cell = document.getElementById('scell_'+key);
         _showCellInlineEdit(cell, curVal, function(newVal){
             if(newVal===null) return;
-            var path=_schedFbRoot()+_schedYear+'/'+_schedMonth+'/cells/'+key;
-            if(newVal){
-                _schedCells[key]=newVal;
-                db.ref(path).set(newVal);
-            } else {
-                delete _schedCells[key];
-                db.ref(path).remove();
-            }
-            if(cell) _applySchedCellStyle(cell, newVal, d);
+            _schedSaveCell(key, newVal);
         });
     }
     
@@ -4136,6 +4155,28 @@
         else { dot.style.borderTopColor='rgba(130,130,130,0.13)'; dot.title='메모 추가'; }
     }
     function _schedDragEnd(){ _schedDragging=false; _schedSelecting=false; _schedDragSeen={}; _schedRowSelecting=false; }
+    function _schedSaveCell(key, newVal){
+        var oldVal = _schedCells[key] || '';
+        if(oldVal === newVal) return;
+        var d = parseInt(key.split('_')[2]);
+        var path = _schedFbRoot()+_schedYear+'/'+_schedMonth+'/cells/'+key;
+        if(newVal){ _schedCells[key]=newVal; db.ref(path).set(newVal); }
+        else { delete _schedCells[key]; db.ref(path).remove(); }
+        var cell = document.getElementById('scell_'+key);
+        if(cell) _applySchedCellStyle(cell, newVal, d);
+        _schedUndoStack.push({key:key, oldVal:oldVal, newVal:newVal});
+        if(_schedUndoStack.length>50) _schedUndoStack.shift();
+    }
+    function _schedUndo(){
+        if(!_schedUndoStack.length) return;
+        var entry = _schedUndoStack.pop();
+        var d = parseInt(entry.key.split('_')[2]);
+        var path = _schedFbRoot()+_schedYear+'/'+_schedMonth+'/cells/'+entry.key;
+        if(entry.oldVal){ _schedCells[entry.key]=entry.oldVal; db.ref(path).set(entry.oldVal); }
+        else { delete _schedCells[entry.key]; db.ref(path).remove(); }
+        var cell = document.getElementById('scell_'+entry.key);
+        if(cell) _applySchedCellStyle(cell, entry.oldVal, d);
+    }
     function _schedDragStart(gIdx, staffId, day){
         _schedDragSeen={};
         _schedApplyCell(gIdx, staffId, day); /* 첫 클릭: _schedDragging=false → 토글 허용 */
