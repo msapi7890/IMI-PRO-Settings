@@ -224,6 +224,19 @@ function createWindow() {
         }
     });
 
+    // 🟢/🔴 폴링: IPC 타이밍 의존 없이 3초마다 렌더러에서 직접 봇 상태 읽기
+    setInterval(() => {
+        if (!win || win.isDestroyed()) return;
+        win.webContents.executeJavaScript(
+            '!!(window._botStatus && window._botStatus.active && !(window._botStatus.lastUpdate && (Date.now()-window._botStatus.lastUpdate)>300000))'
+        ).then(active => {
+            if (monitorActive !== active) {
+                monitorActive = active;
+                _updateTitleBlink();
+            }
+        }).catch(() => {});
+    }, 3000);
+
     win.on('close', (e) => {
         if (isQuitting) return;
         e.preventDefault();
