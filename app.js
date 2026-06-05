@@ -7772,7 +7772,7 @@
         var c=document.getElementById(contentId);
         if(!c) return;
         c.style.left='50%'; c.style.top='50%'; c.style.transform='translate(-50%,-50%)';
-        c.style.width=''; c.style.height='900px'; c.style.maxHeight='900px';
+        c.style.width=''; c.style.height='600px'; c.style.maxHeight='600px';
     }
     (function(){
         function _makeDraggable(contentId, handleId){
@@ -7856,8 +7856,8 @@
         _makeDraggable('urgentDetailContent','urgentDetailDragHandle');
         _makeDraggable('noticeModalContent','noticeModalDragHandle');
         _injectStyle('_modalFixedSize',
-            '#noticeModalContent{width:min(95vw,1080px)!important;min-width:0!important;height:900px!important;max-height:900px!important;overflow:hidden!important;}' +
-            '#urgentDetailContent{width:min(95vw,1080px)!important;min-width:0!important;height:900px!important;max-height:900px!important;overflow:hidden!important;}'
+            '#noticeModalContent{width:min(95vw,800px)!important;min-width:0!important;height:600px!important;max-height:600px!important;overflow:hidden!important;}' +
+            '#urgentDetailContent{width:min(95vw,800px)!important;min-width:0!important;height:600px!important;max-height:600px!important;overflow:hidden!important;}'
         );
     })();
 
