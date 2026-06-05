@@ -429,18 +429,26 @@
         <!-- 인라인 등록 패널 -->
         <div style="padding:10px 14px 12px;border-top:2px solid #1e3a5f;flex-shrink:0;background:#0d1b2a;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
-                <span style="font-size:10px;color:#3abff8;font-weight:900;letter-spacing:0.5px;">📝 이 페이지 항목 등록</span>
+                <span style="font-size:10px;color:#3abff8;font-weight:900;letter-spacing:0.5px;">📝 항목 등록</span>
                 <span id="mfViewerRegFeedback" style="display:none;font-size:11px;font-weight:700;"></span>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
                 <input type="text" id="mfViewerEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;width:100%;box-sizing:border-box;">
-                <select id="mfViewerEntryCat" style="width:100%;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;box-sizing:border-box;"></select>
+                <div style="display:flex;gap:4px;">
+                    <select id="mfViewerEntryCat" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;box-sizing:border-box;"></select>
+                    <button onclick="_mfViewerToggleCatAdd()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>
+                    <button onclick="_mfViewerDelCat()" title="선택 카테고리 삭제" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#ef4444;font-size:12px;cursor:pointer;">🗑</button>
+                </div>
+                <div id="mfViewerCatAddWrap" style="display:none;gap:4px;margin-top:2px;">
+                    <input type="text" id="mfViewerCatAddInput" placeholder="카테고리 이름 입력 후 Enter" onkeydown="if(event.key==='Enter')_mfViewerConfirmAddCat();if(event.key==='Escape')_mfViewerCancelAddCat();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #22c55e;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">
+                    <button onclick="_mfViewerConfirmAddCat()" style="padding:6px 12px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">추가</button>
+                    <button onclick="_mfViewerCancelAddCat()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>
+                </div>
                 <input type="text" id="mfViewerEntryKeywords" placeholder="🔑 키워드 (쉼표 구분, 예: 개명, 이름변경)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;outline:none;width:100%;box-sizing:border-box;">
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                     <span id="mfViewerRegRangeLabel" style="font-size:11px;color:#64748b;flex-shrink:0;">현재: p.?</span>
                     <div style="flex:1;"></div>
-                    <button id="mfViewerBtnSingle" onclick="_mfViewerRegisterSingle()" style="padding:6px 12px;border-radius:7px;background:#166534;color:#4ade80;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">+ 이 페이지만 등록</button>
-                    <button id="mfViewerBtnRange"  onclick="_mfViewerRegisterRange()"  style="padding:6px 12px;border-radius:7px;background:#1e3a5f;color:#7dd3fc;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">+ 선택 범위 등록</button>
+                    <button onclick="_mfViewerAddItem()" style="padding:6px 16px;border-radius:7px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;white-space:nowrap;">+ 항목 추가</button>
                 </div>
             </div>
         </div>

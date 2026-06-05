@@ -1074,28 +1074,9 @@
         h += '</div>';
         h += '<div id="mfThumbResumeBanner" style="display:none;margin-bottom:8px;padding:8px 12px;border-radius:8px;background:#0f2e1a;border:1.5px solid #166534;font-size:11px;color:#4ade80;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>';
         h += '<div id="mfPageThumbs" style="display:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:8px;margin-bottom:10px;background:#0a1120;"></div>';
-        h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">썸네일 클릭 → 시작 페이지 자동 입력. 항목별로 범위 지정 후 추가하세요.</div>';
-        h += '<div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:#1e293b;border-radius:8px;margin-bottom:8px;">';
-        h += '<input type="text" id="mfEntryName" placeholder="항목명 (예: 신용카드 결제)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
-        h += '<div style="display:flex;gap:4px;">';
-        h += '<select id="mfEntryCat" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;"></select>';
-        h += '<button onclick="_mfToggleCatAdd()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>';
-        h += '<button onclick="_mfDelCat()" title="선택 카테고리 삭제" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#ef4444;font-size:12px;cursor:pointer;">🗑</button>';
-        h += '</div>';
-        h += '<div id="mfCatAddWrap" style="display:none;gap:4px;margin-top:2px;">';
-        h += '<input type="text" id="mfCatAddInput" placeholder="카테고리 이름 입력 후 Enter" onkeydown="if(event.key===\'Enter\')_mfConfirmAddCat();if(event.key===\'Escape\')_mfCancelAddCat();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #22c55e;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
-        h += '<button onclick="_mfConfirmAddCat()" style="padding:6px 12px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">추가</button>';
-        h += '<button onclick="_mfCancelAddCat()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>';
-        h += '</div>';
-        h += '<div style="display:flex;gap:6px;align-items:center;">';
-        h += '<span style="font-size:11px;color:#64748b;flex-shrink:0;">페이지</span>';
-        h += '<input type="number" id="mfEntryFrom" min="1" placeholder="시작" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
-        h += '<span style="font-size:11px;color:#64748b;">~</span>';
-        h += '<input type="number" id="mfEntryTo"   min="1" placeholder="끝"   style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">';
-        h += '</div>';
-        h += '<input type="text" id="mfEntryKeywords" placeholder="🔑 키워드 (쉼표 구분, 예: 개명, 이름변경)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;outline:none;">';
-        h += '<button onclick="_mfAddPending()" style="padding:8px 0;border-radius:7px;background:#22c55e;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;">+ 항목 추가</button>';
-        h += '</div>';
+        h += '<div style="font-size:10px;color:#475569;margin-bottom:8px;">썸네일 클릭 → 뷰어에서 항목 등록 후 전체 저장하세요.</div>';
+        h += '<input type="number" id="mfEntryFrom" style="display:none;">';
+        h += '<input type="number" id="mfEntryTo" style="display:none;">';
         h += '<div id="mfPendingList"></div>';
         h += '<button id="mfSaveAllBtn" onclick="_mfSaveAllPending()" style="display:none;padding:10px 0;border-radius:8px;background:#0284c7;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;width:100%;margin-top:8px;">💾 전체 저장</button>';
         h += '</div>';
@@ -1253,11 +1234,13 @@
     }
 
     function _mfFillEntryCat(mode){
-        var sel = document.getElementById('mfEntryCat');
-        if(!sel) return;
         var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
-        var cur = sel.value;
-        sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'"'+(c===cur?' selected':'')+'>'+escHtml(c)+'</option>'; }).join('');
+        ['mfEntryCat','mfViewerEntryCat'].forEach(function(id){
+            var sel = document.getElementById(id);
+            if(!sel) return;
+            var cur = sel.value;
+            sel.innerHTML = cats.map(function(c){ return '<option value="'+escHtml(c)+'"'+(c===cur?' selected':'')+'>'+escHtml(c)+'</option>'; }).join('');
+        });
     }
 
     async function _mfLoadCats(mode){
@@ -1317,6 +1300,60 @@
         if(idx >= 0) cats.splice(idx, 1);
         await _mfSaveCats(mode);
         _mfFillEntryCat(mode);
+    }
+
+    function _mfViewerToggleCatAdd(){
+        var wrap = document.getElementById('mfViewerCatAddWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){ var inp = document.getElementById('mfViewerCatAddInput'); if(inp){ inp.value=''; inp.focus(); } }
+    }
+    async function _mfViewerConfirmAddCat(){
+        var inp = document.getElementById('mfViewerCatAddInput');
+        if(!inp) return;
+        var name = inp.value.trim();
+        if(!name){ inp.focus(); return; }
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        if(cats.indexOf(name) >= 0){ alert('이미 있는 카테고리입니다.'); inp.focus(); return; }
+        cats.push(name);
+        await _mfSaveCats(mode);
+        _mfFillEntryCat(mode);
+        var sel = document.getElementById('mfViewerEntryCat');
+        if(sel) sel.value = name;
+        _mfViewerCancelAddCat();
+    }
+    function _mfViewerCancelAddCat(){
+        var wrap = document.getElementById('mfViewerCatAddWrap');
+        if(wrap) wrap.style.display = 'none';
+    }
+    async function _mfViewerDelCat(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        if(!sel || !sel.value) return;
+        var val = sel.value;
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        if(cats.length <= 1){ alert('카테고리가 1개 이하일 때는 삭제할 수 없습니다.'); return; }
+        if(!confirm('"'+val+'" 카테고리를 삭제할까요?')) return;
+        var idx = cats.indexOf(val);
+        if(idx >= 0) cats.splice(idx, 1);
+        await _mfSaveCats(mode);
+        _mfFillEntryCat(mode);
+    }
+    function _mfViewerAddItem(){
+        var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
+        var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
+        var to   = parseInt(document.getElementById('mfEntryTo').value)||0;
+        if(from && to && from !== to){
+            _mfViewerRegFromTo(from, to);
+        } else if(from){
+            _mfViewerRegFromTo(from, from);
+        } else if(p){
+            _mfViewerRegFromTo(p.page, p.page);
+        } else {
+            alert('페이지 이미지가 없습니다.');
+        }
     }
 
     async function _mfFillEditSel(mode){
@@ -1862,6 +1899,13 @@
         _mfViewerUpdateRegLabel();
         _mfRenderPendingList();
         _mfUpdateNavBadge();
+        var fbEl = document.getElementById('mfViewerRegFeedback');
+        if(fbEl){
+            fbEl.textContent = '✅ p.'+from+(from!==to?'~'+to:'')+' 추가됨!';
+            fbEl.style.color = '#4ade80';
+            fbEl.style.display = '';
+            setTimeout(function(){ if(fbEl) fbEl.style.display='none'; }, 2500);
+        }
     }
     function _mfViewerRegisterSingle(){
         var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
