@@ -1151,6 +1151,19 @@
         h += '</div>';
 
         if(isAdm){
+            h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #7c3aed;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#a78bfa;margin-bottom:4px;">📄 페이지 밀기</div>';
+            h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">지정 페이지부터 이미지·항목 범위를 N페이지 뒤로 이동. 중간에 새 페이지 삽입할 때 사용.</div>';
+            h += '<div style="display:flex;gap:6px;margin-bottom:6px;">';
+            h += '<input type="number" id="mfShiftFrom" min="1" placeholder="기준 페이지 (예: 61)" style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
+            h += '<input type="number" id="mfShiftCount" min="1" value="1" placeholder="밀 페이지 수" style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
+            h += '</div>';
+            h += '<div id="mfShiftProgress" style="font-size:10px;color:#a78bfa;margin-bottom:6px;min-height:12px;white-space:pre-wrap;"></div>';
+            h += '<div style="display:flex;gap:6px;">';
+            h += '<button onclick="_mfShiftPages()" style="flex:1;padding:6px 0;border-radius:7px;background:#1e293b;color:#a78bfa;font-size:10px;font-weight:900;border:1px solid #7c3aed;cursor:pointer;">📋 DB 항목만 밀기</button>';
+            h += '<button onclick="_mfShiftImages()" style="flex:1;padding:6px 0;border-radius:7px;background:#4c1d95;color:#ddd6fe;font-size:10px;font-weight:900;border:1px solid #7c3aed;cursor:pointer;">🖼 이미지+DB 같이 밀기</button>';
+            h += '</div>';
+            h += '</div>';
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
@@ -2574,6 +2587,103 @@
         if(btn){ btn.disabled=false; btn.textContent='✅ 완료 ('+changed+'건)'; setTimeout(function(){ btn.textContent='📄 페이지 밀기 실행'; },2500); }
         _mfEditCache = null;
         _mfLoadRanges(mode);
+        var progEl = document.getElementById('mfShiftProgress');
+        if(progEl) progEl.textContent = '✅ DB 항목 '+changed+'건 업데이트';
+    }
+
+    async function _mfShiftImages(){
+        var fromPage = parseInt((document.getElementById('mfShiftFrom')||{}).value||'0');
+        var shiftBy  = parseInt((document.getElementById('mfShiftCount')||{}).value||'1');
+        if(!fromPage||fromPage<1){ alert('기준 페이지를 입력해주세요.'); return; }
+        if(!shiftBy||shiftBy<1){  alert('밀 페이지 수를 입력해주세요.'); return; }
+        var mode  = _mfMgmtMode;
+        var label = mode==='bay' ? '아이템베이(BAY)' : '아이템매니아(IMI)';
+        if(!confirm('['+label+'] p.'+fromPage+'부터 이미지+항목을 '+shiftBy+'페이지 뒤로 밀겠습니다.\n이미지 수에 따라 수 분 소요됩니다.\n계속하시겠습니까?')) return;
+
+        var progEl = document.getElementById('mfShiftProgress');
+        var btn    = document.querySelector('button[onclick="_mfShiftImages()"]');
+        if(btn) btn.disabled = true;
+
+        // ── 1. 이동할 페이지 번호 수집 (DB + Storage 합집합) ──
+        var pageSet = new Set();
+        try{
+            var dbData = await _authFetch('manual_pages_b64/'+mode+'.json?shallow=true');
+            if(dbData && typeof dbData==='object'){
+                Object.keys(dbData).forEach(function(k){
+                    var n=parseInt(k.replace('p',''),10); if(!isNaN(n)&&n>=fromPage) pageSet.add(n);
+                });
+            }
+        }catch(e){}
+        try{
+            var stResult = await storage.ref('manual_pages/'+mode+'/').listAll();
+            stResult.items.forEach(function(ref){
+                var m=ref.name.match(/page-(\d+)\.jpg$/i);
+                if(m){ var n=parseInt(m[1],10); if(!isNaN(n)&&n>=fromPage) pageSet.add(n); }
+            });
+        }catch(e){}
+
+        var pages = Array.from(pageSet).sort(function(a,b){ return b-a; }); // 역순: 높은 번호부터
+        var total = pages.length;
+        var done  = 0;
+
+        if(!total){
+            if(progEl) progEl.textContent = 'p.'+fromPage+' 이상 이미지 없음.';
+            if(btn) btn.disabled=false;
+            return;
+        }
+
+        // ── 2. 이미지 이동 (역순) ──
+        for(var i=0; i<pages.length; i++){
+            var oldNum = pages[i];
+            var newNum = oldNum + shiftBy;
+            var oldPad = String(oldNum).padStart(3,'0');
+            var newPad = String(newNum).padStart(3,'0');
+            if(progEl) progEl.textContent = '이미지 이동 중... '+done+'/'+total+' (p.'+oldNum+' → p.'+newNum+')';
+
+            // DB (manual_pages_b64) 이동
+            try{
+                var b64 = await _authFetch('manual_pages_b64/'+mode+'/p'+oldPad+'.json');
+                if(b64){
+                    await _authFetch('manual_pages_b64/'+mode+'/p'+newPad+'.json','PUT',b64);
+                    await _authFetch('manual_pages_b64/'+mode+'/p'+oldPad+'.json','DELETE');
+                }
+            }catch(e){}
+
+            // Storage 이동 (다운로드 → 업로드 → 삭제)
+            try{
+                var oldRef = storage.ref('manual_pages/'+mode+'/page-'+oldPad+'.jpg');
+                var newRef = storage.ref('manual_pages/'+mode+'/page-'+newPad+'.jpg');
+                var dlUrl  = await oldRef.getDownloadURL();
+                var resp   = await fetch(dlUrl);
+                var blob   = await resp.blob();
+                await newRef.put(blob, {contentType:'image/jpeg'});
+                await oldRef.delete();
+            }catch(e){}
+
+            done++;
+        }
+
+        // ── 3. DB 항목 범위 밀기 ──
+        if(progEl) progEl.textContent = '이미지 이동 완료. DB 항목 범위 업데이트 중...';
+        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        var rangeChanged = 0;
+        if(raw && typeof raw==='object'){
+            for(var k in raw){
+                var r   = raw[k];
+                var upd = {};
+                var hit = false;
+                if((r.start||0)>=fromPage){ upd.start=(r.start||0)+shiftBy; hit=true; }
+                if((r.end||0)>=fromPage){   upd.end=(r.end||0)+shiftBy;     hit=true; }
+                if(hit){ await _authFetch('manual_page_ranges/'+mode+'/'+k+'.json','PATCH',upd); rangeChanged++; }
+            }
+        }
+
+        if(progEl) progEl.textContent = '✅ 완료! 이미지 '+done+'장 이동 · 항목 '+rangeChanged+'건 업데이트';
+        if(btn){ btn.disabled=false; }
+        _mfEditCache = null;
+        _mfLoadRanges(mode);
+        window._mfPageUrls = [];
+        _mfRenderPageThumbs();
     }
 
     async function _mfResetAll(){
