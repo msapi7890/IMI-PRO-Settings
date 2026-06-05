@@ -1061,7 +1061,6 @@
         h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">';
         h += '<div style="font-size:10px;font-weight:900;color:#22c55e;letter-spacing:0.05em;flex:1;">② 항목 등록 <span id="mfRenderedInfo" style="font-weight:400;color:#64748b;font-size:10px;"></span></div>';
         h += '<button onclick="_mfLoadStorageThumbs()" id="mfLoadThumbsBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #334155;background:none;color:#64748b;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">📷 저장된 이미지 불러오기</button>';
-        h += '<button onclick="_mfRunMigrate()" id="mfMigrateBtn" style="padding:4px 10px;border-radius:6px;border:1px solid #7c3aed;background:none;color:#a78bfa;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">☁ Storage→DB 마이그레이션</button>';
         h += '</div>';
         h += '<div id="mfThumbResumeBanner" style="display:none;margin-bottom:8px;padding:8px 12px;border-radius:8px;background:#0f2e1a;border:1.5px solid #166534;font-size:11px;color:#4ade80;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>';
         h += '<div id="mfPageThumbs" style="display:none;overflow-x:auto;overflow-y:hidden;white-space:nowrap;border:1px solid #1e293b;border-radius:8px;padding:8px;margin-bottom:10px;background:#0a1120;"></div>';
