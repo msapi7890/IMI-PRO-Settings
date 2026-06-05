@@ -176,26 +176,53 @@ async function _flushFraudStats() {
 }
 
 // 1일 이상 된 imi_watch_alerts 항목 → 통계 집계 후 삭제
+// 동일 TID는 2h50m 윈도우 내 재감지 시 통계 1건으로만 집계
 async function cleanupWatchAlerts() {
     const data = await fireGet('/imi_watch_alerts');
     if (!data || typeof data !== 'object') return;
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const WINDOW_MS = 170 * 60 * 1000; // 2시간 50분
 
-    // 삭제 대상 항목을 날짜/시간대/키워드별로 집계
+    // 시간순 정렬 후 처리 (TID 윈도우 중복 제거를 위해)
+    const entries = Object.entries(data)
+        .filter(([, val]) => val && (val.at || 0) < cutoff)
+        .sort((a, b) => (a[1].at || 0) - (b[1].at || 0));
+
     const statsMap = {}; // dateStr → hourStr → { total, keywords: {} }
     const toDelete = [];
-    for (const [key, val] of Object.entries(data)) {
-        if (!val || (val.at || 0) >= cutoff) continue;
+    const tidLastCounted = {}; // tid → 마지막으로 통계에 집계된 timestamp
+
+    for (const [key, val] of entries) {
         toDelete.push(key);
-        const d = new Date(val.at);
+        const alertAt = val.at || 0;
+        const d = new Date(alertAt);
         const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
         const hourStr = String(d.getHours()).padStart(2,'0');
         const keyword = val.keyword || '';
-        const count = val.count || 1;
-        if (!statsMap[dateStr]) statsMap[dateStr] = {};
-        if (!statsMap[dateStr][hourStr]) statsMap[dateStr][hourStr] = { total: 0, keywords: {} };
-        statsMap[dateStr][hourStr].total += count;
-        if (keyword) statsMap[dateStr][hourStr].keywords[keyword] = (statsMap[dateStr][hourStr].keywords[keyword] || 0) + count;
+
+        // TID 목록이 있으면 2h50m 윈도우 기준 중복 제거
+        const tids = Array.isArray(val.tids) ? val.tids.filter(Boolean) : [];
+        let newCount = 0;
+        if (tids.length > 0) {
+            for (const tid of tids) {
+                const lastAt = tidLastCounted[tid] || 0;
+                if (alertAt - lastAt >= WINDOW_MS) {
+                    tidLastCounted[tid] = alertAt;
+                    newCount++;
+                }
+                // 2h50m 이내 동일 TID → 통계 제외 (로그는 그대로)
+            }
+        } else {
+            // TID 정보 없는 구형 데이터 → 그냥 1건 집계
+            newCount = 1;
+        }
+
+        if (newCount > 0) {
+            if (!statsMap[dateStr]) statsMap[dateStr] = {};
+            if (!statsMap[dateStr][hourStr]) statsMap[dateStr][hourStr] = { total: 0, keywords: {} };
+            statsMap[dateStr][hourStr].total += newCount;
+            if (keyword) statsMap[dateStr][hourStr].keywords[keyword] = (statsMap[dateStr][hourStr].keywords[keyword] || 0) + newCount;
+        }
     }
 
     // Firebase에 통계 누적 저장
