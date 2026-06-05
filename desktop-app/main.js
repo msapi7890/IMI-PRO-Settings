@@ -120,10 +120,9 @@ function _updateTitleBlink() {
         if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
         return;
     }
-    // 감지 시: 한 번 flashFrame(주의 유도) + 작업표시줄 고정 빨간색 (점멸 없음)
+    // 감지 시: 작업표시줄 고정 주황불 (깜빡임 없음) + 타이틀 🟢↔🚨 교대
     if (win && !win.isFocused()) {
-        win.flashFrame(true);
-        win.setProgressBar(1, { mode: 'error' }); // 작업표시줄 버튼 고정 빨간색
+        win.setProgressBar(1, { mode: 'error' }); // 고정 주황불 (flashFrame 없음)
     }
     const alert = '🚨 IMI PRO v' + ver;
     if (win) win.setTitle(alert);
@@ -193,14 +192,13 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시 플래시·빨간바 정지 (이모지 교대는 유지)
+    // 포커스 시 주황불·교대 정지 → 🟢 고정 (불 꺼짐)
     win.on('focus', () => {
         if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
         win.flashFrame(false);
         win.setProgressBar(-1);
         const ver = appDisplayVersion();
-        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-        win.setTitle(hasAlert ? '🚨 IMI PRO v' + ver : (monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver));
+        win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
