@@ -942,6 +942,51 @@
     // ── Realtime DB 이미지 저장/조회 헬퍼 (Firebase Storage 대체) ──
     function _b64PadPage(num){ return String(num).padStart(3,'0'); }
 
+    // ── IndexedDB 이미지 캐시 헬퍼 ──
+    var _mfIdbName = 'mf-img-cache', _mfIdbStore = 'imgs';
+    function _mfIdbOpen(){
+        return new Promise(function(res,rej){
+            var r = indexedDB.open(_mfIdbName, 1);
+            r.onupgradeneeded = function(e){ e.target.result.createObjectStore(_mfIdbStore); };
+            r.onsuccess = function(e){ res(e.target.result); };
+            r.onerror   = function(e){ rej(e.target.error); };
+        });
+    }
+    async function _mfCacheGet(key){
+        try{
+            var db = await _mfIdbOpen();
+            return await new Promise(function(res,rej){
+                var tx = db.transaction(_mfIdbStore,'readonly');
+                var req = tx.objectStore(_mfIdbStore).get(key);
+                req.onsuccess = function(){ res(req.result||null); };
+                req.onerror   = function(){ rej(req.error); };
+            });
+        }catch(e){ return null; }
+    }
+    async function _mfCacheSet(key, val){
+        try{
+            var db = await _mfIdbOpen();
+            return await new Promise(function(res,rej){
+                var tx = db.transaction(_mfIdbStore,'readwrite');
+                var req = tx.objectStore(_mfIdbStore).put(val, key);
+                req.onsuccess = function(){ res(); };
+                req.onerror   = function(){ rej(req.error); };
+            });
+        }catch(e){}
+    }
+    async function _mfCacheDel(key){
+        try{
+            var db = await _mfIdbOpen();
+            return await new Promise(function(res,rej){
+                var tx = db.transaction(_mfIdbStore,'readwrite');
+                var req = tx.objectStore(_mfIdbStore).delete(key);
+                req.onsuccess = function(){ res(); };
+                req.onerror   = function(){ rej(req.error); };
+            });
+        }catch(e){}
+    }
+    function _mfCacheKey(mode, pageNum){ return 'mf_'+mode+'_'+_b64PadPage(pageNum); }
+
     async function _savePageToDb(mode, pageNum, blob){
         return new Promise(function(resolve, reject){
             var reader = new FileReader();
@@ -949,7 +994,10 @@
                 try{
                     var b64 = e.target.result.split(',')[1];
                     await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json','PUT',b64);
-                    resolve('data:image/jpeg;base64,'+b64);
+                    var dataUrl = 'data:image/jpeg;base64,'+b64;
+                    // 캐시 갱신 (덮어쓰기 포함)
+                    _mfCacheSet(_mfCacheKey(mode, pageNum), dataUrl).catch(function(){});
+                    resolve(dataUrl);
                 }catch(err){ reject(err); }
             };
             reader.onerror = reject;
@@ -958,9 +1006,18 @@
     }
 
     async function _getPageDataUrl(mode, pageNum){
+        // 캐시 우선
+        var cacheKey = _mfCacheKey(mode, pageNum);
+        var cached = await _mfCacheGet(cacheKey);
+        if(cached) return cached;
+        // DB에서 다운로드 후 캐시 저장
         try{
             var b64 = await _authFetch('manual_pages_b64/'+mode+'/p'+_b64PadPage(pageNum)+'.json');
-            if(b64 && typeof b64==='string') return 'data:image/jpeg;base64,'+b64;
+            if(b64 && typeof b64==='string'){
+                var dataUrl = 'data:image/jpeg;base64,'+b64;
+                _mfCacheSet(cacheKey, dataUrl).catch(function(){});
+                return dataUrl;
+            }
         }catch(e){}
         // Storage 폴백 (마이그레이션 전 호환)
         try{ return await storage.ref('manual_pages/'+mode+'/page-'+_b64PadPage(pageNum)+'.jpg').getDownloadURL(); }
