@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 42; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 43; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -127,7 +127,7 @@ function _updateTitleBlink() {
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
     if (labels.length === 0) {
         if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
-        _updateTrayIcon();
+        _updateWindowIcon();
         return;
     }
     // 감지 시: 작업표시줄 고정 주황불 (깜빡임 없음) + 타이틀 🟢↔🚨 교대
@@ -141,7 +141,7 @@ function _updateTitleBlink() {
         if (!win) return;
         win.setTitle(_bi++ % 2 === 0 ? base : alert);
     }, 900);
-    _updateTrayIcon();
+    _updateWindowIcon();
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -152,11 +152,11 @@ function iconPath() {
     return fs.existsSync(png) ? png : null;
 }
 
-// ── 트레이 컬러 아이콘 (PNG 동적 생성) ───────────────────
+// ── 윈도우·작업표시줄 컬러 아이콘 (PNG 동적 생성) ────────
 let _iconGreen = null, _iconRed = null, _iconAlert = null;
-function _makeTrayIcon(r, g, b) {
-    const N = 16;
-    const cx = (N-1)/2, cy = (N-1)/2, rad = N/2 - 1.5;
+function _makeColorIcon(r, g, b) {
+    const N = 32;
+    const cx = (N-1)/2, cy = (N-1)/2, rad = N/2 - 2;
     const rows = [];
     for (let y = 0; y < N; y++) {
         const sl = Buffer.alloc(1 + N*4);
@@ -181,23 +181,22 @@ function _makeTrayIcon(r, g, b) {
         const cb=Buffer.alloc(4); cb.writeUInt32BE(crc32(Buffer.concat([tb,data])));
         return Buffer.concat([lb,tb,data,cb]);
     }
-    const ihdr = Buffer.from([0,0,0,16, 0,0,0,16, 8, 6, 0, 0, 0]);
+    const ihdr = Buffer.from([0,0,0,32, 0,0,0,32, 8, 6, 0, 0, 0]);
     const sig  = Buffer.from([137,80,78,71,13,10,26,10]);
     const png  = Buffer.concat([sig, chunk('IHDR',ihdr), chunk('IDAT',idat), chunk('IEND',Buffer.alloc(0))]);
     return nativeImage.createFromBuffer(png);
 }
-function _getTrayIcon(state) {
-    if (state === 'alert') { if (!_iconAlert) _iconAlert = _makeTrayIcon(255,100,0); return _iconAlert; }
-    if (state === 'green') { if (!_iconGreen) _iconGreen = _makeTrayIcon(0,200,80);  return _iconGreen; }
-    if (!_iconRed) _iconRed = _makeTrayIcon(220,50,50);
+function _getColorIcon(state) {
+    if (state === 'alert') { if (!_iconAlert) _iconAlert = _makeColorIcon(255,100,0); return _iconAlert; }
+    if (state === 'green') { if (!_iconGreen) _iconGreen = _makeColorIcon(0,200,80);  return _iconGreen; }
+    if (!_iconRed) _iconRed = _makeColorIcon(220,50,50);
     return _iconRed;
 }
-function _updateTrayIcon() {
-    if (!tray) return;
+function _updateWindowIcon() {
+    if (!win || win.isDestroyed()) return;
     const hasAlert = Object.keys(_sseBlinkLabels).length > 0 || _rendererBlinkLabels.length > 0;
     const state = hasAlert ? 'alert' : (monitorActive ? 'green' : 'red');
-    try { tray.setImage(_getTrayIcon(state)); } catch(e) {}
-    rebuildTrayMenu();
+    try { win.setIcon(_getColorIcon(state)); } catch(e) {}
 }
 
 // ── 윈도우 생성 ───────────────────────────────────────────
@@ -248,7 +247,8 @@ function createWindow() {
 
     win.once('ready-to-show', () => {
         win.show();
-        _updateTitleBlink(); // 초기 🟢 타이틀 설정
+        _updateTitleBlink();  // 초기 🟢 타이틀 설정
+        _updateWindowIcon();  // 초기 아이콘 색상 설정
     });
 
     // 포커스 시 주황불 OFF — 미처리 알림 있으면 타이틀 교대 유지, 없으면 🟢 복귀
@@ -346,7 +346,7 @@ function createTray() {
         tray = new Tray(img);
         tray.setToolTip('IMI PRO');
         tray.on('click', showWindow);
-        _updateTrayIcon(); // 초기 컬러 아이콘 + 메뉴 설정
+        rebuildTrayMenu();
     } catch(e) {
         console.error('트레이 생성 실패:', e.message);
     }
