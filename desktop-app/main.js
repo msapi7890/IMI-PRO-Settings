@@ -412,8 +412,13 @@ ipcMain.handle('restart-app', async () => {
     try { await ses2.clearCache(); } catch(_) {}
     const s2 = loadSettings(); s2.lastCachedVersion = '0'; saveSettings(s2);
     const hasPendingUpdate = lastUpdateStatus && lastUpdateStatus.type === 'downloaded';
-    if (!hasPendingUpdate) app.relaunch();
-    app.quit();
+    isQuitting = true; // close 핸들러의 e.preventDefault() 우회
+    if (hasPendingUpdate) {
+        autoUpdater.quitAndInstall(true, true); // silent=true, forceRunAfter=true
+    } else {
+        app.relaunch();
+        app.quit();
+    }
 });
 ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });

@@ -7984,15 +7984,21 @@
     var _updateNoticeOff = null; // Firebase 리스너 해제 함수
     var _updateNoticeDismissed = false; // 이번 세션 나중에 누름 여부
 
+    var _currentNoticeTsForRestart = null;
     function _startUpdateNoticeListener(){
         if(_updateNoticeOff) return; // 중복 방지
         _updateNoticeOff = db.ref('system_flags/update_notice').on('value', function(snap){
             var notice = snap.val();
             if(notice && notice.ts && notice.msg){
-                if(!_updateNoticeDismissed){
+                _currentNoticeTsForRestart = notice.ts;
+                var restarted = localStorage.getItem('imi_restarted_for_notice');
+                if(_updateNoticeDismissed || String(restarted) === String(notice.ts)){
+                    _hideUpdateNoticePopup();
+                } else {
                     _showUpdateNoticePopup(notice.msg);
                 }
             } else {
+                _currentNoticeTsForRestart = null;
                 _hideUpdateNoticePopup();
             }
         });
@@ -8010,10 +8016,12 @@
     window._dismissUpdateNotice = function(){
         _updateNoticeDismissed = true;
         _hideUpdateNoticePopup();
-        // 다음 실행 시 자동 재시작으로 적용
         localStorage.setItem('imi_pending_restart', '1');
     };
     window._doRestartUpdate = function(){
+        if(_currentNoticeTsForRestart){
+            localStorage.setItem('imi_restarted_for_notice', String(_currentNoticeTsForRestart));
+        }
         _hideUpdateNoticePopup();
         if(window.electronAPI && window.electronAPI.restartApp){
             window.electronAPI.restartApp();
