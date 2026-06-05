@@ -6670,7 +6670,7 @@
         renderUrgentHistoryModal();
         document.getElementById('urgentHistoryModal').classList.remove('hidden');
         _urgentFont.init();
-        _urgentFont.init();
+    }
     function closeUrgentHistory(){
         document.getElementById('urgentHistoryModal').classList.add('hidden');
     }
