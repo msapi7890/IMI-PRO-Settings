@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     flashFrame:          (val) => ipcRenderer.send('flash-frame', val),
     blinkTitle:          (on, labels) => ipcRenderer.send('blink-title', { on: !!on, labels: Array.isArray(labels) ? labels : (labels ? [labels] : []) }),
     send:                (ch, val) => ipcRenderer.send(ch, val),
+    restartApp:          () => ipcRenderer.invoke('restart-app'),
     isElectron: true
 });

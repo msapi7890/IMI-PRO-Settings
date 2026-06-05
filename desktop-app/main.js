@@ -401,6 +401,12 @@ function doInstallUpdate() {
 ipcMain.handle('show-notification', (_, { title, body }) => { if (!monitorSuppressed && !osNotifMuted) showNativeNotif(title, body); });
 ipcMain.handle('get-version',       ()                   => app.getVersion());
 ipcMain.handle('install-update',    ()                   => doInstallUpdate());
+ipcMain.handle('restart-app', async () => {
+    const ses2 = require('electron').session.fromPartition('persist:imipro');
+    try { await ses2.clearCache(); } catch(_) {}
+    const s2 = loadSettings(); s2.lastCachedVersion = '0'; saveSettings(s2);
+    app.relaunch(); app.exit(0);
+});
 ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });

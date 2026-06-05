@@ -346,6 +346,11 @@
         setTimeout(_syncHdrBtnWidths, 50);
         var adminItem = document.getElementById('authAdminMenuItem');
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
+        // 관리자 업데이트 알림 발송 버튼
+        var _unBtn = document.getElementById('updateNoticeSendBtn');
+        if(_unBtn) _unBtn.style.display = user.role==='admin' ? '' : 'none';
+        // 업데이트 알림 Firebase 리스너 시작
+        _startUpdateNoticeListener();
         // 승인 대기 감시
         if(user.role === 'admin' || user.role === 'subadmin') _authWatchPending();
         // 로그인 후 메모 로드 (시작 시 _currentUser 없어서 스킵됐던 것 복구)
@@ -7971,6 +7976,81 @@
         if(r) r.value = _nvFontSz;
     };
     window._nvFontAdj = function(d){ window._nvFontSet(_nvFontSz + d); };
+
+    // ── 업데이트 알림 시스템 ──
+    var _updateNoticeOff = null; // Firebase 리스너 해제 함수
+    var _updateNoticeDismissed = false; // 이번 세션 나중에 누름 여부
+
+    function _startUpdateNoticeListener(){
+        if(_updateNoticeOff) return; // 중복 방지
+        _updateNoticeOff = db.ref('system_flags/update_notice').on('value', function(snap){
+            var notice = snap.val();
+            if(notice && notice.ts && notice.msg){
+                if(!_updateNoticeDismissed){
+                    _showUpdateNoticePopup(notice.msg);
+                }
+            } else {
+                _hideUpdateNoticePopup();
+            }
+        });
+    }
+    function _showUpdateNoticePopup(msg){
+        var popup = document.getElementById('updateNoticePopup');
+        var msgEl = document.getElementById('updateNoticeMsg');
+        if(msgEl) msgEl.textContent = msg;
+        if(popup) popup.style.display = '';
+    }
+    function _hideUpdateNoticePopup(){
+        var popup = document.getElementById('updateNoticePopup');
+        if(popup) popup.style.display = 'none';
+    }
+    window._dismissUpdateNotice = function(){
+        _updateNoticeDismissed = true;
+        _hideUpdateNoticePopup();
+    };
+    window._doRestartUpdate = function(){
+        _hideUpdateNoticePopup();
+        if(window.electronAPI && window.electronAPI.restartApp){
+            window.electronAPI.restartApp();
+        } else {
+            alert('Electron 환경에서만 재시작이 가능합니다.\n앱을 직접 껐다 켜주세요.');
+        }
+    };
+    // 관리자 전용: 알림 발송 폼 열기
+    window._openUpdateNoticeSend = function(){
+        var form = document.getElementById('updateNoticeSendForm');
+        var popup = document.getElementById('updateNoticePopup');
+        if(popup) popup.style.display = 'none';
+        if(form) form.style.display = form.style.display === 'none' ? '' : 'none';
+    };
+    window._cancelUpdateNotice = function(){
+        var form = document.getElementById('updateNoticeSendForm');
+        if(form) form.style.display = 'none';
+    };
+    window._sendUpdateNotice = function(){
+        var inp = document.getElementById('updateNoticeInput');
+        var msg = inp ? inp.value.trim() : '';
+        if(!msg){ alert('알림 내용을 입력해주세요.'); return; }
+        db.ref('system_flags/update_notice').set({ ts: Date.now(), msg: msg });
+        if(inp) inp.value = '';
+        var form = document.getElementById('updateNoticeSendForm');
+        if(form) form.style.display = 'none';
+    };
+    window._clearUpdateNotice = function(){
+        if(!confirm('업데이트 알림을 취소하시겠습니까?\n실무자 화면에서 팝업이 사라집니다.')) return;
+        db.ref('system_flags/update_notice').remove();
+        var form = document.getElementById('updateNoticeSendForm');
+        if(form) form.style.display = 'none';
+    };
+    // 폼 바깥 클릭 시 닫기
+    document.addEventListener('click', function(e){
+        var form = document.getElementById('updateNoticeSendForm');
+        var btn  = document.getElementById('updateNoticeSendBtn');
+        if(form && form.style.display !== 'none'){
+            if(!form.contains(e.target) && e.target !== btn) form.style.display = 'none';
+        }
+    });
+
     function openTermsModal(){
         document.getElementById('termsModal').classList.remove('hidden');
         document.getElementById('termsSearchInput').value = '';
