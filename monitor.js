@@ -140,6 +140,11 @@ function _renderBotStatus() {
     var lastUpd = document.getElementById('monLastUpdate');
     var ruleList= document.getElementById('monitorRuleList');
 
+    /* 작업표시줄 🟢/🔴 — DOM 유무와 무관하게 항상 전송 */
+    var _isActive = s && s.active;
+    var _isStale  = s && s.lastUpdate && (Date.now() - s.lastUpdate) > 5 * 60 * 1000;
+    if (window.electronAPI) window.electronAPI.send('monitor-active', !!(_isActive && !_isStale));
+
     if (!dot) return;
 
     if (!s) {
@@ -176,8 +181,6 @@ function _renderBotStatus() {
             badge.style.color      = isActive ? '#4ade80'  : '#9ca3af';
         }
     }
-    /* 작업표시줄 🟢/🔴 상태 전송 */
-    if (window.electronAPI) window.electronAPI.send('monitor-active', !!(isActive && !isStale));
     if (lastUpd && s.lastUpdate) {
         var mins = Math.floor((Date.now() - s.lastUpdate) / 60000);
         var timeStr = new Date(s.lastUpdate).toLocaleTimeString('ko-KR');

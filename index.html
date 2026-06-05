@@ -316,7 +316,7 @@
 
 <!-- 긴급공지 상세보기 모달 -->
 <div id="urgentDetailModal" class="hidden fixed inset-0 z-[5000] bg-black/60 backdrop-blur-sm">
-    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(95vw,1080px);min-width:720px;height:900px;max-height:900px;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);overflow:hidden;">
+    <div id="urgentDetailContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:18px;border:2px solid #ef4444;width:min(95vw,1080px);min-width:0;height:900px;max-height:900px;display:flex;flex-direction:column;box-shadow:0 12px 50px rgba(0,0,0,0.35);overflow:hidden;">
         <!-- 드래그 핸들 + 헤더 -->
         <div id="urgentDetailDragHandle" style="display:flex;flex-direction:column;border-bottom:2px solid var(--border-ui);flex-shrink:0;user-select:none;position:relative;z-index:30;">
             <div style="display:flex;justify-content:center;padding:8px 0 4px;pointer-events:none;">
@@ -338,7 +338,7 @@
             </div>
         </div>
         <!-- 내용 -->
-        <div id="udContent" style="flex:1;min-height:0;overflow-y:auto;padding:16px 20px;font-size:15px;font-weight:500;line-height:1.8;white-space:pre-wrap;"></div>
+        <div id="udContent" style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px 20px;font-size:15px;font-weight:500;line-height:1.8;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;"></div>
         <!-- 컨트롤 -->
         <div style="flex-shrink:0;border-top:2px solid var(--border-ui);padding:12px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <button id="udExtendBtn" onclick="extendUrgentDetail()" style="font-size:11px;font-weight:900;padding:6px 12px;border-radius:8px;border:1.5px solid #ef4444;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer;transition:0.15s;white-space:nowrap;" title="클릭 시 24시간 연장">⏱ +24h 연장</button>
@@ -948,7 +948,7 @@
 </div>
 
 <div id="noticeModal" class="modal hidden fixed inset-0 z-[6000] bg-black/60 backdrop-blur-sm">
-    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(95vw,1080px);min-width:720px;height:900px;max-height:900px;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;">
+    <div id="noticeModalContent" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:900px;max-width:95vw;min-width:0;height:900px;max-height:900px;display:flex;flex-direction:column;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:18px;box-shadow:0 25px 50px rgba(0,0,0,0.4);overflow:hidden;">
         <!-- 드래그 핸들 — 스티커메모 스타일 헤더 바 -->
         <div id="noticeModalDragHandle" style="display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:48px;flex-shrink:0;user-select:none;border-bottom:2px solid var(--border-ui);border-radius:18px 18px 0 0;background:rgba(58,191,248,0.07);position:relative;z-index:30;">
             <div style="display:flex;align-items:center;gap:8px;pointer-events:none;">
@@ -962,7 +962,7 @@
             </div>
         </div>
         <!-- 스크롤 영역 -->
-        <div style="flex:1;min-height:0;overflow-y:auto;padding:24px 28px 16px;">
+        <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:24px 28px 16px;word-break:break-word;overflow-wrap:break-word;">
             <div id="viewMode">
                 <span id="modalDate" class="text-base font-black mb-1 block text-[var(--active-focus-color)]">날짜...</span>
                 <span id="viewUpdatedAt" class="hidden text-sm opacity-50 mb-1 block"></span>

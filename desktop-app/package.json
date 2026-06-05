@@ -1,6 +1,6 @@
 {
   "name": "imi-pro",
-  "version": "26.6.46",
+  "version": "26.6.47",
   "description": "IMI PRO Desktop",
   "main": "main.js",
   "scripts": {
@@ -28,7 +28,14 @@
       "assets/**"
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icon.ico"
     },
     "nsis": {
