@@ -7925,11 +7925,12 @@
     function _makeModalFont(contentId, rangeId, storageKey){
         var BASE = 13;
         var sz = parseInt(localStorage.getItem(storageKey)||''+BASE);
+        var styleId = '_mf_' + contentId;
         var set = function(v){
             sz = Math.min(22, Math.max(11, parseInt(v)||BASE));
             localStorage.setItem(storageKey, sz);
             var c = document.getElementById(contentId);
-            if(c) c.style.zoom = (sz/BASE).toFixed(3);
+            if(c) c.style.fontSize = sz + 'px';
             var r = document.getElementById(rangeId);
             if(r) r.value = sz;
         };
