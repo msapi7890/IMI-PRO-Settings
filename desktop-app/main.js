@@ -109,7 +109,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 48; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 49; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -247,13 +247,14 @@ function createWindow() {
 
     win.on('close', (e) => {
         if (isQuitting) return;
-        e.preventDefault();
         const s = loadSettings();
+        if (s.closeMode === 'quit') {
+            isQuitting = true;
+            return; // e.preventDefault() 없이 자연스럽게 닫힘 → window-all-closed → app.quit()
+        }
+        e.preventDefault();
         if (s.closeMode === 'tray') {
             win.hide();
-        } else if (s.closeMode === 'quit') {
-            isQuitting = true;
-            app.quit();
         } else {
             // 'ask' — 다이얼로그 + 항상 적용 체크박스
             dialog.showMessageBox(win, {
@@ -278,7 +279,7 @@ function createWindow() {
                     win.hide();
                 } else {
                     isQuitting = true;
-                    app.quit();
+                    if (win && !win.isDestroyed()) win.destroy();
                 }
             });
         }
@@ -301,11 +302,7 @@ function createTray() {
 
 function rebuildTrayMenu() {
     if (!tray) return;
-    const hasAlert = Object.keys(_sseBlinkLabels).length > 0 || _rendererBlinkLabels.length > 0;
-    const statusLabel = hasAlert ? '🔺 감지 알림' : (monitorActive ? '🟢 모니터링 활성' : '🔴 모니터링 비활성');
     tray.setContextMenu(Menu.buildFromTemplate([
-        { label: statusLabel, enabled: false },
-        { type: 'separator' },
         { label: 'IMI PRO 열기', click: showWindow },
         { type: 'separator' },
         { label: '종료', click: () => { isQuitting = true; app.quit(); } }
@@ -483,6 +480,6 @@ app.on('activate',      showWindow);   // macOS dock 클릭
 app.on('before-quit',   () => { isQuitting = true; });
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-        // 트레이 상주 → 종료하지 않음
+        if (isQuitting) app.quit(); // quit 모드로 닫힌 경우만 종료, 나머지는 트레이 상주
     }
 });
