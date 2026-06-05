@@ -7772,7 +7772,7 @@
         var c=document.getElementById(contentId);
         if(!c) return;
         c.style.left='50%'; c.style.top='50%'; c.style.transform='translate(-50%,-50%)';
-        c.style.width=''; c.style.height='660px'; c.style.maxHeight='660px';
+        c.style.width=''; c.style.height='900px'; c.style.maxHeight='900px';
     }
     (function(){
         function _makeDraggable(contentId, handleId){
@@ -7856,8 +7856,8 @@
         _makeDraggable('urgentDetailContent','urgentDetailDragHandle');
         _makeDraggable('noticeModalContent','noticeModalDragHandle');
         _injectStyle('_modalFixedSize',
-            '#noticeModalContent{height:660px!important;max-height:660px!important;overflow:hidden!important;}' +
-            '#urgentDetailContent{height:660px!important;max-height:660px!important;overflow:hidden!important;}'
+            '#noticeModalContent{height:900px!important;max-height:900px!important;overflow:hidden!important;}' +
+            '#urgentDetailContent{height:900px!important;max-height:900px!important;overflow:hidden!important;}'
         );
     })();
 
