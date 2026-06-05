@@ -808,9 +808,9 @@ function _getNotifPrefs(){
             row.style.opacity = '0';
             setTimeout(function() {
                 if (row.parentNode) row.parentNode.removeChild(row);
-                // 남은 항목 없으면 5초 후 팝업 닫기
+                // 남은 항목 없으면 즉시 팝업 닫기
                 var remaining = itemList.querySelectorAll('._imi_toast_done');
-                if (remaining.length === 0) setTimeout(remove, 5000);
+                if (remaining.length === 0) remove();
             }, 400);
         });
 
