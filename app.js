@@ -1039,10 +1039,6 @@
         h += '📄🖼 PDF 또는 이미지 선택 (여러 장 가능)';
         h += '<input type="file" id="mfCombinedFile" accept=".pdf,image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="_mfHandleFiles()">';
         h += '</label>';
-        h += '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;user-select:none;">';
-        h += '<input type="checkbox" id="mfImgOverwrite" style="width:14px;height:14px;accent-color:#f59e0b;cursor:pointer;">';
-        h += '<span style="font-size:11px;color:#f59e0b;font-weight:700;">기존 이미지 덮어쓰기 (화질 개선 재업로드 시 체크)</span>';
-        h += '</label>';
         h += '<div id="mfImgUploadProgress" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:#0c1a2e;border:1px solid #1e3a5f;">';
         h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
         h += '<span id="mfImgUploadText" style="font-size:11px;font-weight:700;color:#7dd3fc;"></span>';
