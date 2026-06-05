@@ -1861,6 +1861,8 @@
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
         // 승인 대기 감시
         if(user.role === 'admin' || user.role === 'subadmin') _authWatchPending();
+        // 로그인 후 메모 로드 (시작 시 _currentUser 없어서 스킵됐던 것 복구)
+        loadMemos();
         // 봇 버튼 권한 적용 (monitor.js 함수)
         if(typeof _updateBotToggleBtn === 'function') _updateBotToggleBtn();
         // 모니터링 알림 억제 (monitor_disabled 플래그, admin은 항상 허용)
