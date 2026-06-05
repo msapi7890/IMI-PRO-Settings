@@ -3267,15 +3267,17 @@
         return ranges;
     }
     function _schedKeyDown(e){
+        var tag = document.activeElement ? document.activeElement.tagName : '';
+        var inInput = (tag==='INPUT'||tag==='TEXTAREA'||document.activeElement.isContentEditable);
         if(e.key==='Escape'){
             if(_schedSelStartCol!==null){ _schedClearSel(); return; }
             if(_schedRowSelStart!==null){ _schedRowClearSel(); return; }
-            closeMemoPopup(); closeColorPicker(); closeScheduleModal();
+            if(!inInput){ closeMemoPopup(); closeColorPicker(); closeScheduleModal(); }
         } else if((e.ctrlKey||e.metaKey) && e.key==='c'){
-            if(_schedSelStartCol!==null){ e.preventDefault(); _schedCopySelection(); }
+            if(!inInput && _schedSelStartCol!==null){ e.preventDefault(); _schedCopySelection(); }
         } else if((e.ctrlKey||e.metaKey) && e.key==='z'){
-            e.preventDefault(); _schedUndo();
-        } else if(!_schedStamp && _schedFocusKey && !e.ctrlKey && !e.metaKey && !e.altKey){
+            if(!inInput){ e.preventDefault(); _schedUndo(); }
+        } else if(!inInput && !_schedStamp && _schedFocusKey && !e.ctrlKey && !e.metaKey && !e.altKey){
             if(e.key==='Delete'||e.key==='Backspace'){
                 e.preventDefault(); _schedSaveCell(_schedFocusKey, '');
             } else if(e.key==='Enter'||e.key==='F2'){
