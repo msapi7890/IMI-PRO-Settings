@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 43; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 44; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -154,22 +154,8 @@ function iconPath() {
 
 // ── 윈도우·작업표시줄 컬러 아이콘 (PNG 동적 생성) ────────
 let _iconGreen = null, _iconRed = null, _iconAlert = null;
-function _makeColorIcon(r, g, b) {
-    const N = 32;
-    const cx = (N-1)/2, cy = (N-1)/2, rad = N/2 - 2;
-    const rows = [];
-    for (let y = 0; y < N; y++) {
-        const sl = Buffer.alloc(1 + N*4);
-        for (let x = 0; x < N; x++) {
-            const dx = x-cx, dy = y-cy;
-            const a = Math.sqrt(dx*dx+dy*dy) <= rad ? 255 : 0;
-            const o = 1+x*4;
-            sl[o]=r; sl[o+1]=g; sl[o+2]=b; sl[o+3]=a;
-        }
-        rows.push(sl);
-    }
-    const raw = Buffer.concat(rows);
-    const idat = zlib.deflateSync(raw, {level:1});
+
+function _pngFromPixels(N, pixelFn) {
     function crc32(buf) {
         let c = 0xFFFFFFFF;
         for (const b of buf) { c ^= b; for (let i=0;i<8;i++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); }
@@ -181,15 +167,36 @@ function _makeColorIcon(r, g, b) {
         const cb=Buffer.alloc(4); cb.writeUInt32BE(crc32(Buffer.concat([tb,data])));
         return Buffer.concat([lb,tb,data,cb]);
     }
-    const ihdr = Buffer.from([0,0,0,32, 0,0,0,32, 8, 6, 0, 0, 0]);
+    const rows = [];
+    for (let y=0; y<N; y++) {
+        const sl = Buffer.alloc(1+N*4);
+        for (let x=0; x<N; x++) {
+            const [r,g,b,a] = pixelFn(x,y);
+            const o=1+x*4; sl[o]=r; sl[o+1]=g; sl[o+2]=b; sl[o+3]=a;
+        }
+        rows.push(sl);
+    }
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(N,0); ihdr.writeUInt32BE(N,4);
+    ihdr[8]=8; ihdr[9]=6;
+    const idat = zlib.deflateSync(Buffer.concat(rows), {level:1});
     const sig  = Buffer.from([137,80,78,71,13,10,26,10]);
-    const png  = Buffer.concat([sig, chunk('IHDR',ihdr), chunk('IDAT',idat), chunk('IEND',Buffer.alloc(0))]);
-    return nativeImage.createFromBuffer(png);
+    return nativeImage.createFromBuffer(Buffer.concat([sig, chunk('IHDR',ihdr), chunk('IDAT',idat), chunk('IEND',Buffer.alloc(0))]));
 }
+
+function _makeCircleIcon(r,g,b) {
+    const N=32, cx=(N-1)/2, cy=(N-1)/2, rad=N/2-2;
+    return _pngFromPixels(N, (x,y) => {
+        const dx=x-cx, dy=y-cy;
+        const a = Math.sqrt(dx*dx+dy*dy)<=rad ? 255 : 0;
+        return [r,g,b,a];
+    });
+}
+
 function _getColorIcon(state) {
-    if (state === 'alert') { if (!_iconAlert) _iconAlert = _makeColorIcon(255,100,0); return _iconAlert; }
-    if (state === 'green') { if (!_iconGreen) _iconGreen = _makeColorIcon(0,200,80);  return _iconGreen; }
-    if (!_iconRed) _iconRed = _makeColorIcon(220,50,50);
+    if (state === 'alert') { return _iconAlert || _makeCircleIcon(220,50,50); } // 🚨 로드 전 fallback
+    if (state === 'green') { if (!_iconGreen) _iconGreen = _makeCircleIcon(0,200,80);  return _iconGreen; }
+    if (!_iconRed) _iconRed = _makeCircleIcon(220,50,50);
     return _iconRed;
 }
 function _updateWindowIcon() {
@@ -283,6 +290,20 @@ function createWindow() {
         if (lastUpdateStatus) {
             win.webContents.send('update-status', lastUpdateStatus);
         }
+        // 브라우저 캔버스로 🚨 이모지 → PNG → nativeImage 변환
+        win.webContents.executeJavaScript(`
+            (function(){
+                var c=document.createElement('canvas'); c.width=32; c.height=32;
+                var ctx=c.getContext('2d');
+                ctx.font='26px serif'; ctx.fillText('🚨',1,26);
+                return c.toDataURL('image/png');
+            })()
+        `).then(dataUrl => {
+            try {
+                const img = nativeImage.createFromDataURL(dataUrl);
+                if (!img.isEmpty()) { _iconAlert = img; _updateWindowIcon(); }
+            } catch(_) {}
+        }).catch(() => {});
     });
 
     // 🟢/🔴 폴링: IPC 타이밍 의존 없이 3초마다 렌더러에서 직접 봇 상태 읽기
