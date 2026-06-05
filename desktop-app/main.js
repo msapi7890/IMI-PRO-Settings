@@ -411,7 +411,9 @@ ipcMain.handle('restart-app', async () => {
     const ses2 = require('electron').session.fromPartition('persist:imipro');
     try { await ses2.clearCache(); } catch(_) {}
     const s2 = loadSettings(); s2.lastCachedVersion = '0'; saveSettings(s2);
-    app.relaunch(); app.exit(0);
+    const hasPendingUpdate = lastUpdateStatus && lastUpdateStatus.type === 'downloaded';
+    if (!hasPendingUpdate) app.relaunch();
+    app.quit();
 });
 ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
