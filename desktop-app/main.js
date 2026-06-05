@@ -192,13 +192,17 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시 주황불·교대 정지 → 🟢 고정 (불 꺼짐)
+    // 포커스 시 주황불 OFF — 미처리 알림 있으면 타이틀 교대 유지, 없으면 🟢 복귀
     win.on('focus', () => {
-        if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
         win.flashFrame(false);
         win.setProgressBar(-1);
-        const ver = appDisplayVersion();
-        win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
+        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
+        if (!hasAlert) {
+            if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
+            const ver = appDisplayVersion();
+            win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
+        }
+        // 알림 처리 중이면 타이틀 🟢↔🚨 교대는 계속 유지
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
