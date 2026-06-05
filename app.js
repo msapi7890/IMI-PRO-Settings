@@ -6757,6 +6757,7 @@
         refreshUrgentDetail();
         _resetModalPos('urgentDetailContent');
         document.getElementById('urgentDetailModal').classList.remove('hidden');
+        window._udFontSet(_udFontSz);
     }
     function refreshUrgentDetail(){
         var id=_currentUrgentId; if(!id)return;
@@ -7303,6 +7304,7 @@
         switchToViewMode();
         _resetModalPos('noticeModalContent');
         document.getElementById('noticeModal').classList.remove('hidden');
+        window._nvFontSet(_nvFontSz);
     }
     function updateModalPinBtn(isPinned){
         var btn=document.getElementById('modalPinBtn'); if(!btn)return;
@@ -7761,13 +7763,19 @@
     var _termsMatchIdx = 0;
 
     // ── 모달별 폰트 크기 조절 ──────────────────────
+    function _injectStyle(id, css){
+        var s = document.getElementById(id);
+        if(!s){ s = document.createElement('style'); s.id = id; document.head.appendChild(s); }
+        s.textContent = css;
+    }
     function _makeModalFont(contentId, rangeId, storageKey){
-        var sz = parseInt(localStorage.getItem(storageKey)||'13');
+        var BASE = 13;
+        var sz = parseInt(localStorage.getItem(storageKey)||''+BASE);
         var set = function(v){
-            sz = Math.min(22, Math.max(11, parseInt(v)||13));
+            sz = Math.min(22, Math.max(11, parseInt(v)||BASE));
             localStorage.setItem(storageKey, sz);
             var c = document.getElementById(contentId);
-            if(c) c.style.fontSize = sz+'px';
+            if(c) c.style.zoom = (sz/BASE).toFixed(3);
             var r = document.getElementById(rangeId);
             if(r) r.value = sz;
         };
@@ -7779,16 +7787,41 @@
     window._urgentFontAdj = function(d){ _urgentFont.adj(d); };
     window._noticeFontSet = function(v){ _noticeFont.set(v); };
     window._noticeFontAdj = function(d){ _noticeFont.adj(d); };
+    // 이용약관 폰트 — style 주입으로 CSS 규칙 override
     var _termsFontSz = parseInt(localStorage.getItem('imi_terms_font')||'13');
     window._termsFontSet = function(sz){
         _termsFontSz = Math.min(22, Math.max(11, parseInt(sz)||13));
         localStorage.setItem('imi_terms_font', _termsFontSz);
-        var c = document.getElementById('termsContent');
-        if(c) c.style.fontSize = _termsFontSz + 'px';
+        _injectStyle('_sTerms',
+            '#termsContent,#termsContent p,#termsContent li,#termsContent td,#termsContent th{font-size:'+_termsFontSz+'px!important}'
+            +'#termsContent h2{font-size:'+Math.round(_termsFontSz*1.1)+'px!important}'
+            +'#termsContent h3{font-size:'+Math.round(_termsFontSz*0.95)+'px!important}');
         var r = document.getElementById('termsFontRange');
         if(r) r.value = _termsFontSz;
     };
     window._termsFontAdj = function(delta){ window._termsFontSet(_termsFontSz + delta); };
+    // 긴급공지 상세 폰트
+    var _udFontSz = parseInt(localStorage.getItem('imi_udnot_font')||'15');
+    window._udFontSet = function(sz){
+        _udFontSz = Math.min(22, Math.max(11, parseInt(sz)||15));
+        localStorage.setItem('imi_udnot_font', _udFontSz);
+        var c = document.getElementById('udContent');
+        if(c) c.style.fontSize = _udFontSz + 'px';
+        var r = document.getElementById('udFontRange');
+        if(r) r.value = _udFontSz;
+    };
+    window._udFontAdj = function(d){ window._udFontSet(_udFontSz + d); };
+    // 일반공지 상세 폰트
+    var _nvFontSz = parseInt(localStorage.getItem('imi_nvnot_font')||'14');
+    window._nvFontSet = function(sz){
+        _nvFontSz = Math.min(22, Math.max(11, parseInt(sz)||14));
+        localStorage.setItem('imi_nvnot_font', _nvFontSz);
+        var c = document.getElementById('viewContent');
+        if(c) c.style.fontSize = _nvFontSz + 'px';
+        var r = document.getElementById('nvFontRange');
+        if(r) r.value = _nvFontSz;
+    };
+    window._nvFontAdj = function(d){ window._nvFontSet(_nvFontSz + d); };
     function openTermsModal(){
         document.getElementById('termsModal').classList.remove('hidden');
         document.getElementById('termsSearchInput').value = '';
