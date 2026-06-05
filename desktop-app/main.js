@@ -299,6 +299,7 @@ let _activeNotif = null;
 
 function showNativeNotif(title, body) {
     if (!Notification.isSupported()) return;
+    if (_activeNotif) { try { _activeNotif.close(); } catch(_) {} _activeNotif = null; }
     const opts = { title, body, silent: false, timeoutType: 'never' };
     const icon = iconPath();
     if (icon) opts.icon = icon;
