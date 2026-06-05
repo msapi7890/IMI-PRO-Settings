@@ -1035,22 +1035,13 @@
         h += '<input type="number" id="mfNewStart" min="1" placeholder="예: 151" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;outline:none;">';
         h += '<button onclick="_mfAutoStart()" style="padding:7px 12px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;white-space:nowrap;">자동 확인</button>';
         h += '</div>';
-        h += '<label style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-        h += '📄 PDF 선택 → 이미지 변환 시작';
-        h += '<input type="file" id="mfNewFile" accept=".pdf" style="display:none;" onchange="_mfDoRender()">';
+        h += '<label id="mfImgUploadLabel" style="display:block;padding:9px 14px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#0284c7);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
+        h += '📄🖼 PDF 또는 이미지 선택 (여러 장 가능)';
+        h += '<input type="file" id="mfCombinedFile" accept=".pdf,image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="_mfHandleFiles()">';
         h += '</label>';
-        h += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">';
-        h += '<div style="flex:1;height:1px;background:#334155;"></div>';
-        h += '<span style="font-size:10px;color:#475569;flex-shrink:0;">또는 이미 변환된 이미지 파일 있으면</span>';
-        h += '<div style="flex:1;height:1px;background:#334155;"></div>';
-        h += '</div>';
-        h += '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;margin-bottom:4px;cursor:pointer;user-select:none;">';
+        h += '<label style="display:flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;user-select:none;">';
         h += '<input type="checkbox" id="mfImgOverwrite" style="width:14px;height:14px;accent-color:#f59e0b;cursor:pointer;">';
         h += '<span style="font-size:11px;color:#f59e0b;font-weight:700;">기존 이미지 덮어쓰기 (화질 개선 재업로드 시 체크)</span>';
-        h += '</label>';
-        h += '<label id="mfImgUploadLabel" style="display:block;padding:9px 14px;border-radius:8px;border:1.5px dashed #0284c7;color:#7dd3fc;font-size:11px;font-weight:900;cursor:pointer;text-align:center;background:#0c1a2e;">';
-        h += '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
-        h += '<input type="file" id="mfImgFiles" accept="image/jpeg,image/png,image/webp" multiple style="display:none;" onchange="_mfUploadImgFiles()">';
         h += '</label>';
         h += '<div id="mfImgUploadProgress" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:#0c1a2e;border:1px solid #1e3a5f;">';
         h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
@@ -1453,21 +1444,21 @@
         if(btn){ btn.disabled=true; btn.textContent='취소 중...'; }
     }
 
-    async function _mfUploadImgFiles(){
-        var input    = document.getElementById('mfImgFiles');
+    async function _mfUploadImgFiles(filesOverride){
         var progWrap = document.getElementById('mfImgUploadProgress');
         var progText = document.getElementById('mfImgUploadText');
         var progCnt  = document.getElementById('mfImgUploadCount');
         var progBar  = document.getElementById('mfImgUploadBar');
         var label    = document.getElementById('mfImgUploadLabel');
         var startEl  = document.getElementById('mfNewStart');
-        if(!input || !input.files || !input.files.length) return;
+        var rawFiles = filesOverride || (function(){ var inp=document.getElementById('mfImgFiles'); return inp&&inp.files?Array.from(inp.files):[]; })();
+        if(!rawFiles || !rawFiles.length) return;
         var startPage = parseInt(startEl ? startEl.value : '1', 10);
         if(!startPage || startPage < 1){ alert('시작 페이지를 먼저 입력해주세요.'); return; }
         var mode = _mfMgmtMode;
 
         // 파일명 기준 정렬 (숫자 순서)
-        var files = Array.from(input.files).sort(function(a,b){
+        var files = rawFiles.slice().sort(function(a,b){
             return a.name.localeCompare(b.name, undefined, {numeric:true});
         });
         var total = files.length;
@@ -1572,20 +1563,31 @@
             _lbl2.style.pointerEvents='';
             _lbl2.style.opacity='';
             var _fn = _lbl2.firstChild;
-            if(_fn && _fn.nodeType===3) _fn.nodeValue = '🖼 JPG/PNG 이미지 파일 선택 (여러 장 가능) → 직접 업로드';
+            if(_fn && _fn.nodeType===3) _fn.nodeValue = '📄🖼 PDF 또는 이미지 선택 (여러 장 가능)';
         }
-        input.value = '';
         if(!failed){ _mfLoadStorageThumbs(uploaded, skipped, startPage); }
     }
 
-    async function _mfDoRender(){
+    function _mfHandleFiles(){
+        var input = document.getElementById('mfCombinedFile');
+        var files = input ? Array.from(input.files) : [];
+        if(!files.length) return;
+        var pdfFile = files.find(function(f){ return f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'); });
+        if(pdfFile){
+            _mfDoRender(pdfFile);
+        } else {
+            _mfUploadImgFiles(files);
+        }
+        if(input) input.value='';
+    }
+
+    async function _mfDoRender(fileOverride){
         var startEl = document.getElementById('mfNewStart');
-        var fileEl  = document.getElementById('mfNewFile');
         var prog    = document.getElementById('mfNewProgress');
         var start   = parseInt(startEl ? startEl.value : '0', 10);
-        var file    = fileEl ? fileEl.files[0] : null;
+        var file    = fileOverride || null;
         if(!file) return;
-        if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); if(fileEl) fileEl.value=''; return; }
+        if(!start||start<1){ alert('"자동 확인" 버튼을 눌러 시작 페이지를 설정하거나 직접 입력해주세요.'); return; }
         // 취소 버튼 표시
         _mfCancelRender = false;
         if(prog) prog.innerHTML = '이미지 변환 준비 중... <button id="mfCancelBtn" onclick="_mfCancelRenderNow()" style="margin-left:8px;padding:2px 10px;border-radius:5px;background:#7f1d1d;color:#fca5a5;border:none;font-size:10px;font-weight:900;cursor:pointer;">✕ 취소</button>';
