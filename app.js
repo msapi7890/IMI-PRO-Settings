@@ -1371,22 +1371,26 @@
     }
 
     async function _mfGetMaxPage(mode){
-        // 빠른 경로: 업로드 시 저장해둔 maxPage 메타 먼저 확인
+        var max = 0;
+        // 메타 파일 (업로드 시 기록)
         try{
             var meta = await _authFetch('manual_meta/'+mode+'/maxPage.json');
-            if(meta && typeof meta==='number' && meta>0) return meta;
+            if(meta && typeof meta==='number' && meta>0) max = Math.max(max, meta);
         }catch(e){}
-
-        // 폴백: 등록 항목 기준
-        var max = 0;
-        var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
-        if(raw) Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
-
-        // 폴백: DB 실제 저장 파일 기준 — 중단된 업로드 후 DB 미반영 케이스 커버
+        // 등록 항목 기준
+        try{
+            var raw = await _authFetch('manual_page_ranges/'+mode+'.json');
+            if(raw) Object.values(raw).forEach(function(r){ if((r.end||0)>max) max=r.end; });
+        }catch(e){}
+        // DB 실제 저장 파일 기준 (가장 신뢰성 높음 — 메타 파일이 오래됐어도 보정)
         try{
             var dbPages = await _listDbPages(mode);
             if(dbPages.length) max = Math.max(max, dbPages[dbPages.length-1]);
         }catch(e){}
+        // 세 소스 중 최댓값으로 maxPage 메타 갱신 (다음 호출부터 빠르게 읽도록)
+        if(max>0){
+            try{ await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',max); }catch(e){}
+        }
         return max;
     }
 
