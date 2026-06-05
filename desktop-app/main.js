@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 45; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 46; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -136,15 +136,19 @@ function _updateTitleBlink() {
         return;
     }
 
-    // 감지 중: 타이틀 고정, 비포커스 시 주황불, 아이콘 🚨↔🟢 교대
-    if (win) win.setTitle(base); // 타이틀 고정
+    // 감지 중: 타이틀 이모지 교대(텍스트 고정), 비포커스 시 주황불, 아이콘 🚨↔🟢 교대
     if (win && !win.isFocused()) {
         win.setProgressBar(1, { mode: 'error' }); // 고정 주황불
     }
+    const alertTitle = '🚨 IMI PRO v' + ver;
+    if (win) win.setTitle(alertTitle);
     let _ii = 0;
     _iconBlinkTimer = setInterval(() => {
         if (!win || win.isDestroyed()) return;
-        try { win.setIcon(_getColorIcon(_ii++ % 2 === 0 ? 'alert' : 'green')); } catch(_) {}
+        const isAlert = _ii % 2 === 0;
+        win.setTitle(isAlert ? alertTitle : base);
+        try { win.setIcon(_getColorIcon(isAlert ? 'alert' : 'green')); } catch(_) {}
+        _ii++;
     }, 900);
 }
 
@@ -521,7 +525,7 @@ ipcMain.handle('restart-app', async () => {
 ipcMain.on('close-notification',    ()                   => { closeNativeNotif(); });
 ipcMain.on('set-monitor-disabled',  (_, val)             => { monitorSuppressed = !!val; });
 ipcMain.on('set-os-notif-muted',    (_, val)             => { osNotifMuted = !!val; });
-ipcMain.on('flash-frame',           (_, val)             => { if (win) win.flashFrame(!!val); });
+ipcMain.on('flash-frame',           (_, val)             => { if (win && !val) win.flashFrame(false); }); // true(깜빡임)는 무시, false(끄기)만 적용
 ipcMain.on('monitor-active',        (_, val)             => { monitorActive = !!val; _updateTitleBlink(); });
 
 // ── 타이틀 깜빡임 IPC (렌더러 요청) ─────────────────────
