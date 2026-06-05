@@ -1033,9 +1033,8 @@
 <header>
     <div class="h-left" style="position:relative;">
         <h1 onclick="checkAppStatus()" title="Claude 연결 상태 확인" style="font-size:18px;font-weight:900;font-style:italic;letter-spacing:0.06em;background:linear-gradient(135deg,#0284c7 0%,#3abff8 50%,#db2777 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;user-select:none;cursor:pointer;">✦ IMI PRO ✦</h1>
-        <button id="updateNoticeSendBtn" onclick="_openUpdateNoticeSend()" title="업데이트 알림 보내기" style="display:none;padding:2px 7px;border-radius:6px;border:1px solid #f59e0b;background:none;color:#f59e0b;font-size:10px;font-weight:900;cursor:pointer;flex-shrink:0;">📢</button>
         <span id="syncStatusBadge" style="display:none;"></span>
-        <!-- 업데이트 알림 팝업 -->
+        <!-- 실무자용 업데이트 알림 팝업 (로고 아래) -->
         <div id="updateNoticePopup" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:9999;background:#1e293b;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;min-width:230px;box-shadow:0 8px 28px rgba(0,0,0,0.5);">
             <div style="font-size:11px;font-weight:900;color:#f59e0b;margin-bottom:4px;">🔄 업데이트 알림</div>
             <div id="updateNoticeMsg" style="font-size:11px;color:#cbd5e1;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;"></div>
@@ -1044,14 +1043,17 @@
                 <button onclick="_dismissUpdateNotice()" style="padding:6px 10px;border-radius:7px;background:none;border:1px solid #334155;color:#64748b;font-size:11px;cursor:pointer;">나중에</button>
             </div>
         </div>
-        <!-- 업데이트 알림 발송 폼 (관리자 전용) -->
-        <div id="updateNoticeSendForm" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:9999;background:#1e293b;border:1.5px solid #334155;border-radius:12px;padding:12px 14px;min-width:260px;box-shadow:0 8px 28px rgba(0,0,0,0.5);">
-            <div style="font-size:11px;font-weight:900;color:#94a3b8;margin-bottom:8px;">📢 업데이트 알림 발송</div>
-            <textarea id="updateNoticeInput" rows="3" placeholder="변경 내용 입력 (예: 사기글 재감지 기능 추가)" style="width:100%;padding:7px 9px;border-radius:7px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;resize:none;outline:none;box-sizing:border-box;margin-bottom:8px;"></textarea>
-            <div style="display:flex;gap:6px;">
-                <button onclick="_sendUpdateNotice()" style="flex:1;padding:6px;border-radius:7px;background:#f59e0b;color:#fff;font-size:11px;font-weight:900;border:none;cursor:pointer;">발송</button>
-                <button onclick="_cancelUpdateNotice()" style="padding:6px 10px;border-radius:7px;background:none;border:1px solid #334155;color:#64748b;font-size:11px;cursor:pointer;">취소</button>
-                <button onclick="_clearUpdateNotice()" style="padding:6px 10px;border-radius:7px;background:none;border:1px solid #ef4444;color:#ef4444;font-size:11px;cursor:pointer;">알림 취소</button>
+    </div>
+
+    <!-- 업데이트 알림 발송 모달 (관리자 전용, fixed 오버레이) -->
+    <div id="updateNoticeSendModal" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;" onclick="if(event.target===this)_cancelUpdateNotice()">
+        <div style="background:#1e293b;border:1.5px solid #334155;border-radius:14px;padding:20px;width:340px;box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+            <div style="font-size:13px;font-weight:900;color:#e2e8f0;margin-bottom:12px;">📢 업데이트 알림 발송</div>
+            <textarea id="updateNoticeInput" rows="4" placeholder="변경 내용 입력&#10;예) 사기글 재감지 기능 추가&#10;    매뉴얼 등록 화면 개선" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;resize:none;outline:none;box-sizing:border-box;margin-bottom:12px;line-height:1.6;"></textarea>
+            <div style="display:flex;gap:8px;">
+                <button onclick="_sendUpdateNotice()" style="flex:1;padding:8px;border-radius:8px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;">발송</button>
+                <button onclick="_cancelUpdateNotice()" style="padding:8px 14px;border-radius:8px;background:none;border:1px solid #334155;color:#64748b;font-size:12px;cursor:pointer;">취소</button>
+                <button onclick="_clearUpdateNotice()" style="padding:8px 14px;border-radius:8px;background:none;border:1px solid #ef4444;color:#ef4444;font-size:12px;cursor:pointer;">알림 취소</button>
             </div>
         </div>
     </div>

@@ -346,9 +346,6 @@
         setTimeout(_syncHdrBtnWidths, 50);
         var adminItem = document.getElementById('authAdminMenuItem');
         if(adminItem) adminItem.style.display = user.role==='admin' ? '' : 'none';
-        // 관리자 업데이트 알림 발송 버튼
-        var _unBtn = document.getElementById('updateNoticeSendBtn');
-        if(_unBtn) _unBtn.style.display = user.role==='admin' ? '' : 'none';
         // 업데이트 알림 Firebase 리스너 시작
         _startUpdateNoticeListener();
         // 승인 대기 감시
@@ -517,6 +514,9 @@
         h += '<div id="authInlineSettings" style="display:none;border-bottom:1px solid var(--border-ui);background:var(--bg-body);">';
         if(_currentUser){
             h += '<div onclick="openUserMgmtModal()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f465; 멤버 목록'+pendingTag+'</div>';
+        }
+        if(isAdmin){
+            h += '<div onclick="_openUpdateNoticeSend()" style="'+rowS+'color:#f59e0b;border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f4e2; 업데이트 알림 발송</div>';
         }
         h += '<div onclick="_openUserChangePw()" style="'+rowS+'color:var(--text-main);border-bottom:1px solid var(--border-ui);" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f511; 비밀번호 변경</div>';
         h += '<div onclick="_authLogout()" style="'+rowS+'color:#ef4444;" onmouseover="this.style.opacity=0.75" onmouseout="this.style.opacity=1">&#x1f6aa; 로그아웃</div>';
@@ -8018,16 +8018,17 @@
             alert('Electron 환경에서만 재시작이 가능합니다.\n앱을 직접 껐다 켜주세요.');
         }
     };
-    // 관리자 전용: 알림 발송 폼 열기
+    // 관리자 전용: 알림 발송 모달 열기
     window._openUpdateNoticeSend = function(){
-        var form = document.getElementById('updateNoticeSendForm');
-        var popup = document.getElementById('updateNoticePopup');
-        if(popup) popup.style.display = 'none';
-        if(form) form.style.display = form.style.display === 'none' ? '' : 'none';
+        var modal = document.getElementById('updateNoticeSendModal');
+        if(modal){ modal.style.display = 'flex'; }
+        // 유저 메뉴 닫기
+        var menu = document.getElementById('authUserMenu');
+        if(menu) menu.style.display = 'none';
     };
     window._cancelUpdateNotice = function(){
-        var form = document.getElementById('updateNoticeSendForm');
-        if(form) form.style.display = 'none';
+        var modal = document.getElementById('updateNoticeSendModal');
+        if(modal) modal.style.display = 'none';
     };
     window._sendUpdateNotice = function(){
         var inp = document.getElementById('updateNoticeInput');
@@ -8035,23 +8036,13 @@
         if(!msg){ alert('알림 내용을 입력해주세요.'); return; }
         db.ref('system_flags/update_notice').set({ ts: Date.now(), msg: msg });
         if(inp) inp.value = '';
-        var form = document.getElementById('updateNoticeSendForm');
-        if(form) form.style.display = 'none';
+        window._cancelUpdateNotice();
     };
     window._clearUpdateNotice = function(){
         if(!confirm('업데이트 알림을 취소하시겠습니까?\n실무자 화면에서 팝업이 사라집니다.')) return;
         db.ref('system_flags/update_notice').remove();
-        var form = document.getElementById('updateNoticeSendForm');
-        if(form) form.style.display = 'none';
+        window._cancelUpdateNotice();
     };
-    // 폼 바깥 클릭 시 닫기
-    document.addEventListener('click', function(e){
-        var form = document.getElementById('updateNoticeSendForm');
-        var btn  = document.getElementById('updateNoticeSendBtn');
-        if(form && form.style.display !== 'none'){
-            if(!form.contains(e.target) && e.target !== btn) form.style.display = 'none';
-        }
-    });
 
     function openTermsModal(){
         document.getElementById('termsModal').classList.remove('hidden');
