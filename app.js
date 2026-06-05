@@ -7855,8 +7855,10 @@
         }
         _makeDraggable('urgentDetailContent','urgentDetailDragHandle');
         _makeDraggable('noticeModalContent','noticeModalDragHandle');
-        _makeResizable('urgentDetailContent');
-        _makeResizable('noticeModalContent');
+        _injectStyle('_modalFixedSize',
+            '#noticeModalContent{height:660px!important;max-height:660px!important;overflow:hidden!important;}' +
+            '#urgentDetailContent{height:660px!important;max-height:660px!important;overflow:hidden!important;}'
+        );
     })();
 
     /* ── 플립 시계 ── */
