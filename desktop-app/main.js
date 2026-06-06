@@ -110,36 +110,38 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 58; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 59; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
 }
 
 // ── 타이틀 / 작업표시줄 상태 핵심 함수 ──────────────────────
-let _titleBlinkTimer = null;
+let _alertBarActive = false; // 비거래 감지 초록 바 활성 여부
 
 function _updateTitleBlink() {
-    if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
-
     const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-    const ver  = appDisplayVersion();
-    const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
+    const ver = appDisplayVersion();
 
-    if (!hasAlert) {
-        if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
+    if (win) { win.setTitle('IMI PRO v' + ver); win.flashFrame(false); }
+
+    if (!monitorActive) {
+        // 봇 비활성 → 빨간 바 항상 (포커스 무관)
+        if (win) win.setProgressBar(1, { mode: 'error' });
+        _alertBarActive = false;
         return;
     }
 
-    if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
+    if (!hasAlert) {
+        // 평상시 → 아무것도 없음
+        if (win) win.setProgressBar(-1);
+        _alertBarActive = false;
+        return;
+    }
 
-    const alertTitle = '🚨 IMI PRO v' + ver;
-    if (win) win.setTitle(alertTitle);
-    let _bi = 0;
-    _titleBlinkTimer = setInterval(() => {
-        if (!win) return;
-        win.setTitle(_bi++ % 2 === 0 ? alertTitle : base);
-    }, 900);
+    // 감지 중 + 모니터링 활성: 초록 바는 blink-title/SSE 트리거에서만 켬
+    // 빨간 바 잔여(봇 재연결 직후 등) 제거
+    if (!_alertBarActive && win) win.setProgressBar(-1);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -194,10 +196,13 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시: 플래시 즉시 OFF
+    // 포커스 시: 감지 초록 바만 OFF (봇 비활성 빨간 바는 유지)
     win.on('focus', () => {
         win.flashFrame(false);
-        win.setProgressBar(-1);
+        if (_alertBarActive) {
+            win.setProgressBar(-1);
+            _alertBarActive = false;
+        }
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
@@ -368,7 +373,13 @@ function connectSSE() {
                             if (!monitorSuppressed && !osNotifMuted) showNativeNotif(title, body);
                         }
                         // 타이틀 깜빡임 (쿨다운 없음)
-                        if (!_sseBlinkLabels[ruleKey]) { _sseBlinkLabels[ruleKey] = d.ruleName || '알림'; sseChanged = true; }
+                        if (!_sseBlinkLabels[ruleKey]) {
+                            _sseBlinkLabels[ruleKey] = d.ruleName || '알림'; sseChanged = true;
+                            // 새 SSE 감지 + 비포커스 → 초록 바 켜짐
+                            if (monitorActive && win && !win.isDestroyed() && !win.isFocused()) {
+                                win.setProgressBar(1, { mode: 'normal' }); _alertBarActive = true;
+                            }
+                        }
                     } else {
                         if (_sseBlinkLabels[ruleKey]) { delete _sseBlinkLabels[ruleKey]; sseChanged = true; }
                     }
@@ -440,7 +451,15 @@ ipcMain.on('monitor-active',        (_, val)             => { monitorActive = !!
 
 // ── 타이틀 깜빡임 IPC (렌더러 요청) ─────────────────────
 ipcMain.on('blink-title', (_, { on, labels }) => {
+    const prevLabels = _rendererBlinkLabels.slice();
     _rendererBlinkLabels = on && labels && labels.length > 0 ? labels : [];
+
+    // 새 감지 레이블 + 비포커스 → 초록 바 켜짐
+    if (_rendererBlinkLabels.length > 0 && monitorActive && win && !win.isFocused()) {
+        const isNew = _rendererBlinkLabels.some(l => !prevLabels.includes(l));
+        if (isNew) { win.setProgressBar(1, { mode: 'normal' }); _alertBarActive = true; }
+    }
+
     _updateTitleBlink();
 });
 
