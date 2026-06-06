@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 54; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 55; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -200,12 +200,6 @@ function createWindow() {
     win.on('focus', () => {
         win.flashFrame(false);
         win.setProgressBar(-1);
-    });
-
-    // 비포커스 시: 경보 중이면 작업표시줄 플래시(고정) 재활성
-    win.on('blur', () => {
-        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-        if (hasAlert) win.setProgressBar(1, { mode: 'error' });
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
