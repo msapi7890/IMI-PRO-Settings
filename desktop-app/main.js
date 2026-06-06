@@ -110,15 +110,10 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 57; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 58; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
-}
-
-// ── 커스텀 타이틀바 상태 전송 ─────────────────────────────────
-function _sendTitleStatus(emoji) {
-    try { if (win && !win.isDestroyed()) win.webContents.send('__imi_status__', emoji); } catch(_) {}
 }
 
 // ── 타이틀 / 작업표시줄 상태 핵심 함수 ──────────────────────
@@ -129,24 +124,21 @@ function _updateTitleBlink() {
 
     const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
     const ver  = appDisplayVersion();
-    const base = 'IMI PRO v' + ver;
+    const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
 
     if (!hasAlert) {
         if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
-        _sendTitleStatus(monitorActive ? '🟢' : '🔴');
         return;
     }
 
-    // 경보 중: 비포커스 시 주황불 고정
     if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
 
-    // 커스텀 타이틀바: 🚨 ↔ 🟢 교대
-    if (win) win.setTitle(base);
-    _sendTitleStatus('🚨');
+    const alertTitle = '🚨 IMI PRO v' + ver;
+    if (win) win.setTitle(alertTitle);
     let _bi = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        _sendTitleStatus(_bi++ % 2 === 0 ? '🚨' : (monitorActive ? '🟢' : '🔴'));
+        win.setTitle(_bi++ % 2 === 0 ? alertTitle : base);
     }, 900);
 }
 
@@ -167,8 +159,6 @@ function createWindow() {
         minWidth:  960,
         minHeight: 600,
         title: 'IMI PRO v' + appDisplayVersion(),
-        titleBarStyle: 'hidden',
-        titleBarOverlay: { color: '#0f172a', symbolColor: '#94a3b8', height: 32 },
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
