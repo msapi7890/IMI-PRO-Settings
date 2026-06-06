@@ -110,10 +110,58 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 51; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 52; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
+}
+
+// ── 작업표시줄 오버레이 아이콘 (색깔 배지) ───────────────────
+let _overlayGreen = null, _overlayRed = null, _overlayOrange = null;
+
+function _makeCircleIcon(r, g, b) {
+    const zlib = require('zlib');
+    const size = 16;
+    const cx = (size - 1) / 2, cy = (size - 1) / 2, radius = size / 2 - 1;
+    const rows = [];
+    for (let y = 0; y < size; y++) {
+        const row = Buffer.alloc(1 + size * 4); // filter=0 + RGBA*size
+        for (let x = 0; x < size; x++) {
+            const inside = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2) <= radius;
+            const o = 1 + x * 4;
+            row[o] = inside ? r : 0; row[o+1] = inside ? g : 0;
+            row[o+2] = inside ? b : 0; row[o+3] = inside ? 255 : 0;
+        }
+        rows.push(row);
+    }
+    const compressed = zlib.deflateSync(Buffer.concat(rows));
+    // CRC32
+    const crcT = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) { let c = i; for (let j = 0; j < 8; j++) c = (c&1)?(0xEDB88320^(c>>>1)):(c>>>1); crcT[i]=c; }
+    const crc32 = buf => { let c=0xFFFFFFFF; for (const b of buf) c=crcT[(c^b)&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+    const mkChunk = (type, data) => {
+        const t=Buffer.from(type,'ascii'), len=Buffer.alloc(4), cb=Buffer.alloc(4);
+        len.writeUInt32BE(data.length,0); cb.writeUInt32BE(crc32(Buffer.concat([t,data])),0);
+        return Buffer.concat([len,t,data,cb]);
+    };
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(size,0); ihdr.writeUInt32BE(size,4); ihdr[8]=8; ihdr[9]=6;
+    return nativeImage.createFromBuffer(Buffer.concat([
+        Buffer.from([137,80,78,71,13,10,26,10]),
+        mkChunk('IHDR',ihdr), mkChunk('IDAT',compressed), mkChunk('IEND',Buffer.alloc(0))
+    ]));
+}
+
+function _initOverlayIcons() {
+    try {
+        _overlayGreen  = _makeCircleIcon(0x22, 0xCC, 0x22); // 초록
+        _overlayRed    = _makeCircleIcon(0xDD, 0x22, 0x22); // 빨강
+        _overlayOrange = _makeCircleIcon(0xFF, 0x88, 0x00); // 사이렌/주황
+    } catch(e) { console.error('overlay icon init failed', e); }
+}
+
+function _setOverlay(icon, desc) {
+    try { if (win && !win.isDestroyed()) win.setOverlayIcon(icon, desc); } catch(_) {}
 }
 
 // ── 타이틀 / 작업표시줄 상태 핵심 함수 ──────────────────────
@@ -130,16 +178,17 @@ function _updateTitleBlink() {
 
     if (!hasAlert) {
         if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
+        _setOverlay(monitorActive ? _overlayGreen : _overlayRed, monitorActive ? '모니터링 활성' : '모니터링 비활성');
         return;
     }
 
-    // 감지 중: 비포커스 시 주황불 고정
+    // 감지 중: 오버레이 사이렌 + 비포커스 시 주황불 고정
+    _setOverlay(_overlayOrange, '감지 경보');
     if (win && !win.isFocused()) {
         win.setProgressBar(1, { mode: 'error' });
     }
 
     if (hasSseAlert) {
-        // SSE 경보: 렌더러가 타이틀 안 건드리므로 main이 직접 교대
         const alertTitle = '🚨 IMI PRO v' + ver;
         if (win) win.setTitle(alertTitle);
         let _bi = 0;
@@ -477,6 +526,7 @@ app.whenReady().then(async () => {
         saveSettings(s);
     }
 
+    _initOverlayIcons();
     buildAppMenu();
     createWindow();
     createTray();
