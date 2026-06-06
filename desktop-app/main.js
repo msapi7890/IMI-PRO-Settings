@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 53; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 54; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -122,9 +122,7 @@ let _titleBlinkTimer = null;
 function _updateTitleBlink() {
     if (_titleBlinkTimer) { clearInterval(_titleBlinkTimer); _titleBlinkTimer = null; }
 
-    const hasSseAlert = Object.keys(_sseBlinkLabels).length > 0;
-    const hasRendererAlert = _rendererBlinkLabels.length > 0;
-    const hasAlert = hasSseAlert || hasRendererAlert;
+    const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
     const ver  = appDisplayVersion();
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
 
@@ -133,22 +131,17 @@ function _updateTitleBlink() {
         return;
     }
 
-    // 감지 중: 비포커스 시 작업표시줄 진행바 고정
-    if (win && !win.isFocused()) {
-        win.setProgressBar(1, { mode: 'error' });
-    }
+    // 경보 중: 비포커스 시 플래시 고정
+    if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
 
-    if (hasSseAlert) {
-        // SSE 경보: 렌더러가 타이틀 안 건드리므로 main이 직접 교대
-        const alertTitle = '🚨 IMI PRO v' + ver;
-        if (win) win.setTitle(alertTitle);
-        let _bi = 0;
-        _titleBlinkTimer = setInterval(() => {
-            if (!win) return;
-            win.setTitle(_bi++ % 2 === 0 ? alertTitle : base);
-        }, 900);
-    }
-    // 렌더러 경보: renderer가 document.title 교대 → page-title-updated가 win.setTitle 처리
+    // 🚨 ↔ 🟢 교대 — 포커스 여부 무관, 경보 해제 전까지 계속
+    const alertTitle = '🚨 IMI PRO v' + ver;
+    if (win) win.setTitle(alertTitle);
+    let _bi = 0;
+    _titleBlinkTimer = setInterval(() => {
+        if (!win) return;
+        win.setTitle(_bi++ % 2 === 0 ? alertTitle : base);
+    }, 900);
 }
 
 // ── 아이콘 경로 (없으면 null) ──────────────────────────────
@@ -182,20 +175,8 @@ function createWindow() {
     win = new BrowserWindow(opts);
     win.loadURL(APP_URL);
 
-    // 페이지 title 변경 — 🟢/🔴/🚨 이모지 타이틀만 통과, 나머지 차단
-    win.on('page-title-updated', (e, title) => {
-        e.preventDefault();
-        const ver = appDisplayVersion();
-        if (!title) return;
-        if (title.startsWith('🚨') || title.startsWith('🟢') || title.startsWith('🔴')) {
-            // 렌더러가 이모지 타이틀 설정 시 버전 붙여서 반영
-            win.setTitle(title.includes('IMI PRO') ? title : title + ' IMI PRO v' + ver);
-        } else {
-            // 렌더러가 'IMI PRO' 등 평문 설정 시 → 경보 없으면 🟢/🔴 재적용
-            const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-            if (!hasAlert) win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
-        }
-    });
+    // 렌더러 title 변경 차단 — main이 win.setTitle로 모든 타이틀 제어
+    win.on('page-title-updated', (e) => { e.preventDefault(); });
 
     // target="_blank" 등 새 창 요청 → 시스템 기본 브라우저로
     win.webContents.setWindowOpenHandler(({ url }) => {
@@ -215,11 +196,16 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시: 플래시 즉시 OFF, 아이콘 교대는 유지
+    // 포커스 시: 플래시 즉시 OFF, 이모지 교대는 유지
     win.on('focus', () => {
         win.flashFrame(false);
-        win.setProgressBar(-1); // 주황불 즉시 꺼짐
-        // 아이콘 교대(_iconBlinkTimer)는 계속 유지 — 감지 해제 시 자동 정리됨
+        win.setProgressBar(-1);
+    });
+
+    // 비포커스 시: 경보 중이면 작업표시줄 플래시(고정) 재활성
+    win.on('blur', () => {
+        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
+        if (hasAlert) win.setProgressBar(1, { mode: 'error' });
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
