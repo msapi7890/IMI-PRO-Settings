@@ -110,10 +110,15 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 56; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 57; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
+}
+
+// ── 커스텀 타이틀바 상태 전송 ─────────────────────────────────
+function _sendTitleStatus(emoji) {
+    try { if (win && !win.isDestroyed()) win.webContents.send('__imi_status__', emoji); } catch(_) {}
 }
 
 // ── 타이틀 / 작업표시줄 상태 핵심 함수 ──────────────────────
@@ -124,28 +129,24 @@ function _updateTitleBlink() {
 
     const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
     const ver  = appDisplayVersion();
-    const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
+    const base = 'IMI PRO v' + ver;
 
     if (!hasAlert) {
-        if (win) {
-            win.setTitle(base);
-            win.flashFrame(false);
-            // 모니터링 상태 색상: 초록(active) / 빨강(inactive)
-            win.setProgressBar(1, { mode: monitorActive ? 'normal' : 'error' });
-        }
+        if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
+        _sendTitleStatus(monitorActive ? '🟢' : '🔴');
         return;
     }
 
-    // 경보 중: 비포커스 시 빨간 플래시 고정
+    // 경보 중: 비포커스 시 주황불 고정
     if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
 
-    // 🚨 ↔ 🟢 교대 — 포커스 여부 무관, 경보 해제 전까지 계속
-    const alertTitle = '🚨 IMI PRO v' + ver;
-    if (win) win.setTitle(alertTitle);
+    // 커스텀 타이틀바: 🚨 ↔ 🟢 교대
+    if (win) win.setTitle(base);
+    _sendTitleStatus('🚨');
     let _bi = 0;
     _titleBlinkTimer = setInterval(() => {
         if (!win) return;
-        win.setTitle(_bi++ % 2 === 0 ? alertTitle : base);
+        _sendTitleStatus(_bi++ % 2 === 0 ? '🚨' : (monitorActive ? '🟢' : '🔴'));
     }, 900);
 }
 
@@ -166,6 +167,8 @@ function createWindow() {
         minWidth:  960,
         minHeight: 600,
         title: 'IMI PRO v' + appDisplayVersion(),
+        titleBarStyle: 'hidden',
+        titleBarOverlay: { color: '#0f172a', symbolColor: '#94a3b8', height: 32 },
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -201,12 +204,10 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시: 경보 플래시만 OFF — 모니터링 상태 색상(초록/빨강)은 유지
+    // 포커스 시: 플래시 즉시 OFF
     win.on('focus', () => {
         win.flashFrame(false);
-        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
-        if (hasAlert) win.setProgressBar(-1); // 경보 중만 플래시 꺼짐
-        // 경보 없으면 모니터링 초록/빨강 그대로 유지
+        win.setProgressBar(-1);
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
