@@ -109,7 +109,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 49; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 50; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -176,13 +176,12 @@ function createWindow() {
     win.loadURL(APP_URL);
 
     // 페이지 title 변경 — 🟢/🔴/🚨 이모지 타이틀만 통과, 나머지 차단
-    win.on('page-title-updated', (e, title) => {
+    win.on('page-title-updated', (e) => {
         e.preventDefault();
-        const ver = 'IMI PRO v' + appDisplayVersion();
-        if (!title) return;
-        if (title.startsWith('🚨') || title.startsWith('🟢') || title.startsWith('🔴')) {
-            // 버전이 없으면 기본 버전 텍스트로 교체
-            win.setTitle(title.includes('IMI PRO') ? title : title + ' ' + ver);
+        // 페이지가 타이틀 덮어쓰려 할 때마다 이모지 타이틀 재적용
+        if (!_titleBlinkTimer) {
+            const ver = appDisplayVersion();
+            win.setTitle(monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver);
         }
     });
 
