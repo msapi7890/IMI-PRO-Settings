@@ -110,7 +110,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 55; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 56; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -127,11 +127,16 @@ function _updateTitleBlink() {
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
 
     if (!hasAlert) {
-        if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
+        if (win) {
+            win.setTitle(base);
+            win.flashFrame(false);
+            // 모니터링 상태 색상: 초록(active) / 빨강(inactive)
+            win.setProgressBar(1, { mode: monitorActive ? 'normal' : 'error' });
+        }
         return;
     }
 
-    // 경보 중: 비포커스 시 플래시 고정
+    // 경보 중: 비포커스 시 빨간 플래시 고정
     if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
 
     // 🚨 ↔ 🟢 교대 — 포커스 여부 무관, 경보 해제 전까지 계속
@@ -196,10 +201,12 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시: 플래시 즉시 OFF, 이모지 교대는 유지
+    // 포커스 시: 경보 플래시만 OFF — 모니터링 상태 색상(초록/빨강)은 유지
     win.on('focus', () => {
         win.flashFrame(false);
-        win.setProgressBar(-1);
+        const hasAlert = _rendererBlinkLabels.length > 0 || Object.keys(_sseBlinkLabels).length > 0;
+        if (hasAlert) win.setProgressBar(-1); // 경보 중만 플래시 꺼짐
+        // 경보 없으면 모니터링 초록/빨강 그대로 유지
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
