@@ -1574,9 +1574,10 @@
         }
 
         var uploaded = 0, failed = 0, skipped = 0;
-        var lastUploadedPage = 0;
+        var lastUploadedPage = 0, maxPageNum = 0;
         for(var i=0; i<files.length; i++){
             var pageNum = _fnPageNum(files[i].name, startPage + i);
+            if(pageNum > maxPageNum) maxPageNum = pageNum;
             var padded  = String(pageNum).padStart(3,'0');
             var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
 
@@ -1610,8 +1611,8 @@
             if(_lpt) _lpt.textContent=txt; if(_lpc) _lpc.textContent=cnt; if(_lpb) _lpb.style.width=pct+'%';
         }
 
-        // maxPage: 파일명 기준 최대 페이지 번호로 저장
-        var lastPage = files.reduce(function(mx, f, i){ return Math.max(mx, _fnPageNum(f.name, startPage+i)); }, 0);
+        // maxPage: 실제 처리된 페이지 번호 기준 (건너뜀 포함)
+        var lastPage = maxPageNum || (startPage + files.length - 1);
         if(lastPage > 0){
             await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',lastPage);
             _mfTotalPdfPages = lastPage;
