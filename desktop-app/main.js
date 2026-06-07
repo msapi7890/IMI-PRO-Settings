@@ -109,7 +109,7 @@ const _sseBlinkLabels = {};    // ruleKey → label (SSE 감지 상태)
 let _rendererBlinkLabels = []; // 렌더러 IPC 요청 레이블
 
 // ── 버전 표시 (26.6.17 형식, .0 끝나면 축약) ─────────────
-const EXE_BUILD = 61; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
+const EXE_BUILD = 62; // exe 빌드 횟수 (desktop-v 태그 기준, 새 exe 빌드 시 +1)
 function appDisplayVersion() {
     const v = app.getVersion();
     return v.endsWith('.0') ? v.slice(0, -2) : v;
@@ -210,7 +210,7 @@ function createWindow() {
     win.webContents.on('before-input-event', (event, input) => {
         if (input.type !== 'keyDown') return;
         if (input.key === 'F5' || (input.control && (input.key === 'r' || input.key === 'R'))) {
-            win.webContents.reloadIgnoringCache();
+            win.webContents.session.clearCache().then(() => win.webContents.reloadIgnoringCache());
         }
         if (input.key === 'F12' || (input.control && input.shift && (input.key === 'i' || input.key === 'I'))) {
             win.webContents.toggleDevTools();
