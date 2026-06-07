@@ -130,12 +130,8 @@ function _updateTitleBlink() {
         if (win) {
             win.setTitle(base);
             win.flashFrame(false);
-            // 연결 정상 → 초록, 연결 끊김 → 빨강 (항상 표시)
-            if (monitorActive) {
-                win.setProgressBar(1);
-            } else {
-                win.setProgressBar(1, { mode: 'error' });
-            }
+            // 연결 정상: 이모지만 (바 없음), 연결 끊김: 빨간 바
+            win.setProgressBar(monitorActive ? -1 : 1, monitorActive ? {} : { mode: 'error' });
         }
         return;
     }
