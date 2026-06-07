@@ -131,13 +131,13 @@ function _updateTitleBlink() {
             win.setTitle(base);
             win.flashFrame(false);
             // 연결 정상: 이모지만 (바 없음), 연결 끊김: 빨간 바
-            win.setProgressBar(monitorActive ? -1 : 1, monitorActive ? {} : { mode: 'error' });
+            win.setProgressBar(monitorActive ? -1 : 1, monitorActive ? {} : { mode: 'paused' });
         }
         return;
     }
 
     // 비거래 감지: 빨간 바 고정 + 제목 교차
-    if (win) win.setProgressBar(1, { mode: 'error' });
+    if (win) win.setProgressBar(1, { mode: 'paused' });
     if (win && !win.isFocused()) win.flashFrame(true);
 
     const alertTitle = '🚨 IMI PRO v' + ver;
