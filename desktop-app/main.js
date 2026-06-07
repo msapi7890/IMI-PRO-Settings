@@ -127,11 +127,22 @@ function _updateTitleBlink() {
     const base = monitorActive ? '🟢 IMI PRO v' + ver : '🔴 IMI PRO v' + ver;
 
     if (!hasAlert) {
-        if (win) { win.setTitle(base); win.flashFrame(false); win.setProgressBar(-1); }
+        if (win) {
+            win.setTitle(base);
+            win.flashFrame(false);
+            // 연결 정상 → 초록, 연결 끊김 → 빨강 (항상 표시)
+            if (monitorActive) {
+                win.setProgressBar(1);
+            } else {
+                win.setProgressBar(1, { mode: 'error' });
+            }
+        }
         return;
     }
 
-    if (win && !win.isFocused()) win.setProgressBar(1, { mode: 'error' });
+    // 비거래 감지: 빨간 바 고정 + 제목 교차
+    if (win) win.setProgressBar(1, { mode: 'error' });
+    if (win && !win.isFocused()) win.flashFrame(true);
 
     const alertTitle = '🚨 IMI PRO v' + ver;
     if (win) win.setTitle(alertTitle);
@@ -194,10 +205,10 @@ function createWindow() {
         _updateTitleBlink(); // 초기 🟢 타이틀 설정
     });
 
-    // 포커스 시: 플래시 즉시 OFF
+    // 포커스 시: 플래시만 끄고, 상태 인디케이터(초록/빨강)는 유지
     win.on('focus', () => {
         win.flashFrame(false);
-        win.setProgressBar(-1);
+        _updateTitleBlink();
     });
 
     // F5 / Ctrl+R 새로고침 단축키 복원
