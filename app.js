@@ -2580,6 +2580,11 @@
             _authFetch('manual_meta/'+mode+'.json')
         ]);
         if(meta && meta.maxPage) _mfTotalPdfPages = meta.maxPage;
+        // 챗봇용 RANGES도 즉시 갱신 (새 항목이 바로 반영되도록)
+        if(raw && typeof raw === 'object'){
+            if(mode === 'bay') BAY_MANUAL_RANGES = raw;
+            else MANUAL_RANGES = raw;
+        }
         if(!raw||typeof raw!=='object'){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
         var entries = Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
         if(!entries.length){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
