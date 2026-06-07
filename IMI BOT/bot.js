@@ -572,7 +572,7 @@
             if (findPage2Link()) {
                 // 2페이지가 있으면 1페이지 결과를 저장하고 2페이지도 스캔 (_el 제외 직렬화)
                 sessionStorage.setItem(_P1_ITEMS_KEY, JSON.stringify(
-                    items.map(it => ({ t: it.t, p: it.p, u: it.u, key: it.key, tid: it.tid, listTime: it.listTime || '' }))
+                    items.map(it => ({ t: it.t, p: it.p, u: it.u, key: it.key, tid: it.tid, listTime: it.listTime || '', matchedKw: it.matchedKw || '' }))
                 ));
                 sessionStorage.setItem('_imi_page2_scan', '1');
                 setStatus(`1p ${items.length}개 — 2p 추가 스캔 중...`, '#f59e0b');
