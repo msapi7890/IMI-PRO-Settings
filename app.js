@@ -4,9 +4,9 @@
     var BAY_MANUAL_INDEX = JSON.parse(document.getElementById('bayManualData').textContent);
     var BAY_PAGE_RANGES = JSON.parse(document.getElementById('bayPageRangesData').textContent);
 
-    // BAY 카테고리 그룹: PDF 파란줄 섹션 기준 (1-1. 리셋 지점마다 새 섹션)
-    var BAY_CATEGORY_GROUPS = (function(){
-        var _names = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    // BAY 카테고리 그룹: BAY_MANUAL_INDEX 갱신 시 재빌드
+    var _BAY_CAT_NAMES = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    function _buildBayCategoryGroups(){
         var _titles = Object.keys(BAY_MANUAL_INDEX);
         var _gs = [], _cur = [];
         _titles.forEach(function(t){
@@ -15,9 +15,11 @@
         });
         if(_cur.length) _gs.push(_cur);
         var _map = {};
-        _gs.forEach(function(g,i){ if(_names[i]) _map[_names[i]]=g; });
-        return _map;
-    })();
+        _gs.forEach(function(g,i){ if(_BAY_CAT_NAMES[i]) _map[_BAY_CAT_NAMES[i]]=g; });
+        BAY_CATEGORY_GROUPS = _map;
+    }
+    var BAY_CATEGORY_GROUPS = {};
+    _buildBayCategoryGroups();
 
     var FIREBASE_CONFIG = {apiKey:"AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",projectId:"manual-9a47c",storageBucket:"manual-9a47c.firebasestorage.app",messagingSenderId:"360735158801",appId:"1:360735158801:web:1dd7b4d7a07ac9502a37b0"};
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -2763,7 +2765,7 @@
                     });
                 }
                 await _authFetch('imi_manual_index/'+mode+'.json','PUT', newIdxFb);
-                if(mode==='bay') BAY_MANUAL_INDEX = newIdxMem;
+                if(mode==='bay'){ BAY_MANUAL_INDEX = newIdxMem; _buildBayCategoryGroups(); }
                 else MANUAL_INDEX = newIdxMem;
             }
             var cntM = Object.keys(MANUAL_INDEX).length;
@@ -2797,7 +2799,7 @@
                 Object.keys(bI).forEach(function(k){
                     var t=bI[k]; if(t&&typeof t==='string') _bi[t]=''; else _bi[k]='';
                 });
-                BAY_MANUAL_INDEX = _bi;
+                BAY_MANUAL_INDEX = _bi; _buildBayCategoryGroups();
             }
             if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
             if(bpR && typeof bpR === 'object') BAY_PAGE_RANGES  = bpR;
