@@ -1184,7 +1184,15 @@
 
         // 카테고리
         h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;margin-bottom:3px;">카테고리</div>';
-        h += '<select id="mfEditFCat" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:8px;"></select>';
+        h += '<div style="display:flex;gap:4px;margin-bottom:4px;">';
+        h += '<select id="mfEditFCat" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;"></select>';
+        h += '<button onclick="_mfToggleEditCatRename()" title="카테고리 이름 변경" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#f59e0b;font-size:12px;cursor:pointer;">✏️</button>';
+        h += '</div>';
+        h += '<div id="mfEditCatRenameWrap" style="display:none;gap:4px;margin-bottom:8px;">';
+        h += '<input type="text" id="mfEditCatRenameInput" placeholder="새 카테고리 이름" onkeydown="if(event.key===\'Enter\')_mfConfirmEditCatRename();if(event.key===\'Escape\')_mfCancelEditCatRename();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #f59e0b;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;">';
+        h += '<button onclick="_mfConfirmEditCatRename()" style="padding:6px 12px;border-radius:7px;border:none;background:#f59e0b;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">변경</button>';
+        h += '<button onclick="_mfCancelEditCatRename()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>';
+        h += '</div>';
 
         // 페이지 범위
         h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;margin-bottom:3px;">페이지 범위</div>';
@@ -1199,21 +1207,7 @@
         h += '<input id="mfEditFKws" placeholder="예: 개명, 이름변경, 명의변경" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:10px;">';
 
         // 저장 버튼
-        h += '<button id="mfEditSaveBtn" onclick="_mfSaveEditItem()" style="width:100%;padding:9px;border-radius:7px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;margin-bottom:10px;">💾 저장</button>';
-
-        // 이미지/PDF 교체
-        h += '<div style="border-top:1px solid #1e293b;padding-top:10px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#475569;margin-bottom:6px;">🔄 이미지 교체</div>';
-        h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;margin-bottom:6px;">';
-        h += '🖼 이미지 파일 선택 (JPG/PNG, 여러 장) → 직접 교체';
-        h += '<input type="file" id="mfEditImgFiles" accept="image/*" multiple style="display:none;" onchange="_mfDoModifyByImages()">';
-        h += '</label>';
-        h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-        h += '📄 PDF 선택 → 이미지 자동 변환 교체';
-        h += '<input type="file" id="mfEditFile" accept=".pdf" style="display:none;" onchange="_mfDoModify()">';
-        h += '</label>';
-        h += '<div id="mfEditProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
-        h += '</div>';
+        h += '<button id="mfEditSaveBtn" onclick="_mfSaveEditItem()" style="width:100%;padding:9px;border-radius:7px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;">💾 저장</button>';
 
         // 추가 범위 수정 (PDF 렌더링 완료 후)
         h += '<div id="mfEditExtraPanel" style="display:none;margin-top:10px;">';
@@ -1426,6 +1420,28 @@
         _mfFillEntryCat(mode);
     }
 
+    async function _mfDoRenameCat(oldName, newName, onDone){
+        if(!newName || newName === oldName){ if(onDone) onDone(); return; }
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        var idx = cats.indexOf(oldName);
+        if(idx < 0) return;
+        if(cats.indexOf(newName) >= 0){ alert('이미 있는 카테고리 이름입니다.'); return; }
+        cats[idx] = newName;
+        await _mfSaveCats(mode);
+        var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(allRaw && typeof allRaw === 'object'){
+            for(var _rk in allRaw){
+                if((allRaw[_rk].category||'') === oldName){
+                    await _authFetch('manual_page_ranges/'+mode+'/'+_rk+'/category.json','PUT',newName);
+                }
+            }
+        }
+        _mfFillEntryCat(mode);
+        if(onDone) onDone(newName);
+        _mfLoadRanges(mode);
+    }
+
     function _mfViewerToggleCatRename(){
         var sel = document.getElementById('mfViewerEntryCat');
         if(!sel || !sel.value) return;
@@ -1444,33 +1460,37 @@
         var sel = document.getElementById('mfViewerEntryCat');
         var inp = document.getElementById('mfViewerCatRenameInput');
         if(!sel || !inp) return;
-        var oldName = sel.value;
-        var newName = inp.value.trim();
-        if(!newName || newName === oldName){ _mfViewerCancelRenameCat(); return; }
-        var mode = _mfMgmtMode;
-        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
-        var idx = cats.indexOf(oldName);
-        if(idx < 0) return;
-        if(cats.indexOf(newName) >= 0){ alert('이미 있는 카테고리 이름입니다.'); inp.focus(); return; }
-        cats[idx] = newName;
-        await _mfSaveCats(mode);
-        // Firebase에서 해당 카테고리를 쓰는 모든 항목 일괄 변경
-        var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
-        if(allRaw && typeof allRaw === 'object'){
-            for(var _rk in allRaw){
-                if((allRaw[_rk].category||'') === oldName){
-                    await _authFetch('manual_page_ranges/'+mode+'/'+_rk+'/category.json','PUT',newName);
-                }
-            }
-        }
-        _mfFillEntryCat(mode);
-        var updSel = document.getElementById('mfViewerEntryCat');
-        if(updSel) updSel.value = newName;
+        var oldName = sel.value, newName = inp.value.trim();
         _mfViewerCancelRenameCat();
-        _mfLoadRanges(mode);
+        await _mfDoRenameCat(oldName, newName, function(n){ var s=document.getElementById('mfViewerEntryCat'); if(s&&n) s.value=n; });
     }
     function _mfViewerCancelRenameCat(){
         var wrap = document.getElementById('mfViewerCatRenameWrap');
+        if(wrap) wrap.style.display = 'none';
+    }
+
+    function _mfToggleEditCatRename(){
+        var sel = document.getElementById('mfEditFCat');
+        if(!sel || !sel.value) return;
+        var wrap = document.getElementById('mfEditCatRenameWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){
+            var inp = document.getElementById('mfEditCatRenameInput');
+            if(inp){ inp.value = sel.value; inp.focus(); inp.select(); }
+        }
+    }
+    async function _mfConfirmEditCatRename(){
+        var sel = document.getElementById('mfEditFCat');
+        var inp = document.getElementById('mfEditCatRenameInput');
+        if(!sel || !inp) return;
+        var oldName = sel.value, newName = inp.value.trim();
+        _mfCancelEditCatRename();
+        await _mfDoRenameCat(oldName, newName, function(n){ var s=document.getElementById('mfEditFCat'); if(s&&n) s.value=n; });
+    }
+    function _mfCancelEditCatRename(){
+        var wrap = document.getElementById('mfEditCatRenameWrap');
         if(wrap) wrap.style.display = 'none';
     }
 
