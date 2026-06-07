@@ -1425,6 +1425,55 @@
         await _mfSaveCats(mode);
         _mfFillEntryCat(mode);
     }
+
+    function _mfViewerToggleCatRename(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        if(!sel || !sel.value) return;
+        var wrap = document.getElementById('mfViewerCatRenameWrap');
+        var addWrap = document.getElementById('mfViewerCatAddWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        if(addWrap) addWrap.style.display = 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){
+            var inp = document.getElementById('mfViewerCatRenameInput');
+            if(inp){ inp.value = sel.value; inp.focus(); inp.select(); }
+        }
+    }
+    async function _mfViewerConfirmRenameCat(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        var inp = document.getElementById('mfViewerCatRenameInput');
+        if(!sel || !inp) return;
+        var oldName = sel.value;
+        var newName = inp.value.trim();
+        if(!newName || newName === oldName){ _mfViewerCancelRenameCat(); return; }
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        var idx = cats.indexOf(oldName);
+        if(idx < 0) return;
+        if(cats.indexOf(newName) >= 0){ alert('이미 있는 카테고리 이름입니다.'); inp.focus(); return; }
+        cats[idx] = newName;
+        await _mfSaveCats(mode);
+        // Firebase에서 해당 카테고리를 쓰는 모든 항목 일괄 변경
+        var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(allRaw && typeof allRaw === 'object'){
+            for(var _rk in allRaw){
+                if((allRaw[_rk].category||'') === oldName){
+                    await _authFetch('manual_page_ranges/'+mode+'/'+_rk+'/category.json','PUT',newName);
+                }
+            }
+        }
+        _mfFillEntryCat(mode);
+        var updSel = document.getElementById('mfViewerEntryCat');
+        if(updSel) updSel.value = newName;
+        _mfViewerCancelRenameCat();
+        _mfLoadRanges(mode);
+    }
+    function _mfViewerCancelRenameCat(){
+        var wrap = document.getElementById('mfViewerCatRenameWrap');
+        if(wrap) wrap.style.display = 'none';
+    }
+
     function _mfViewerAddItem(){
         var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
         var from = parseInt(document.getElementById('mfEntryFrom').value)||0;

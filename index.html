@@ -437,12 +437,18 @@
                 <div style="display:flex;gap:4px;">
                     <select id="mfViewerEntryCat" style="flex:1;padding:7px 8px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;box-sizing:border-box;"></select>
                     <button onclick="_mfViewerToggleCatAdd()" title="카테고리 추가" style="padding:7px 11px;border-radius:7px;border:1px solid #334155;background:none;color:#22c55e;font-size:15px;font-weight:900;cursor:pointer;line-height:1;">＋</button>
+                    <button onclick="_mfViewerToggleCatRename()" title="카테고리 이름 변경" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#f59e0b;font-size:12px;cursor:pointer;">✏️</button>
                     <button onclick="_mfViewerDelCat()" title="선택 카테고리 삭제" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#ef4444;font-size:12px;cursor:pointer;">🗑</button>
                 </div>
                 <div id="mfViewerCatAddWrap" style="display:none;gap:4px;margin-top:2px;">
                     <input type="text" id="mfViewerCatAddInput" placeholder="카테고리 이름 입력 후 Enter" onkeydown="if(event.key==='Enter')_mfViewerConfirmAddCat();if(event.key==='Escape')_mfViewerCancelAddCat();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #22c55e;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">
                     <button onclick="_mfViewerConfirmAddCat()" style="padding:6px 12px;border-radius:7px;border:none;background:#22c55e;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">추가</button>
                     <button onclick="_mfViewerCancelAddCat()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>
+                </div>
+                <div id="mfViewerCatRenameWrap" style="display:none;gap:4px;margin-top:2px;">
+                    <input type="text" id="mfViewerCatRenameInput" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter')_mfViewerConfirmRenameCat();if(event.key==='Escape')_mfViewerCancelRenameCat();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #f59e0b;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">
+                    <button onclick="_mfViewerConfirmRenameCat()" style="padding:6px 12px;border-radius:7px;border:none;background:#f59e0b;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">변경</button>
+                    <button onclick="_mfViewerCancelRenameCat()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>
                 </div>
                 <input type="text" id="mfViewerEntryKeywords" placeholder="🔑 키워드 (쉼표 구분, 예: 개명, 이름변경)" style="padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:11px;outline:none;width:100%;box-sizing:border-box;">
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
