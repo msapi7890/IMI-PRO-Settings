@@ -2734,21 +2734,15 @@
         if(localStorage.getItem('bay_range_repair_done_v1')) return;
         var allRaw = await _authFetch('manual_page_ranges/bay.json');
         if(!allRaw || typeof allRaw !== 'object') return;
-        // 이름 기반 범위: "보안서비스회원가입" 항목 ~ "개인 정보 안내 기준" 항목 사이만 -1
-        var sorted = Object.entries(allRaw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
-        var _startIdx = -1, _endIdx = -1;
-        for(var i=0; i<sorted.length; i++){
-            var _t = (sorted[i][1].title||'');
-            if(_startIdx === -1 && _t.includes('보안서비스회원가입')) _startIdx = i;
-            if(_t.includes('개인 정보 안내 기준')) _endIdx = i;
-        }
-        if(_startIdx === -1 || _endIdx === -1 || _startIdx > _endIdx) return;
+        // p.95~p.162 범위 항목만 -1 (사용자가 직접 수정한 163+ 항목 제외)
         var changed = 0;
-        for(var j=_startIdx; j<=_endIdx; j++){
-            var _rk = sorted[j][0], _rr = sorted[j][1];
+        for(var _rk in allRaw){
+            var _rr = allRaw[_rk];
             var _rs = _rr.start||0, _re = _rr.end||0;
-            await _authFetch('manual_page_ranges/bay/'+_rk+'.json','PATCH',{start:_rs-1, end:_re-1});
-            changed++;
+            if(_rs >= 95 && _rs <= 162){
+                await _authFetch('manual_page_ranges/bay/'+_rk+'.json','PATCH',{start:_rs-1, end:_re-1});
+                changed++;
+            }
         }
         localStorage.setItem('bay_range_repair_done_v1', '1');
         if(changed > 0) _mfLoadRanges('bay');
