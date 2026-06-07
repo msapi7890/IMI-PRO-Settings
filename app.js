@@ -1578,7 +1578,9 @@
         var uploaded = 0, failed = 0, skipped = 0;
         var lastUploadedPage = 0, maxPageNum = 0;
         for(var i=0; i<files.length; i++){
-            var pageNum = _fnPageNum(files[i].name, startPage + i);
+            // 파일명 숫자가 startPage보다 작으면 PDF 내보내기 파일(001.jpg 등)로 판단해 startPage 기준으로 계산
+            var _fnNum = _fnPageNum(files[i].name, startPage + i);
+            var pageNum = (_fnNum >= startPage) ? _fnNum : (startPage + i);
             if(pageNum > maxPageNum) maxPageNum = pageNum;
             var padded  = String(pageNum).padStart(3,'0');
             var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
@@ -8711,7 +8713,7 @@
     function _showWatchAlert(data, alertKey){
         // watchPopup ON → 하단 팝업만 표시
         if(_notifPrefs && _notifPrefs.watchPopup){
-            if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',itemCount:data.count||0,itemRows:data.itemRows||[]});
+            if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',ruleKeyword:data.keyword||'',itemCount:data.count||0,itemRows:data.itemRows||[]});
             if(window.electronAPI && window.electronAPI.blinkTitle) { _autoWatchBlink = true; window.electronAPI.blinkTitle(true, ['비거래']); }
             // 상단바 탭 배지 표시
             var wTab = document.getElementById('watchHeaderTab');
@@ -8865,6 +8867,13 @@
                 tidLink.style.cssText = 'color:#38bdf8;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;';
                 tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
                 infoArea.appendChild(tidLink);
+
+                if(keyword){
+                    var kwBadgeEl = document.createElement('span');
+                    kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
+                    kwBadgeEl.textContent = '🔑 '+keyword;
+                    infoArea.appendChild(kwBadgeEl);
+                }
 
                 if(itemTitle){
                     var titleEl2 = document.createElement('div');
