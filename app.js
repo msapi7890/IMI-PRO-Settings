@@ -1234,6 +1234,13 @@
         h += '</div>';
 
         if(isAdm){
+            if(_mfMgmtMode === 'bay'){
+                h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #854d0e;">';
+                h += '<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:4px;">🔧 베이 페이지 범위 복구 (p.95+ → -1)</div>';
+                h += '<div style="font-size:9px;color:#78350f;margin-bottom:6px;">항목 수정 시 자동 밀기로 p.95부터 한칸씩 밀린 경우 복구</div>';
+                h += '<button onclick="_mfRepairBayRanges()" style="padding:7px 0;border-radius:7px;background:#78350f;color:#fcd34d;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">📐 p.95+ 범위 복구 실행</button>';
+                h += '</div>';
+            }
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
@@ -2332,21 +2339,7 @@
         await _authFetch('manual_page_ranges/'+mode+'/'+_mfCurrentEditKey+'.json','PATCH',
             {title:newTitle, category:cat, start:start, end:end, keywords:kws});
 
-        // 이후 항목 자동 밀기 (end 늘어난 경우)
-        if(shiftDiff > 0){
-            var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
-            if(allRaw && typeof allRaw==='object'){
-                for(var _k in allRaw){
-                    if(_k === _mfCurrentEditKey) continue;
-                    var _r = allRaw[_k];
-                    var _hit = false;
-                    var _ns = _r.start||0, _ne = _r.end||0;
-                    if(_ns > oldEnd){ _ns += shiftDiff; _hit = true; }
-                    if(_ne > oldEnd){ _ne += shiftDiff; _hit = true; }
-                    if(_hit) await _authFetch('manual_page_ranges/'+mode+'/'+_k+'.json','PATCH',{start:_ns, end:_ne});
-                }
-            }
-        }
+        // 이후 항목 자동 밀기 제거됨 — 범위 수정은 해당 항목만 적용
 
         // 검색 인덱스 갱신 (제목 바뀌면 이전 키 삭제 후 새 키 등록)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
@@ -2741,6 +2734,28 @@
             if(prog) prog.textContent = _mfProgressHtml;
         }
         return _renderedCount;
+    }
+
+    async function _mfRepairBayRanges(){
+        if(!confirm('베이 매뉴얼 페이지 범위 복구를 실행합니다.\n\n' +
+            'start 또는 end가 95 이상인 항목을 -1 조정합니다.\n' +
+            '(항목 수정 시 자동 밀기로 p.95+가 한칸 밀린 경우)\n\n계속하시겠습니까?')) return;
+        var allRaw = await _authFetch('manual_page_ranges/bay.json');
+        if(!allRaw || typeof allRaw !== 'object'){ alert('데이터 로드 실패'); return; }
+        var changed = 0;
+        for(var _rk in allRaw){
+            var _rr = allRaw[_rk];
+            var _rs = _rr.start||0, _re = _rr.end||0;
+            var _ns = _rs, _ne = _re;
+            if(_rs >= 95) _ns = _rs - 1;
+            if(_re >= 95) _ne = _re - 1;
+            if(_ns !== _rs || _ne !== _re){
+                await _authFetch('manual_page_ranges/bay/'+_rk+'.json','PATCH',{start:_ns, end:_ne});
+                changed++;
+            }
+        }
+        alert('복구 완료: ' + changed + '개 항목 수정됨');
+        _mfLoadRanges('bay');
     }
 
     async function _mfSyncSearchIndex(){
