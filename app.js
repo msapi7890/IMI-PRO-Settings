@@ -8883,10 +8883,11 @@
                 tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
                 infoArea.appendChild(tidLink);
 
-                if(keyword){
+                var _kw4Badge = rowData.matchedKw || '';
+                if(_kw4Badge){
                     var kwBadgeEl = document.createElement('span');
                     kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
-                    kwBadgeEl.textContent = '🔑 '+keyword;
+                    kwBadgeEl.textContent = '🔑 '+_kw4Badge;
                     infoArea.appendChild(kwBadgeEl);
                 }
 

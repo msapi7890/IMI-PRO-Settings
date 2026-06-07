@@ -247,6 +247,7 @@
             if (kws.length && !kws.some(k => normText.includes(_norm(k)))) return;
             if (subKws.length && !subKws.every(k => normText.includes(_norm(k)))) return;
             if (exKws.length && exKws.some(k => normText.includes(_norm(k)))) return;
+            const matchedKw = kws.find(k => normText.includes(_norm(k))) || '';
 
             const price = extractMaxPrice(text);
             const hasPhoto = !!el.querySelector('.hasScreenshot');
@@ -354,7 +355,7 @@
             }
 
             // _el: DOM 참조 저장 → 클릭 시 직접 사용
-            items.push({ t: title, p: price, u: href, key: itemKey, tid, listTime, _el: el });
+            items.push({ t: title, p: price, u: href, key: itemKey, tid, listTime, matchedKw, _el: el });
         });
         return items;
     }

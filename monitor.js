@@ -732,7 +732,8 @@ function _getNotifPrefs(){
             var row = document.createElement('div');
             row.style.cssText = 'padding:5px 0;border-bottom:1px solid #33415540;';
             var tidHtml = '';
-            var kwBadge = kw ? '<span style="font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">🔑 '+_esc(kw)+'</span>' : '';
+            var _itKw = (it.matchedKw || '');
+            var kwBadge = _itKw ? '<span style="font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">🔑 '+_esc(_itKw)+'</span>' : '';
             if (it.tid) {
                 if (isWatch) {
                     tidHtml = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;"><a href="https://www.itemmania.com/buy/buy_main.php?tid='+_esc(it.tid)+'" target="_blank" style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;text-decoration:none;">#'+_fmtTid(it.tid)+'</a>'+kwBadge+'</div>';
