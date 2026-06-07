@@ -1234,13 +1234,11 @@
         h += '</div>';
 
         if(isAdm){
-            if(_mfMgmtMode === 'bay'){
-                h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #854d0e;">';
-                h += '<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:4px;">🔧 베이 페이지 범위 복구 (p.95+ → -1)</div>';
-                h += '<div style="font-size:9px;color:#78350f;margin-bottom:6px;">항목 수정 시 자동 밀기로 p.95부터 한칸씩 밀린 경우 복구</div>';
-                h += '<button onclick="_mfRepairBayRanges()" style="padding:7px 0;border-radius:7px;background:#78350f;color:#fcd34d;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">📐 p.95+ 범위 복구 실행</button>';
-                h += '</div>';
-            }
+            h += '<div id="mfBayRepairBox" style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #854d0e;">';
+            h += '<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:4px;">🔧 베이 페이지 범위 복구 (p.95+ → -1)</div>';
+            h += '<div style="font-size:9px;color:#78350f;margin-bottom:6px;">항목 수정 시 자동 밀기로 p.95부터 한칸씩 밀린 경우 복구</div>';
+            h += '<button onclick="_mfRepairBayRanges()" style="padding:7px 0;border-radius:7px;background:#78350f;color:#fcd34d;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">📐 p.95+ 범위 복구 실행</button>';
+            h += '</div>';
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
