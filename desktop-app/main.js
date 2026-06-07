@@ -131,7 +131,7 @@ function _updateTitleBlink() {
             win.setTitle(base);
             win.flashFrame(false);
             // 연결 정상: 이모지만 (바 없음), 연결 끊김: 빨간 바
-            win.setProgressBar(monitorActive ? -1 : 1, monitorActive ? {} : { mode: 'paused' });
+            win.setProgressBar(monitorActive ? -1 : 1, monitorActive ? {} : { mode: 'error' });
         }
         return;
     }
