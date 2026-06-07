@@ -1234,11 +1234,6 @@
         h += '</div>';
 
         if(isAdm){
-            h += '<div id="mfBayRepairBox" style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #854d0e;">';
-            h += '<div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:4px;">🔧 베이 페이지 범위 복구 (p.95+ → -1)</div>';
-            h += '<div style="font-size:9px;color:#78350f;margin-bottom:6px;">항목 수정 시 자동 밀기로 p.95부터 한칸씩 밀린 경우 복구</div>';
-            h += '<button onclick="_mfRepairBayRanges()" style="padding:7px 0;border-radius:7px;background:#78350f;color:#fcd34d;font-size:11px;font-weight:900;border:none;cursor:pointer;width:100%;">📐 p.95+ 범위 복구 실행</button>';
-            h += '</div>';
             h += '<div style="background:#0f172a;border-radius:10px;padding:12px 14px;margin-top:8px;border:1px solid #0369a1;">';
             h += '<div style="font-size:10px;font-weight:700;color:#38bdf8;margin-bottom:6px;">🔄 파일 매뉴얼 → 챗봇 검색 인덱스 동기화</div>';
             h += '<div style="font-size:9px;color:#475569;margin-bottom:6px;">등록된 항목이 챗봇에서 검색 안 될 때 실행</div>';
@@ -1306,6 +1301,7 @@
         _mfFillEditSel(mode);
         _mfLoadRanges(mode);
         _mfEditCache = null; // 모드 전환 시 항목 수정 캐시 초기화
+        if(mode === 'bay') _mfRepairBayRanges();
     }
 
     function _mfSetRegTab(tab){
@@ -2735,11 +2731,9 @@
     }
 
     async function _mfRepairBayRanges(){
-        if(!confirm('베이 매뉴얼 페이지 범위 복구를 실행합니다.\n\n' +
-            'start 또는 end가 95 이상인 항목을 -1 조정합니다.\n' +
-            '(항목 수정 시 자동 밀기로 p.95+가 한칸 밀린 경우)\n\n계속하시겠습니까?')) return;
+        if(localStorage.getItem('bay_range_repair_done_v1')) return;
         var allRaw = await _authFetch('manual_page_ranges/bay.json');
-        if(!allRaw || typeof allRaw !== 'object'){ alert('데이터 로드 실패'); return; }
+        if(!allRaw || typeof allRaw !== 'object') return;
         var changed = 0;
         for(var _rk in allRaw){
             var _rr = allRaw[_rk];
@@ -2752,8 +2746,8 @@
                 changed++;
             }
         }
-        alert('복구 완료: ' + changed + '개 항목 수정됨');
-        _mfLoadRanges('bay');
+        localStorage.setItem('bay_range_repair_done_v1', '1');
+        if(changed > 0) _mfLoadRanges('bay');
     }
 
     async function _mfSyncSearchIndex(){

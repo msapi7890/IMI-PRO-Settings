@@ -395,7 +395,7 @@
     // logRows: 이번에 새로 감지된 항목만 (재감지면 null → history 기록 안 함)
     function sendAlert(items, logRows) {
         const _at = Date.now();
-        const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '' }));
+        const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '', matchedKw: it.matchedKw || '' }));
         chrome.runtime.sendMessage({
             type: 'FIREBASE_SET',
             path: '/monitor_flash_state',
