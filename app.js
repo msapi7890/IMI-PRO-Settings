@@ -7747,8 +7747,10 @@
             ? allNotices[currentMode][currentEditId].date : null;
         var dateStr = existingDate || new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
         var obj={title:content.split('\n')[0].substring(0,35),content:content,date:dateStr};
-        var existingAuthor=currentEditId&&allNotices[currentMode]&&allNotices[currentMode][currentEditId]?allNotices[currentMode][currentEditId].author:null;
+        var existingNotice=currentEditId&&allNotices[currentMode]?allNotices[currentMode][currentEditId]:null;
+        var existingAuthor=existingNotice?existingNotice.author:null;
         obj.author=existingAuthor||(_currentUser&&_currentUser.name?_currentUser.name:'알 수 없음');
+        if(existingNotice&&existingNotice.pinned) obj.pinned=true;
         if(urlVal) obj.url=urlVal;
         if(currentEditId) obj.updatedAt=new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
         var saveKey=currentEditId||String(Date.now());
