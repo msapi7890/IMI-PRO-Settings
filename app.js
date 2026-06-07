@@ -8943,10 +8943,12 @@
                 infoArea.appendChild(tidLink);
 
                 var _kw4Badge = rowData.matchedKw || '';
-                var kwBadgeEl = document.createElement('span');
-                kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
-                kwBadgeEl.textContent = '🔑 '+(_kw4Badge || '(없음)');
-                infoArea.appendChild(kwBadgeEl);
+                if(_kw4Badge){
+                    var kwBadgeEl = document.createElement('span');
+                    kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
+                    kwBadgeEl.textContent = '🔑 '+_kw4Badge;
+                    infoArea.appendChild(kwBadgeEl);
+                }
 
                 if(itemTitle){
                     var titleEl2 = document.createElement('div');
