@@ -719,7 +719,9 @@
             +'<div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;gap:6px;align-items:center;">'
             +'<input id="bwSearchInput" type="text" placeholder="금칙어 검색..." oninput="_renderBwList()" style="flex:1;font-size:12px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;">'
             +'<button onclick="_bwShowAddForm()" style="padding:0 14px;height:34px;border-radius:8px;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>'
+            +'<button onclick="_bwShowBulkForm()" style="padding:0 14px;height:34px;border-radius:8px;background:#7c3aed;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">📋 일괄 등록</button>'
             +'</div>'
+            // 단건 추가 폼
             +'<div id="bwAddForm" style="display:none;padding:10px;border-bottom:1px solid #334155;background:#0f172a;gap:6px;flex-direction:column;">'
             +'<div style="display:flex;gap:6px;">'
             +'<select id="bwAddGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
@@ -729,6 +731,20 @@
             +'<input id="bwAddWord" type="text" placeholder="금칙어 입력" style="flex:1;font-size:13px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;" onkeydown="if(event.key===\'Enter\')_bwDoAdd()">'
             +'<button onclick="_bwDoAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">등록</button>'
             +'<button onclick="_bwHideAddForm()" style="padding:0 10px;height:34px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;flex-shrink:0;">취소</button>'
+            +'</div>'
+            +'</div>'
+            // 일괄 등록 폼
+            +'<div id="bwBulkForm" style="display:none;padding:10px;border-bottom:1px solid #334155;background:#0f172a;gap:6px;flex-direction:column;">'
+            +'<div style="font-size:11px;font-weight:900;color:#7c3aed;margin-bottom:2px;">📋 일괄 등록 — 한 줄에 단어 하나씩 입력</div>'
+            +'<div style="display:flex;gap:6px;">'
+            +'<select id="bwBulkGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
+            +'<input id="bwBulkGameNew" type="text" placeholder="새 카테고리명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
+            +'</div>'
+            +'<textarea id="bwBulkWords" rows="6" placeholder="금칙어를 한 줄에 하나씩 입력하세요&#10;예)&#10;작업템&#10;사기&#10;버스" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;resize:vertical;outline:none;box-sizing:border-box;line-height:1.6;" oninput="_bwBulkCount()"></textarea>'
+            +'<div style="display:flex;align-items:center;gap:6px;">'
+            +'<span id="bwBulkCountLabel" style="flex:1;font-size:11px;color:#64748b;">0개 단어</span>'
+            +'<button onclick="_bwDoBulkAdd()" style="padding:0 18px;height:34px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">일괄 등록</button>'
+            +'<button onclick="_bwHideBulkForm()" style="padding:0 10px;height:34px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;flex-shrink:0;">취소</button>'
             +'</div>'
             +'</div>'
             +'<div id="bwListContent" style="padding:10px 14px;"></div>'
@@ -7036,6 +7052,7 @@
     }
 
     function _bwShowAddForm(){
+        document.getElementById('bwBulkForm').style.display='none';
         var form=document.getElementById('bwAddForm');
         var sel=document.getElementById('bwAddGame');
         var games=Object.keys(_bwData).sort(function(a,b){return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko');});
@@ -7054,6 +7071,62 @@
         document.getElementById('bwAddForm').style.display='none';
         document.getElementById('bwAddWord').value='';
         document.getElementById('bwAddGameNew').style.display='none';
+    }
+
+    function _bwShowBulkForm(){
+        document.getElementById('bwAddForm').style.display='none';
+        var bulkForm = document.getElementById('bwBulkForm');
+        var sel = document.getElementById('bwBulkGame');
+        var games = Object.keys(_bwData).sort(function(a,b){return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko');});
+        sel.innerHTML = '<option value="">카테고리 선택...</option>'
+            + games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
+            + '<option value="__new__">+ 새 카테고리</option>';
+        sel.onchange = function(){
+            var ni = document.getElementById('bwBulkGameNew');
+            ni.style.display = sel.value==='__new__' ? 'block' : 'none';
+        };
+        bulkForm.style.display = 'flex';
+        bulkForm.style.flexDirection = 'column';
+        document.getElementById('bwBulkWords').focus();
+    }
+
+    function _bwHideBulkForm(){
+        document.getElementById('bwBulkForm').style.display = 'none';
+        document.getElementById('bwBulkWords').value = '';
+        document.getElementById('bwBulkGameNew').style.display = 'none';
+        document.getElementById('bwBulkCountLabel').textContent = '0개 단어';
+    }
+
+    function _bwBulkCount(){
+        var ta = document.getElementById('bwBulkWords');
+        var cnt = (ta.value||'').split('\n').map(function(l){return l.trim();}).filter(Boolean).length;
+        document.getElementById('bwBulkCountLabel').textContent = cnt + '개 단어';
+    }
+
+    async function _bwDoBulkAdd(){
+        var sel = document.getElementById('bwBulkGame');
+        var ni = document.getElementById('bwBulkGameNew');
+        var game = sel.value==='__new__' ? ni.value.trim() : sel.value;
+        if(!game || game==='카테고리 선택...'){ alert('카테고리를 선택하세요.'); return; }
+        var ta = document.getElementById('bwBulkWords');
+        var newWords = (ta.value||'').split('\n').map(function(l){return l.trim();}).filter(Boolean);
+        if(!newWords.length){ alert('단어를 입력하세요.'); return; }
+        var existing = (_bwData[game]||[]).slice();
+        var added = [], skipped = [];
+        newWords.forEach(function(w){
+            if(existing.indexOf(w)>=0) skipped.push(w);
+            else { existing.push(w); added.push(w); }
+        });
+        if(!added.length){ alert('모두 이미 등록된 단어입니다.\n중복: '+skipped.join(', ')); return; }
+        try{
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',existing);
+            _badwordsCache[currentMode] = null;
+            _bwHideBulkForm();
+            _renderBwList();
+            var msg = added.length+'개 등록 완료.';
+            if(skipped.length) msg += '\n중복 제외 '+skipped.length+'개: '+skipped.join(', ');
+            alert(msg);
+        }catch(e){ alert('저장 실패: '+e.message); }
     }
 
     function _bwQuickAdd(game){
