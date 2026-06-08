@@ -1200,14 +1200,11 @@
         </div>
         <!-- 채팅방 2: 금칙어 조회 -->
         <div id="chatRoom2" style="flex:1;display:none;flex-direction:column;min-height:0;">
-            <div style="padding:14px 16px 12px;border-bottom:2px solid var(--border-ui);flex-shrink:0;">
-                <div style="font-size:12px;font-weight:900;color:var(--text-main);margin-bottom:10px;">🚫 금칙어 조회 — 물품 제목에 포함된 금칙어를 확인합니다</div>
-                <div style="display:flex;gap:8px;">
-                    <input type="text" id="badwordInput" class="bordered-input shadow-sm" style="flex:1;" placeholder="물품 제목 입력 (예: 불독 썬콜 자투 팝니다)" onkeydown="if(event.key==='Enter'){checkBadwords();}">
-                    <button onclick="checkBadwords()" class="px-5 py-2 rounded-xl font-black text-white shadow-lg transition active:scale-95" style="background:var(--active-focus-color);flex-shrink:0;font-size:12px;white-space:nowrap;">조회</button>
-                </div>
+            <div id="badwordResult" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;"></div>
+            <div class="chat-input-area">
+                <input type="text" id="badwordInput" class="bordered-input shadow-sm" placeholder="물품 제목 입력 (예: 불독 썬콜 자투 팝니다)" onkeydown="if(event.key==='Enter'){checkBadwords();}">
+                <button onclick="checkBadwords()" id="bwAskBtn" class="px-12 py-3 rounded-xl font-black text-white shadow-lg transition active:scale-95">조회</button>
             </div>
-            <div id="badwordResult" style="flex:1;overflow-y:auto;padding:14px 16px;min-height:0;"></div>
         </div>
     </section>
 

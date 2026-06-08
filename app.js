@@ -6682,14 +6682,16 @@
             if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:13px;">물품 제목을 입력하세요.</div>';
             return;
         }
-        if(result)result.innerHTML='<div style="text-align:center;opacity:0.5;padding:30px;font-size:12px;">조회 중...</div>';
+        // 사용자 입력을 채팅 형식으로 추가
+        var userRow='<div style="display:flex;justify-content:flex-end;">'
+            +'<div class="bubble user-bubble" style="max-width:85%;word-break:break-all;">'+escHtml(title)+'</div>'
+            +'</div>';
+        if(result){result.insertAdjacentHTML('beforeend',userRow);result.scrollTop=99999;}
         _loadBadwords(currentMode,function(data){
             var matched=[];
-            // 전체게임 먼저
             (data['전체게임']||[]).forEach(function(w){
                 if(_buildFuzzyRe(w).test(title)) matched.push({word:w,games:['전체게임']});
             });
-            // 게임별
             Object.keys(data).forEach(function(game){
                 if(game==='전체게임')return;
                 (data[game]||[]).forEach(function(w){
@@ -6701,36 +6703,36 @@
                 });
             });
             if(!result)return;
+            var botContent;
             if(matched.length===0){
-                result.innerHTML='<div style="text-align:center;padding:40px 16px;">'
-                    +'<div style="font-size:36px;margin-bottom:12px;">✅</div>'
-                    +'<div style="font-size:14px;font-weight:900;color:#22c55e;">금칙어 없음</div>'
-                    +'<div style="font-size:11px;opacity:0.55;margin-top:6px;">입력한 제목에서 금칙어가 발견되지 않았습니다.</div>'
-                    +'</div>';
+                botContent='<span style="color:#22c55e;font-weight:900;">✅ 금칙어 없음</span><br>'
+                    +'<span style="font-size:11px;opacity:0.6;">입력한 제목에서 금칙어가 발견되지 않았습니다.</span>';
             } else {
                 var hlTitle=_highlightFuzzy(title,matched.map(function(m){return m.word;}));
-                var html='<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg-card);border:2px solid #ef4444;border-radius:12px;">'
-                    +'<div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:6px;">📌 검사한 제목</div>'
-                    +'<div style="font-size:13px;font-weight:700;line-height:1.7;word-break:break-all;">'+hlTitle+'</div>'
-                    +'</div>';
-                html+='<div style="font-size:11px;font-weight:900;color:var(--text-muted,#888);margin-bottom:8px;">🚫 감지된 금칙어 '+matched.length+'개</div>';
-                html+='<div style="display:flex;flex-direction:column;gap:7px;">';
+                botContent='<div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:5px;">📌 검사 제목</div>'
+                    +'<div style="font-size:12px;font-weight:700;line-height:1.7;word-break:break-all;margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);">'+hlTitle+'</div>'
+                    +'<div style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:6px;">🚫 감지된 금칙어 '+matched.length+'개</div>'
+                    +'<div style="display:flex;flex-direction:column;gap:5px;">';
                 matched.forEach(function(m){
-                    html+='<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:10px;">'
-                        +'<span style="flex-shrink:0;font-size:14px;font-weight:900;color:#ef4444;">'+escHtml(m.word)+'</span>'
-                        +'<div style="display:flex;flex-wrap:wrap;gap:4px;flex:1;">'
+                    botContent+='<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:8px;">'
+                        +'<span style="font-size:13px;font-weight:900;color:#ef4444;flex-shrink:0;">'+escHtml(m.word)+'</span>'
+                        +'<div style="display:flex;flex-wrap:wrap;gap:3px;">'
                         +m.games.map(function(g){
                             var isAll=g==='전체게임';
-                            return '<span style="font-size:9px;font-weight:900;padding:2px 7px;border-radius:5px;'
+                            return '<span style="font-size:9px;font-weight:900;padding:1px 6px;border-radius:4px;'
                                 +(isAll?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')
                                 +'">'+escHtml(g)+'</span>';
                         }).join('')
                         +'</div>'
                         +'</div>';
                 });
-                html+='</div>';
-                result.innerHTML=html;
+                botContent+='</div>';
             }
+            var botRow='<div style="display:flex;justify-content:flex-start;">'
+                +'<div class="bubble bot-bubble" style="max-width:90%;font-size:12px;">'+botContent+'</div>'
+                +'</div>';
+            result.insertAdjacentHTML('beforeend',botRow);
+            result.scrollTop=99999;
         });
     }
 
@@ -6872,6 +6874,16 @@
             r1.style.display='none'; r2.style.display='flex';
             t2.style.background=cColor; t2.style.color='white'; t2.style.borderColor=cColor;
             t1.style.background=''; t1.style.color=''; t1.style.borderColor='';
+            var bRes=document.getElementById('badwordResult');
+            if(bRes&&!bRes._bwInited){
+                bRes._bwInited=true;
+                bRes.innerHTML='<div style="display:flex;justify-content:flex-start;">'
+                    +'<div class="bubble bot-bubble" style="max-width:85%;font-size:12px;line-height:1.7;">'
+                    +'🚫 <strong>금칙어 조회</strong><br>'
+                    +'물품 제목을 입력하면 포함된 금칙어와 해당 게임을 표시합니다.<br>'
+                    +'<span style="opacity:0.6;font-size:11px;">공백은 투명처리 (예: 버 스 → 버스 감지)</span>'
+                    +'</div></div>';
+            }
             var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
         }
     }
