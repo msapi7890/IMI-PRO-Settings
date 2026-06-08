@@ -6662,7 +6662,7 @@
         var out='',pos=0;
         merged.forEach(function(sp){
             out+=escHtml(title.slice(pos,sp.s));
-            out+='<mark style="background:rgba(239,68,68,0.25);color:#ef4444;border-radius:3px;padding:0 2px;font-weight:900;">'+escHtml(title.slice(sp.s,sp.e))+'</mark>';
+            out+='<mark style="background:#ef4444;color:#fff;border-radius:4px;padding:1px 4px;font-weight:900;">'+escHtml(title.slice(sp.s,sp.e))+'</mark>';
             pos=sp.e;
         });
         return out+escHtml(title.slice(pos));
@@ -6679,14 +6679,12 @@
         var title=inp?inp.value.trim():'';
         var result=document.getElementById('badwordResult');
         if(!title){
-            if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:17px;">물품 제목을 입력하세요.</div>';
+            if(result)result.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;gap:10px;color:var(--text-muted,#888);text-align:center;">'
+                +'<div style="font-size:36px;opacity:0.4;">🚫</div>'
+                +'<div style="font-size:15px;">물품 제목을 입력하세요.</div>'
+                +'</div>';
             return;
         }
-        // 사용자 입력을 채팅 형식으로 추가
-        var userRow='<div style="display:flex;justify-content:flex-end;">'
-            +'<div class="bubble user-bubble" style="max-width:85%;word-break:break-all;">'+escHtml(title)+'</div>'
-            +'</div>';
-        if(result){result.insertAdjacentHTML('beforeend',userRow);result.scrollTop=99999;}
         _loadBadwords(currentMode,function(data){
             var matched=[];
             (data['전체게임']||[]).forEach(function(w){
@@ -6707,36 +6705,53 @@
                 });
             });
             if(!result)return;
-            var botContent;
+
+            var hlTitle=matched.length>0?_highlightFuzzy(title,matched.map(function(m){return m.word;})):escHtml(title);
+            var html='<div style="padding:16px;display:flex;flex-direction:column;gap:14px;">';
+
+            // ── 검사 제목 카드
+            html+='<div style="background:rgba(239,68,68,0.06);border:1.5px solid rgba(239,68,68,0.22);border-radius:14px;padding:14px 18px;">'
+                +'<div style="font-size:11px;font-weight:800;color:#ef4444;letter-spacing:1px;margin-bottom:8px;">📌 검사 제목</div>'
+                +'<div style="font-size:18px;font-weight:700;line-height:1.7;word-break:break-all;">'+hlTitle+'</div>'
+                +'</div>';
+
             if(matched.length===0){
-                botContent='<span style="color:#22c55e;font-weight:900;">✅ 금칙어 없음</span><br>'
-                    +'<span style="font-size:14px;opacity:0.6;">입력한 제목에서 금칙어가 발견되지 않았습니다.</span>';
+                // ── 금칙어 없음
+                html+='<div style="display:flex;align-items:center;gap:16px;background:rgba(34,197,94,0.08);border:1.5px solid rgba(34,197,94,0.3);border-radius:14px;padding:18px 20px;">'
+                    +'<span style="font-size:36px;line-height:1;">✅</span>'
+                    +'<div>'
+                    +'<div style="font-size:18px;font-weight:900;color:#22c55e;">금칙어 없음</div>'
+                    +'<div style="font-size:13px;opacity:0.6;margin-top:4px;">입력한 제목에서 금칙어가 발견되지 않았습니다.</div>'
+                    +'</div>'
+                    +'</div>';
             } else {
-                var hlTitle=_highlightFuzzy(title,matched.map(function(m){return m.word;}));
-                botContent='<div style="font-size:14px;font-weight:900;color:#ef4444;margin-bottom:5px;">📌 검사 제목</div>'
-                    +'<div style="font-size:16px;font-weight:700;line-height:1.7;word-break:break-all;margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);">'+hlTitle+'</div>'
-                    +'<div style="font-size:14px;font-weight:900;opacity:0.7;margin-bottom:6px;">🚫 감지된 금칙어 '+matched.length+'개</div>'
-                    +'<div style="display:flex;flex-direction:column;gap:5px;">';
+                // ── 요약 헤더
+                html+='<div style="display:flex;align-items:center;gap:8px;">'
+                    +'<span style="font-size:15px;font-weight:800;color:#ef4444;">🚫 감지된 금칙어</span>'
+                    +'<span style="background:#ef4444;color:#fff;font-size:13px;font-weight:900;padding:2px 10px;border-radius:20px;">'+matched.length+'개</span>'
+                    +'</div>';
+                // ── 키워드 카드 그리드
+                html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">';
                 matched.forEach(function(m){
-                    botContent+='<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:8px;">'
-                        +'<span style="font-size:17px;font-weight:900;color:#ef4444;flex-shrink:0;">'+escHtml(m.word)+'</span>'
-                        +'<div style="display:flex;flex-wrap:wrap;gap:3px;">'
+                    html+='<div style="background:var(--bg-body,#0f172a);border:2px solid rgba(239,68,68,0.35);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;">'
+                        +'<div style="font-size:22px;font-weight:900;color:#ef4444;word-break:break-all;">'+escHtml(m.word)+'</div>'
+                        +'<div style="height:1px;background:rgba(239,68,68,0.18);"></div>'
+                        +'<div style="display:flex;flex-wrap:wrap;gap:5px;">'
                         +m.games.map(function(g){
                             var isAll=g==='전체게임';
-                            return '<span style="font-size:13px;font-weight:900;padding:2px 8px;border-radius:4px;'
-                                +(isAll?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')
+                            return '<span style="font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;'
+                                +(isAll?'background:rgba(127,29,29,0.55);color:#fca5a5;border:1px solid rgba(239,68,68,0.35);':'background:rgba(30,58,95,0.55);color:#93c5fd;border:1px solid rgba(59,130,246,0.35);')
                                 +'">'+escHtml(g)+'</span>';
                         }).join('')
                         +'</div>'
                         +'</div>';
                 });
-                botContent+='</div>';
+                html+='</div>';
             }
-            var botRow='<div style="display:flex;justify-content:flex-start;">'
-                +'<div class="bubble bot-bubble" style="width:90%;font-size:15px;">'+botContent+'</div>'
-                +'</div>';
-            result.insertAdjacentHTML('beforeend',botRow);
-            result.scrollTop=99999;
+
+            html+='</div>';
+            result.innerHTML=html;
+            result.scrollTop=0;
         });
     }
 
@@ -6881,12 +6896,11 @@
             var bRes=document.getElementById('badwordResult');
             if(bRes&&!bRes._bwInited){
                 bRes._bwInited=true;
-                bRes.innerHTML='<div style="display:flex;justify-content:flex-start;">'
-                    +'<div class="bubble bot-bubble" style="max-width:85%;font-size:15px;line-height:1.7;">'
-                    +'🚫 <strong>금칙어 조회</strong><br>'
-                    +'물품 제목을 입력하면 포함된 금칙어와 해당 게임을 표시합니다.<br>'
-                    +'<span style="opacity:0.6;font-size:13px;">공백은 투명처리 (예: 버 스 → 버스 감지)</span>'
-                    +'</div></div>';
+                bRes.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;gap:10px;color:var(--text-muted,#888);text-align:center;">'
+                    +'<div style="font-size:40px;opacity:0.35;">🚫</div>'
+                    +'<div style="font-size:15px;font-weight:700;">금칙어 조회</div>'
+                    +'<div style="font-size:13px;opacity:0.6;line-height:1.6;">물품 제목을 입력하면 포함된 금칙어와 해당 게임을 표시합니다.<br>공백은 투명처리 (예: 버 스 → 버스 감지)</div>'
+                    +'</div>';
             }
             var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
         }
