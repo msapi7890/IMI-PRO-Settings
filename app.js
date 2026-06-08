@@ -8724,13 +8724,12 @@
         }
         });
         var _savedFont = parseInt(localStorage.getItem('imi_font_size')) || 16;
-        document.getElementById('fontSlider').value = _savedFont;
         switchMode('mania'); updateFontSize(_savedFont); loadMemos(); switchChatTab(1);
         // 레이아웃 완전 정착 후 이미지 크기 재계산 (초기 chatBox.clientWidth=0 문제 해결)
-        setTimeout(function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); }, 200);
-        setTimeout(function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); }, 800);
+        setTimeout(function(){ updateFontSize(parseInt(localStorage.getItem('imi_font_size')) || 16); }, 200);
+        setTimeout(function(){ updateFontSize(parseInt(localStorage.getItem('imi_font_size')) || 16); }, 800);
         if(localStorage.getItem('tickerCollapsed')==='1') toggleTicker();
-        window.addEventListener('resize', function(){ updateFontSize(parseInt(document.getElementById('fontSlider').value)); });
+        window.addEventListener('resize', function(){ updateFontSize(parseInt(localStorage.getItem('imi_font_size')) || 16); });
         // chatBox 크기 변동 시 이미지 크기 자동 재계산
         (function(){
             var cb = document.getElementById('chatBox');
@@ -8738,7 +8737,7 @@
             var _lastW = 0;
             new ResizeObserver(function(){
                 var w = cb.clientWidth;
-                if(w > 0 && w !== _lastW){ _lastW = w; updateFontSize(parseInt(document.getElementById('fontSlider').value)); }
+                if(w > 0 && w !== _lastW){ _lastW = w; updateFontSize(parseInt(localStorage.getItem('imi_font_size')) || 16); }
             }).observe(cb);
         })();
         // 채팅창 휠 스크롤 세분화 (기본 스크롤보다 작은 고정 단계)
