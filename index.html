@@ -1108,7 +1108,12 @@
         </div>
     </div>
     <div class="h-right">
-        <div class="slider-container"><span class="text-[9px] font-black opacity-50 mr-1">FONT</span><span id="fontDisplay">16</span><input type="range" id="fontSlider" min="12" max="20" value="16" oninput="updateFontSize(this.value)"></div>
+        <div style="display:flex;align-items:center;gap:2px;border:2px solid var(--border-ui);padding:0 8px;border-radius:20px;background:var(--bg-body);height:34px;">
+            <span style="font-size:9px;font-weight:900;color:var(--text-sub);margin-right:2px;">FONT</span>
+            <button onclick="adjustFontSize(-1)" style="background:none;border:none;cursor:pointer;font-size:16px;font-weight:900;color:var(--text-main);padding:0 3px;line-height:1;user-select:none;">−</button>
+            <span id="fontDisplay" style="font-size:13px;font-weight:900;width:22px;text-align:center;color:var(--active-focus-color);">16</span>
+            <button onclick="adjustFontSize(1)" style="background:none;border:none;cursor:pointer;font-size:16px;font-weight:900;color:var(--text-main);padding:0 3px;line-height:1;user-select:none;">+</button>
+        </div>
 
         <button onclick="cycleTheme()" class="text-2xl p-1 hover:scale-110 transition" id="themeBtn">🌞</button>
     </div>

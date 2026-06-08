@@ -3462,6 +3462,11 @@
         var tickerH = Math.round(v * 1.75);
         document.documentElement.style.setProperty('--ticker-inner-h', tickerH+'px');
     }
+    function adjustFontSize(delta){
+        var cur = parseInt(document.getElementById('fontDisplay').innerText) || 16;
+        var next = Math.min(20, Math.max(12, cur + delta));
+        updateFontSize(next);
+    }
 
     /* ── 직원 스케쥴 ── */
     var SCHED_GROUPS = [
@@ -9119,20 +9124,24 @@
                 var infoArea = document.createElement('div');
                 infoArea.style.cssText = 'display:flex;flex-direction:column;gap:2px;padding:7px 10px 6px;';
 
+                var tidRow = document.createElement('div');
+                tidRow.style.cssText = 'display:flex;align-items:center;gap:7px;';
+
                 var tidLink = document.createElement('a');
                 tidLink.href = 'https://www.itemmania.com/sell/application.html?id='+tid;
                 tidLink.target = '_blank';
-                tidLink.style.cssText = 'color:#38bdf8;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;';
+                tidLink.style.cssText = 'color:#38bdf8;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:0.04em;white-space:nowrap;flex-shrink:0;';
                 tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
-                infoArea.appendChild(tidLink);
+                tidRow.appendChild(tidLink);
 
                 var _kw4Badge = rowData.matchedKw || '';
                 if(_kw4Badge){
                     var kwBadgeEl = document.createElement('span');
-                    kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
-                    kwBadgeEl.textContent = '🔑 '+_kw4Badge;
-                    infoArea.appendChild(kwBadgeEl);
+                    kwBadgeEl.style.cssText = 'font-size:11px;font-weight:900;color:#22c55e;background:rgba(34,197,94,0.12);border:1.5px solid rgba(34,197,94,0.45);border-radius:12px;padding:2px 9px;flex-shrink:0;white-space:nowrap;';
+                    kwBadgeEl.textContent = _kw4Badge;
+                    tidRow.appendChild(kwBadgeEl);
                 }
+                infoArea.appendChild(tidRow);
 
                 if(itemTitle){
                     var titleEl2 = document.createElement('div');
