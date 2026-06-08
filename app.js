@@ -8753,14 +8753,20 @@
         _fbAuthPromise.then(function(){
             // REST로 직접 읽기 (SDK 리스너가 보안규칙에 막힐 경우 대비)
             _authFetch('config/claude_api_key.json').then(function(val){
-                if(val && typeof val === 'string' && !CLAUDE_API_KEY){
-                    CLAUDE_API_KEY = val;
-                    updateStatusBadge();
+                if(val && typeof val === 'string'){
+                    // 이중 직렬화로 저장된 따옴표 제거: "\"sk-ant-...\"" → sk-ant-...
+                    var _clean = val.replace(/^"+|"+$/g, '');
+                    if(_clean && !CLAUDE_API_KEY){
+                        CLAUDE_API_KEY = _clean;
+                        updateStatusBadge();
+                    }
                 }
             }).catch(function(){});
             var _apiKeyFirstLoad = true;
             db.ref('config/claude_api_key').on('value', function(snap){
-                CLAUDE_API_KEY = snap.val() || '';
+                var _v = snap.val() || '';
+                // SDK가 빈값을 반환해도 이미 REST로 로드된 키가 있으면 덮어쓰지 않음
+                if(_v || !CLAUDE_API_KEY) CLAUDE_API_KEY = _v.replace(/^"+|"+$/g, '');
                 updateStatusBadge();
                 if(_apiKeyFirstLoad){
                     _apiKeyFirstLoad = false;
