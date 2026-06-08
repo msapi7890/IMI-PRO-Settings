@@ -1388,7 +1388,7 @@ function _loadLogByType(fullDay, isWatch) {
                     ? '<span style="font-size:8px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">📦 비거래</span>'
                     : '<span style="font-size:8px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">🚨 사기글</span>';
                 var rows = (d.itemRows || []).map(function(it) {
-                    var rawKey = it.key || (it.t || '').substring(0, 30).trim();
+                    var rawKey = it.key || (it.tid ? 'tid_' + it.tid : (it.t || '').substring(0, 30).trim());
                     var bk = _esc(rawKey);
                     var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                     var titleAttr = _esc(it.t || '');
@@ -1476,7 +1476,7 @@ function _loadLogByType(fullDay, isWatch) {
                     var d = entry.data;
                     var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
                     var rows = (d.itemRows || []).map(function(it) {
-                        var rawKey = it.key || (it.t || '').substring(0, 30).trim();
+                        var rawKey = it.key || (it.tid ? 'tid_' + it.tid : (it.t || '').substring(0, 30).trim());
                         var bk = _esc(rawKey);
                         var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                         var titleAttr = _esc(it.t || '');

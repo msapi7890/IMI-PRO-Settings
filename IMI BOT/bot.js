@@ -408,7 +408,7 @@
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,
-                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', listTime: it.listTime || '' })) : null,
+                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '', listTime: it.listTime || '' })) : null,
                 scanInterval: rule.scanInterval || 60,
                 at: _at
             }
@@ -525,6 +525,14 @@
 
     async function doCheck() {
         if (!isRunning || !rule) return;
+
+        // 스캔마다 제외목록 최신화 (모니터 패널에서 제외한 항목 반영)
+        await new Promise(resolve => {
+            chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
+                if (bRes && bRes.blocked) blockedItems = new Set(bRes.blocked);
+                resolve();
+            });
+        });
 
         // 시간대 범위 체크
         const inHours = await _isInActiveHours();

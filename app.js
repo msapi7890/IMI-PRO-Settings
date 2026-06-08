@@ -5589,10 +5589,10 @@
         return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    /* ── 매뉴얼 탭: 템플릿 생성 버튼 ── */
+    /* ── 매뉴얼 탭: QNA 생성 버튼 ── */
     function _appendTemplateBtn(title, botD){
         var btn=document.createElement('button');
-        btn.textContent='📝 답변 템플릿 생성';
+        btn.textContent='❓ QNA 생성';
         btn.style.cssText='margin-top:8px;width:100%;padding:9px 0;border-radius:8px;border:2px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;font-size:11px;font-weight:900;transition:0.15s;';
         btn.addEventListener('mouseenter',function(){if(!btn.disabled){btn.style.background='var(--active-focus-color)';btn.style.color='#fff';}});
         btn.addEventListener('mouseleave',function(){if(!btn.disabled){btn.style.background='none';btn.style.color='var(--active-focus-color)';}});
@@ -5608,12 +5608,12 @@
         var idx=currentMode==='bay'?BAY_MANUAL_INDEX:MANUAL_INDEX;
         var val=idx[title]||'';
         if(typeof val==='object') val=val.text||val.content||'';
-        addMsg('📝 템플릿 생성: '+title,'user');
+        addMsg('❓ QNA 생성: '+title,'user');
         var lid='L'+Date.now();
-        addMsg('<span style="opacity:0.5;font-style:italic;">템플릿 생성 중...</span>','bot',lid);
+        addMsg('<span style="opacity:0.5;font-style:italic;">분석 중...</span>','bot',lid);
         var botEl=document.getElementById(lid); if(!botEl)return;
         var botD=botEl.querySelector('.bubble');
-        _generateCSTemplate(title,val,title,botEl,botD);
+        _generateQnA(title,val,title,botEl,botD);
     }
 
     /* ── 메모 패드 (플로팅 스티커) ── */
@@ -6630,6 +6630,110 @@
         }catch(e){botD.innerHTML='⚠️ 네트워크 오류: '+e.message;}
     }
 
+    /* ── 금칙어 조회 ── */
+    var _badwordsCache={};
+    // 각 글자 사이에 비알파벳·비한글 문자가 끼어들어도 감지하는 퍼지 패턴
+    // 예: "버스" → /버[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]*스/i
+    var _SEP='[^a-zA-Z0-9\\uAC00-\\uD7A3\\u3131-\\u318F]*';
+    function _buildFuzzyRe(word){
+        var pat=Array.from(word).map(function(c){
+            return c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        }).join(_SEP);
+        return new RegExp(pat,'i');
+    }
+    // 원본 title에서 퍼지 매치 위치를 찾아 HTML 하이라이트
+    function _highlightFuzzy(title,words){
+        var spans=[];
+        words.forEach(function(w){
+            var re=new RegExp(_buildFuzzyRe(w).source,'gi');
+            var m;
+            while((m=re.exec(title))!==null){
+                spans.push({s:m.index,e:m.index+m[0].length});
+                if(m[0].length===0)re.lastIndex++;
+            }
+        });
+        spans.sort(function(a,b){return a.s-b.s;});
+        var merged=[];
+        spans.forEach(function(sp){
+            if(merged.length&&sp.s<=merged[merged.length-1].e)
+                merged[merged.length-1].e=Math.max(merged[merged.length-1].e,sp.e);
+            else merged.push({s:sp.s,e:sp.e});
+        });
+        var out='',pos=0;
+        merged.forEach(function(sp){
+            out+=escHtml(title.slice(pos,sp.s));
+            out+='<mark style="background:rgba(239,68,68,0.25);color:#ef4444;border-radius:3px;padding:0 2px;font-weight:900;">'+escHtml(title.slice(sp.s,sp.e))+'</mark>';
+            pos=sp.e;
+        });
+        return out+escHtml(title.slice(pos));
+    }
+    function _loadBadwords(mode,cb){
+        if(_badwordsCache[mode]){cb(_badwordsCache[mode]);return;}
+        db.ref('/imi_badwords/'+mode).once('value',function(snap){
+            _badwordsCache[mode]=snap.val()||{};
+            cb(_badwordsCache[mode]);
+        });
+    }
+    function checkBadwords(){
+        var inp=document.getElementById('badwordInput');
+        var title=inp?inp.value.trim():'';
+        var result=document.getElementById('badwordResult');
+        if(!title){
+            if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:13px;">물품 제목을 입력하세요.</div>';
+            return;
+        }
+        if(result)result.innerHTML='<div style="text-align:center;opacity:0.5;padding:30px;font-size:12px;">조회 중...</div>';
+        _loadBadwords(currentMode,function(data){
+            var matched=[];
+            // 전체게임 먼저
+            (data['전체게임']||[]).forEach(function(w){
+                if(_buildFuzzyRe(w).test(title)) matched.push({word:w,games:['전체게임']});
+            });
+            // 게임별
+            Object.keys(data).forEach(function(game){
+                if(game==='전체게임')return;
+                (data[game]||[]).forEach(function(w){
+                    if(_buildFuzzyRe(w).test(title)){
+                        var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
+                        if(ex)ex.games.push(game);
+                        else matched.push({word:w,games:[game]});
+                    }
+                });
+            });
+            if(!result)return;
+            if(matched.length===0){
+                result.innerHTML='<div style="text-align:center;padding:40px 16px;">'
+                    +'<div style="font-size:36px;margin-bottom:12px;">✅</div>'
+                    +'<div style="font-size:14px;font-weight:900;color:#22c55e;">금칙어 없음</div>'
+                    +'<div style="font-size:11px;opacity:0.55;margin-top:6px;">입력한 제목에서 금칙어가 발견되지 않았습니다.</div>'
+                    +'</div>';
+            } else {
+                var hlTitle=_highlightFuzzy(title,matched.map(function(m){return m.word;}));
+                var html='<div style="margin-bottom:14px;padding:12px 14px;background:var(--bg-card);border:2px solid #ef4444;border-radius:12px;">'
+                    +'<div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:6px;">📌 검사한 제목</div>'
+                    +'<div style="font-size:13px;font-weight:700;line-height:1.7;word-break:break-all;">'+hlTitle+'</div>'
+                    +'</div>';
+                html+='<div style="font-size:11px;font-weight:900;color:var(--text-muted,#888);margin-bottom:8px;">🚫 감지된 금칙어 '+matched.length+'개</div>';
+                html+='<div style="display:flex;flex-direction:column;gap:7px;">';
+                matched.forEach(function(m){
+                    html+='<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:2px solid var(--border-ui);border-radius:10px;">'
+                        +'<span style="flex-shrink:0;font-size:14px;font-weight:900;color:#ef4444;">'+escHtml(m.word)+'</span>'
+                        +'<div style="display:flex;flex-wrap:wrap;gap:4px;flex:1;">'
+                        +m.games.map(function(g){
+                            var isAll=g==='전체게임';
+                            return '<span style="font-size:9px;font-weight:900;padding:2px 7px;border-radius:5px;'
+                                +(isAll?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')
+                                +'">'+escHtml(g)+'</span>';
+                        }).join('')
+                        +'</div>'
+                        +'</div>';
+                });
+                html+='</div>';
+                result.innerHTML=html;
+            }
+        });
+    }
+
     /* ── 고객 예상 QNA 생성 ── */
     function _renderQnA(txt){
         // Q: 와 A: 사이에 빈 줄이 있어도 하나의 블록으로 합침
@@ -6768,6 +6872,7 @@
             r1.style.display='none'; r2.style.display='flex';
             t2.style.background=cColor; t2.style.color='white'; t2.style.borderColor=cColor;
             t1.style.background=''; t1.style.color=''; t1.style.borderColor='';
+            var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
         }
     }
 
