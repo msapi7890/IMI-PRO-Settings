@@ -3127,13 +3127,18 @@
                         + '</div>';
 
                     // 파트별 멤버
-                    parts.forEach(function(part){
+                    parts.forEach(function(part, pi){
                         var pMems = teamMembers.filter(function(u){ return u.part === part; });
                         var chips = pMems.map(function(u){
                             return '<span style="background:#1e293b;border:1px solid #334155;border-radius:5px;padding:2px 7px;font-size:10px;color:#94a3b8;display:inline-flex;align-items:center;">'
                                 + escHtml(u.name)+'</span>';
                         }).join(' ');
+                        var MBTN = 'background:none;border:1px solid #334155;border-radius:4px;color:#64748b;cursor:pointer;font-size:9px;padding:1px 4px;line-height:1;';
                         h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 10px;border-left:2px solid #0284c7;margin-bottom:5px;">'
+                            + '<div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">'
+                            + '<button onclick="_umMovePart(\''+escHtml(team)+'\','+pi+',-1)" style="'+MBTN+(pi===0?'opacity:0.2;cursor:default;':'')+'" '+(pi===0?'disabled':'')+' title="위로">▲</button>'
+                            + '<button onclick="_umMovePart(\''+escHtml(team)+'\','+pi+',1)" style="'+MBTN+(pi===parts.length-1?'opacity:0.2;cursor:default;':'')+'" '+(pi===parts.length-1?'disabled':'')+' title="아래로">▼</button>'
+                            + '</div>'
                             + '<span style="font-size:11px;font-weight:700;color:#7dd3fc;min-width:54px;flex-shrink:0;">'+escHtml(part)+'</span>'
                             + '<span style="font-size:10px;color:#475569;flex-shrink:0;">'+pMems.length+'명</span>'
                             + '<span style="flex:1;display:flex;flex-wrap:wrap;gap:3px;">'+(chips||'<span style="font-size:10px;color:#334155;">없음</span>')+'</span>'
@@ -3213,6 +3218,16 @@
             .filter(function(e){ return e[1].team === team && e[1].part === part; })
             .map(function(e){ return _authFetch('imi_users/'+e[0]+'/part.json', 'PUT', ''); });
         await Promise.all(tasks);
+        _renderUserMgmt();
+    }
+    async function _umMovePart(team, idx, dir){
+        var teamsData = await _umLoadTeams();
+        var parts = teamsData[team];
+        if(!parts) return;
+        var newIdx = idx + dir;
+        if(newIdx < 0 || newIdx >= parts.length) return;
+        var tmp = parts[idx]; parts[idx] = parts[newIdx]; parts[newIdx] = tmp;
+        await _authFetch('imi_teams.json', 'PUT', _teamsToFirebase(teamsData));
         _renderUserMgmt();
     }
 
