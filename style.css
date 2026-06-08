@@ -28,7 +28,7 @@
         header { height: var(--header-h); background-color: var(--bg-card); border-bottom: 2px solid var(--border-ui); display: flex; align-items: center; z-index: 1100; }
         .h-left { width: var(--sidebar-w); padding: 0 1rem; border-right: 2px solid var(--border-ui); height: 100%; display: flex; align-items: center; justify-content: center; }
         .h-center { flex: 1; padding: 0 1.2rem; display: flex; align-items: center; justify-content: space-between; }
-        .h-right { width: var(--notice-w); padding: 0 1rem; border-left: 2px solid var(--border-ui); height: 100%; display: flex; align-items: center; justify-content: space-between; }
+        .h-right { width: var(--notice-w); padding: 0 1rem; border-left: 2px solid var(--border-ui); height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         #chatBox { flex: 1; overflow-y: auto; background: var(--bg-chat); padding: 15px; display: flex; flex-direction: column; gap: 10px; }
         .bubble { max-width: 85%; padding: 0.7rem 1rem; border-radius: 12px; line-height: 1.6; border: 2px solid var(--border-ui); position: relative; word-break: break-word; color: var(--text-main) !important; }
