@@ -653,22 +653,20 @@
     // ===== 파일 매뉴얼 시스템 =====
     function _isPrivileged(){ return _currentUser && (_currentUser.role==='admin'||_currentUser.role==='subadmin'); }
 
-    function openManualFilesModal(){
+    function openManualFilesModal(tab){
         _mfUploadDone = false;
         _mfUpdateNavBadge();
         var tab1 = document.getElementById('mfTab1');
         if(tab1) tab1.style.display = _isPrivileged() ? '' : 'none';
         document.getElementById('manualFilesModal').style.display='flex';
-        // 관리자·부관리자: 매뉴얼 관리(탭1) 기본, 일반: 파일 목록(탭2) 기본
-        _mfSwitchTab(_isPrivileged() ? 1 : 2);
+        _mfSwitchTab(tab || (_isPrivileged() ? 1 : 2));
     }
     function closeManualFilesModal(){
         document.getElementById('manualFilesModal').style.display='none';
     }
     function _mfSwitchTab(n){
-        // 탭1 = 매뉴얼 관리(#f59e0b), 탭2 = 파일 목록(#0284c7)
-        var cols = {1:'#f59e0b', 2:'#0284c7'};
-        [1,2].forEach(function(i){
+        var cols = {1:'#f59e0b', 2:'#0284c7', 3:'#ef4444'};
+        [1,2,3].forEach(function(i){
             var btn = document.getElementById('mfTab'+i);
             if(!btn) return;
             var active = i===n;
@@ -676,8 +674,67 @@
             btn.style.background = active ? '#0f172a' : '#1e293b';
             btn.style.color = active ? cols[i] : '#475569';
         });
+        var wrap = document.getElementById('mfContent');
+        if(wrap) wrap.style.padding = n===3 ? '0' : '16px 20px';
         if(n===1) _renderManualMgmt();
-        else _renderManualFiles();
+        else if(n===2) _renderManualFiles();
+        else _renderBadwordMgmt();
+    }
+
+    function _renderBadwordMgmt(){
+        var wrap = document.getElementById('mfContent');
+        if(!wrap) return;
+        var _kbdStyle = 'font-size:11px;padding:2px 6px;border-radius:4px;font-weight:900;background:#ef4444;color:#fff;border:none;font-family:inherit;';
+        wrap.innerHTML =
+            '<div style="display:flex;flex-shrink:0;border-bottom:1px solid #334155;">'
+            +'<button id="bwTabQuery" onclick="_bwSwitchTab(\'query\')" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #ef4444;background:#0f172a;color:#ef4444;cursor:pointer;">🔍 조회</button>'
+            +'<button id="bwTabList" onclick="_bwSwitchTab(\'list\')" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">📋 목록 관리</button>'
+            +'</div>'
+            // 조회 뷰
+            +'<div id="bwViewQuery" style="display:flex;flex-direction:column;">'
+            +'<div style="padding:10px 14px;border-bottom:1px solid #334155;display:flex;gap:8px;align-items:center;">'
+            +'<input type="text" id="badwordInput" style="flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none;" placeholder="물품 제목을 그대로 입력 (예: +5강 버 스지원 갑니다!! PVPPVE 세팅)" onkeydown="if(event.key===\'Enter\'){checkBadwords();}">'
+            +'<button onclick="checkBadwords()" id="bwAskBtn" style="flex-shrink:0;padding:0 20px;height:42px;border-radius:10px;font-size:14px;font-weight:900;color:#fff;background:#ef4444;border:none;cursor:pointer;">조회</button>'
+            +'</div>'
+            +'<div id="badwordResult" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">'
+            +'<div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;">'
+            +'<div style="text-align:center;">'
+            +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
+            +'<div style="font-size:15px;font-weight:900;color:#e2e8f0;">금칙어 조회</div>'
+            +'<div style="font-size:12px;margin-top:5px;color:#64748b;font-weight:600;">물품 제목을 위 입력창에 붙여넣고 조회 버튼을 누르세요.</div>'
+            +'</div>'
+            +'<div style="width:100%;max-width:420px;background:#0f172a;border:2px solid #334155;border-radius:14px;padding:16px 18px;">'
+            +'<div style="font-size:11px;font-weight:900;color:#ef4444;letter-spacing:0.8px;margin-bottom:12px;">📋 물품 제목 입력이 어려운 경우</div>'
+            +'<div style="display:flex;flex-direction:column;gap:10px;">'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">1</span><span>관리자 화면 물품 제목 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">2</span><span>관리자 본인 아이디 검색 → 메시지 쓰기</span></div>'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">3</span><span>물품 제목 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 보내기</span></div>'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">4</span><span>인터넷 PC 아이템매니아 본인 아이디 접속</span></div>'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">5</span><span>메시지함 → 메시지 내용 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
+            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">6</span><span>IMI PRO 금칙어 조회 입력창 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 조회</span></div>'
+            +'</div></div></div></div>'
+            +'</div>'
+            // 목록 관리 뷰
+            +'<div id="bwViewList" style="display:none;flex-direction:column;">'
+            +'<div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;gap:6px;align-items:center;">'
+            +'<input id="bwSearchInput" type="text" placeholder="금칙어 검색..." oninput="_renderBwList()" style="flex:1;font-size:12px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;">'
+            +'<button onclick="_bwShowAddForm()" style="padding:0 14px;height:34px;border-radius:8px;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>'
+            +'</div>'
+            +'<div id="bwAddForm" style="display:none;padding:10px;border-bottom:1px solid #334155;background:#0f172a;gap:6px;flex-direction:column;">'
+            +'<div style="display:flex;gap:6px;">'
+            +'<select id="bwAddGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
+            +'<input id="bwAddGameNew" type="text" placeholder="새 카테고리명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
+            +'</div>'
+            +'<div style="display:flex;gap:6px;">'
+            +'<input id="bwAddWord" type="text" placeholder="금칙어 입력" style="flex:1;font-size:13px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;" onkeydown="if(event.key===\'Enter\')_bwDoAdd()">'
+            +'<button onclick="_bwDoAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">등록</button>'
+            +'<button onclick="_bwHideAddForm()" style="padding:0 10px;height:34px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;flex-shrink:0;">취소</button>'
+            +'</div>'
+            +'</div>'
+            +'<div id="bwListContent" style="padding:10px 14px;"></div>'
+            +'</div>';
+        var bInp = document.getElementById('badwordInput');
+        if(bInp) setTimeout(function(){ bInp.focus(); }, 80);
     }
 
     function _mfFileRow(f, priv){
@@ -6911,63 +6968,14 @@
 
     var _currentChatTab=1;
     function switchChatTab(tab){
-        _currentChatTab=tab;
+        _currentChatTab=1;
         var r1=document.getElementById('chatRoom1');
-        var r2=document.getElementById('chatRoom2');
         var t1=document.getElementById('maniaLink');
         var t2=document.getElementById('bayLink');
         var cColor=currentMode==='mania'?'var(--mania-color)':'var(--bay-color)';
-        if(tab===1){
-            r1.style.display='flex'; r2.style.display='none';
-            t1.style.background=cColor; t1.style.color='white'; t1.style.borderColor=cColor;
-            t2.style.background=''; t2.style.color=''; t2.style.borderColor='';
-        } else {
-            r1.style.display='none'; r2.style.display='flex';
-            t2.style.background=cColor; t2.style.color='white'; t2.style.borderColor=cColor;
-            t1.style.background=''; t1.style.color=''; t1.style.borderColor='';
-            var bRes=document.getElementById('badwordResult');
-            if(bRes&&!bRes._bwInited){
-                bRes._bwInited=true;
-                var _kbdStyle='font-size:11px;padding:2px 6px;border-radius:4px;font-weight:900;background:#ef4444;color:#fff;border:none;font-family:inherit;';
-                bRes.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;">'
-                    +'<div style="text-align:center;">'
-                    +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
-                    +'<div style="font-size:15px;font-weight:900;color:var(--text-main);">금칙어 조회</div>'
-                    +'<div style="font-size:12px;margin-top:5px;color:var(--text-sub);font-weight:600;">물품 제목을 아래 입력창에 붙여넣고 조회 버튼을 누르세요.</div>'
-                    +'</div>'
-                    +'<div style="width:100%;max-width:420px;background:var(--bg-body);border:2px solid var(--border-ui);border-radius:14px;padding:16px 18px;">'
-                    +'<div style="font-size:11px;font-weight:900;color:#ef4444;letter-spacing:0.8px;margin-bottom:12px;">📋 물품 제목 입력이 어려운 경우</div>'
-                    +'<div style="display:flex;flex-direction:column;gap:10px;">'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">1</span>'
-                    +'<span>관리자 화면 물품 제목 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span>'
-                    +'</div>'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">2</span>'
-                    +'<span>관리자 본인 아이디 검색 → 메시지 쓰기</span>'
-                    +'</div>'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">3</span>'
-                    +'<span>물품 제목 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 보내기</span>'
-                    +'</div>'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">4</span>'
-                    +'<span>인터넷 PC 아이템매니아 본인 아이디 접속</span>'
-                    +'</div>'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">5</span>'
-                    +'<span>메시지함 → 메시지 내용 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span>'
-                    +'</div>'
-                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;">'
-                    +'<span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">6</span>'
-                    +'<span>IMI PRO 금칙어 조회 입력창 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 조회</span>'
-                    +'</div>'
-                    +'</div>'
-                    +'</div>'
-                    +'</div>';
-            }
-            var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
-        }
+        if(r1) r1.style.display='flex';
+        if(t1){ t1.style.background=cColor; t1.style.color='white'; t1.style.borderColor=cColor; }
+        if(t2){ t2.style.background=''; t2.style.color=''; t2.style.borderColor=''; }
     }
 
     /* ── 금칙어 목록 관리 ── */
@@ -6977,14 +6985,17 @@
         var isQuery = tab==='query';
         var tQ=document.getElementById('bwTabQuery'), tL=document.getElementById('bwTabList');
         var vQ=document.getElementById('bwViewQuery'), vL=document.getElementById('bwViewList');
-        var ac='var(--active-focus-color)';
-        tQ.style.background=isQuery?'var(--active-focus-color)':'var(--bg-body)';
-        tQ.style.color=isQuery?'#fff':'var(--text-sub)';
-        tL.style.background=!isQuery?'var(--active-focus-color)':'var(--bg-body)';
-        tL.style.color=!isQuery?'#fff':'var(--text-sub)';
+        if(!tQ||!tL||!vQ||!vL)return;
+        tQ.style.borderBottomColor=isQuery?'#ef4444':'transparent';
+        tQ.style.background=isQuery?'#0f172a':'#1e293b';
+        tQ.style.color=isQuery?'#ef4444':'#475569';
+        tL.style.borderBottomColor=!isQuery?'#ef4444':'transparent';
+        tL.style.background=!isQuery?'#0f172a':'#1e293b';
+        tL.style.color=!isQuery?'#ef4444':'#475569';
         vQ.style.display=isQuery?'flex':'none';
+        if(isQuery) vQ.style.flexDirection='column';
         vL.style.display=!isQuery?'flex':'none';
-        if(!isQuery){ _badwordsCache[currentMode]=null; _renderBwList(); }
+        if(!isQuery){ vL.style.flexDirection='column'; _badwordsCache[currentMode]=null; _renderBwList(); }
     }
 
     function _renderBwList(){
