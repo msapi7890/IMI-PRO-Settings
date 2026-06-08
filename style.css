@@ -1,4 +1,4 @@
-﻿        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap');
+﻿        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         :root { --base-font: 16px; --active-focus-color: #3abff8; --sidebar-w: 240px; --notice-w: 280px; --header-h: 50px; }
 
         body.light-mode {
