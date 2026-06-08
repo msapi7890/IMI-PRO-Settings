@@ -374,6 +374,8 @@
             window.electronAPI.setOsNotifMuted(_osNotifDis);
         // Firebase에서 매뉴얼 인덱스 데이터 로드
         _initManualData();
+        // 로그인 후 role 확정 — API 키 배너 재렌더
+        updateStatusBadge();
     }
 
     // 로그아웃
