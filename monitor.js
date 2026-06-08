@@ -764,8 +764,7 @@ function _getNotifPrefs(){
             wrap.appendChild(prog);
             setTimeout(function() { bar.style.width = '0%'; }, 50);
         }
-        // 비거래는 드랍다운과 동일하게 교체 방식 (사기글은 누적)
-        if (isWatch) { container.innerHTML = ''; }
+        // 비거래도 사기글과 동일하게 누적 방식
         container.appendChild(wrap);
 
         var _autoCloseTimer = null;
