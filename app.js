@@ -6927,7 +6927,7 @@
                     +'</div>'
                     +'<div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.5;">'
                     +'<span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">6</span>'
-                    +'<span>IMI PRO 금칙어 조회 입력창에 붙여넣기 → 조회</span>'
+                    +'<span>IMI PRO 금칙어 조회 입력창에 붙여넣기 <kbd style="font-size:11px;padding:1px 5px;border-radius:4px;border:1px solid var(--border-ui,#444);background:var(--bg-body,#0f172a);">Ctrl+V</kbd> → 조회</span>'
                     +'</div>'
                     +'</div>'
                     +'</div>'
