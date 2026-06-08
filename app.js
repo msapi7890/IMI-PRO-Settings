@@ -6634,7 +6634,7 @@
     var _badwordsCache={};
     // 각 글자 사이에 비알파벳·비한글 문자가 끼어들어도 감지하는 퍼지 패턴
     // 예: "버스" → /버[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]*스/i
-    var _SEP='[^a-zA-Z0-9\\uAC00-\\uD7A3\\u3131-\\u318F]*';
+    var _SEP='\\s*';
     function _buildFuzzyRe(word){
         var pat=Array.from(word).map(function(c){
             return c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
