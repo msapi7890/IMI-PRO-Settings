@@ -1,5 +1,5 @@
 ﻿        @import url('https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css');
-        :root { --base-font: 16px; --active-focus-color: #3abff8; --sidebar-w: 240px; --notice-w: 280px; --header-h: 50px; }
+        :root { --base-font: 16px; --active-focus-color: #3abff8; --sidebar-w: 240px; --notice-w: 320px; --header-h: 50px; }
 
         body.light-mode {
             --bg-body: #f1f3f5; --bg-card: #ffffff; --bg-chat: #f8f9fa;
