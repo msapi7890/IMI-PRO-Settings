@@ -1956,7 +1956,8 @@ function addBotRule() {
                 : r;
         }));
         _cancelBotRuleEdit();
-        alert('✅ 규칙이 수정됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
+        var _brBtn = document.getElementById('brAddBtn');
+        if (_brBtn) { var _brOrig = _brBtn.textContent; _brBtn.textContent = '✅ 수정 완료!'; _brBtn.style.background = '#22c55e'; setTimeout(function(){ _brBtn.textContent = _brOrig; _brBtn.style.background = ''; }, 1500); }
     } else {
         var newRule = {
             id: 'r_' + Date.now(),
@@ -2207,7 +2208,8 @@ function addWatchScanRule() {
                 : r;
         }));
         _cancelWsrEdit();
-        alert('✅ 수정됐습니다.');
+        var _wsrBtn = document.getElementById('wsrAddBtn');
+        if (_wsrBtn) { _wsrBtn.textContent = '✅ 수정 완료!'; _wsrBtn.style.background = '#22c55e'; setTimeout(function(){ _wsrBtn.textContent = '✅ 규칙 등록'; _wsrBtn.style.background = '#22c55e'; }, 1500); }
         return;
     }
     var addedBy = (typeof _currentUser !== 'undefined' && _currentUser) ? (_currentUser.name||'') : '';
