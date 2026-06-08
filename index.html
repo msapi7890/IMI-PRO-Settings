@@ -1109,7 +1109,7 @@
         </div>
     </div>
     <div class="h-right">
-        <div style="flex:1;display:flex;align-items:center;border:2px solid var(--border-ui);padding:0 12px;border-radius:20px;background:var(--bg-body);height:34px;margin-right:4px;">
+        <div style="flex:1;display:flex;align-items:center;border:2px solid var(--border-ui);padding:0 12px;border-radius:20px;background:var(--bg-body);height:34px;margin-right:10px;">
             <span style="font-size:9px;font-weight:900;color:var(--text-sub);margin-right:6px;flex-shrink:0;">FONT</span>
             <button onclick="adjustFontSize(-1)" style="display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;font-size:18px;font-weight:900;color:var(--text-main);width:22px;height:22px;user-select:none;padding:0;flex-shrink:0;">−</button>
             <span id="fontDisplay" style="font-size:13px;font-weight:900;flex:1;text-align:center;color:var(--active-focus-color);">16</span>
@@ -1172,7 +1172,7 @@
             <!-- 채팅방 탭 (링크 대신 탭 전환) -->
             <div id="linkArea" style="display:flex;gap:6px;">
                 <button id="maniaLink" onclick="switchChatTab(1)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">📚 매뉴얼</button>
-                <button id="bayLink" onclick="openManualFilesModal(3)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">🚫 금칙어 관리</button>
+                <button id="bayLink" class="link-banner" style="flex:1;text-align:center;border:none;cursor:default;opacity:0;pointer-events:none;"></button>
             </div>
             <!-- 모드 버튼 -->
             <div class="flex gap-2">
