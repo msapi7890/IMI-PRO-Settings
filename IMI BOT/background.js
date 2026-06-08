@@ -544,7 +544,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     if (tidsW.length === 0) return;
                     firePush('/imi_watch_alerts', {
                         tids:     tidsW,
-                        itemRows: rowsW.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'' })),
+                        itemRows: rowsW.map(r => ({ tid: r.tid||'', t: r.t||'', key: r.key||'', matchedKw: r.matchedKw||'' })),
                         label:    msg.data.label   || msg.data.ruleName    || '',
                         keyword:  msg.data.keyword || msg.data.ruleKeyword || '',
                         count:    rowsW.length,

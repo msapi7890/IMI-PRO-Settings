@@ -4,9 +4,9 @@
     var BAY_MANUAL_INDEX = JSON.parse(document.getElementById('bayManualData').textContent);
     var BAY_PAGE_RANGES = JSON.parse(document.getElementById('bayPageRangesData').textContent);
 
-    // BAY 카테고리 그룹: PDF 파란줄 섹션 기준 (1-1. 리셋 지점마다 새 섹션)
-    var BAY_CATEGORY_GROUPS = (function(){
-        var _names = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    // BAY 카테고리 그룹: BAY_MANUAL_INDEX 갱신 시 재빌드
+    var _BAY_CAT_NAMES = ['회원가입/탈퇴','판매','구매','결제','마일리지충전','마일리지 출금','거래 안내','회원등급/인증센터','보안서비스','부가서비스','기타','베이만의서비스','거래신고/취소/종료','거래사고 및 비관련 상품(비거래)'];
+    function _buildBayCategoryGroups(){
         var _titles = Object.keys(BAY_MANUAL_INDEX);
         var _gs = [], _cur = [];
         _titles.forEach(function(t){
@@ -15,9 +15,11 @@
         });
         if(_cur.length) _gs.push(_cur);
         var _map = {};
-        _gs.forEach(function(g,i){ if(_names[i]) _map[_names[i]]=g; });
-        return _map;
-    })();
+        _gs.forEach(function(g,i){ if(_BAY_CAT_NAMES[i]) _map[_BAY_CAT_NAMES[i]]=g; });
+        BAY_CATEGORY_GROUPS = _map;
+    }
+    var BAY_CATEGORY_GROUPS = {};
+    _buildBayCategoryGroups();
 
     var FIREBASE_CONFIG = {apiKey:"AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",projectId:"manual-9a47c",storageBucket:"manual-9a47c.firebasestorage.app",messagingSenderId:"360735158801",appId:"1:360735158801:web:1dd7b4d7a07ac9502a37b0"};
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -1182,7 +1184,15 @@
 
         // 카테고리
         h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;margin-bottom:3px;">카테고리</div>';
-        h += '<select id="mfEditFCat" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:8px;"></select>';
+        h += '<div style="display:flex;gap:4px;margin-bottom:4px;">';
+        h += '<select id="mfEditFCat" style="flex:1;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;"></select>';
+        h += '<button onclick="_mfToggleEditCatRename()" title="카테고리 이름 변경" style="padding:7px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#f59e0b;font-size:12px;cursor:pointer;">✏️</button>';
+        h += '</div>';
+        h += '<div id="mfEditCatRenameWrap" style="display:none;gap:4px;margin-bottom:8px;">';
+        h += '<input type="text" id="mfEditCatRenameInput" placeholder="새 카테고리 이름" onkeydown="if(event.key===\'Enter\')_mfConfirmEditCatRename();if(event.key===\'Escape\')_mfCancelEditCatRename();" style="flex:1;padding:6px 10px;border-radius:7px;border:1.5px solid #f59e0b;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;">';
+        h += '<button onclick="_mfConfirmEditCatRename()" style="padding:6px 12px;border-radius:7px;border:none;background:#f59e0b;color:#fff;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;">변경</button>';
+        h += '<button onclick="_mfCancelEditCatRename()" style="padding:6px 10px;border-radius:7px;border:1px solid #334155;background:none;color:#64748b;font-size:11px;cursor:pointer;">취소</button>';
+        h += '</div>';
 
         // 페이지 범위
         h += '<div style="font-size:10px;font-weight:900;color:#f59e0b;margin-bottom:3px;">페이지 범위</div>';
@@ -1197,21 +1207,7 @@
         h += '<input id="mfEditFKws" placeholder="예: 개명, 이름변경, 명의변경" style="width:100%;padding:7px 10px;border-radius:7px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:11px;outline:none;margin-bottom:10px;">';
 
         // 저장 버튼
-        h += '<button id="mfEditSaveBtn" onclick="_mfSaveEditItem()" style="width:100%;padding:9px;border-radius:7px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;margin-bottom:10px;">💾 저장</button>';
-
-        // 이미지/PDF 교체
-        h += '<div style="border-top:1px solid #1e293b;padding-top:10px;">';
-        h += '<div style="font-size:10px;font-weight:900;color:#475569;margin-bottom:6px;">🔄 이미지 교체</div>';
-        h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;margin-bottom:6px;">';
-        h += '🖼 이미지 파일 선택 (JPG/PNG, 여러 장) → 직접 교체';
-        h += '<input type="file" id="mfEditImgFiles" accept="image/*" multiple style="display:none;" onchange="_mfDoModifyByImages()">';
-        h += '</label>';
-        h += '<label style="display:block;padding:8px 14px;border-radius:8px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:11px;font-weight:900;cursor:pointer;text-align:center;">';
-        h += '📄 PDF 선택 → 이미지 자동 변환 교체';
-        h += '<input type="file" id="mfEditFile" accept=".pdf" style="display:none;" onchange="_mfDoModify()">';
-        h += '</label>';
-        h += '<div id="mfEditProgress" style="font-size:11px;color:#64748b;margin-top:8px;min-height:16px;white-space:pre-wrap;"></div>';
-        h += '</div>';
+        h += '<button id="mfEditSaveBtn" onclick="_mfSaveEditItem()" style="width:100%;padding:9px;border-radius:7px;background:#f59e0b;color:#fff;font-size:12px;font-weight:900;border:none;cursor:pointer;">💾 저장</button>';
 
         // 추가 범위 수정 (PDF 렌더링 완료 후)
         h += '<div id="mfEditExtraPanel" style="display:none;margin-top:10px;">';
@@ -1299,6 +1295,7 @@
         _mfFillEditSel(mode);
         _mfLoadRanges(mode);
         _mfEditCache = null; // 모드 전환 시 항목 수정 캐시 초기화
+        if(mode === 'bay') _mfRepairBayRanges();
     }
 
     function _mfSetRegTab(tab){
@@ -1422,6 +1419,81 @@
         await _mfSaveCats(mode);
         _mfFillEntryCat(mode);
     }
+
+    async function _mfDoRenameCat(oldName, newName, onDone){
+        if(!newName || newName === oldName){ if(onDone) onDone(); return; }
+        var mode = _mfMgmtMode;
+        var cats = mode==='mania' ? _MANIA_CATS : _BAY_CATS;
+        var idx = cats.indexOf(oldName);
+        if(idx < 0) return;
+        if(cats.indexOf(newName) >= 0){ alert('이미 있는 카테고리 이름입니다.'); return; }
+        cats[idx] = newName;
+        await _mfSaveCats(mode);
+        var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
+        if(allRaw && typeof allRaw === 'object'){
+            for(var _rk in allRaw){
+                if((allRaw[_rk].category||'') === oldName){
+                    await _authFetch('manual_page_ranges/'+mode+'/'+_rk+'/category.json','PUT',newName);
+                }
+            }
+        }
+        _mfFillEntryCat(mode);
+        if(onDone) onDone(newName);
+        _mfLoadRanges(mode);
+    }
+
+    function _mfViewerToggleCatRename(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        if(!sel || !sel.value) return;
+        var wrap = document.getElementById('mfViewerCatRenameWrap');
+        var addWrap = document.getElementById('mfViewerCatAddWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        if(addWrap) addWrap.style.display = 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){
+            var inp = document.getElementById('mfViewerCatRenameInput');
+            if(inp){ inp.value = sel.value; inp.focus(); inp.select(); }
+        }
+    }
+    async function _mfViewerConfirmRenameCat(){
+        var sel = document.getElementById('mfViewerEntryCat');
+        var inp = document.getElementById('mfViewerCatRenameInput');
+        if(!sel || !inp) return;
+        var oldName = sel.value, newName = inp.value.trim();
+        _mfViewerCancelRenameCat();
+        await _mfDoRenameCat(oldName, newName, function(n){ var s=document.getElementById('mfViewerEntryCat'); if(s&&n) s.value=n; });
+    }
+    function _mfViewerCancelRenameCat(){
+        var wrap = document.getElementById('mfViewerCatRenameWrap');
+        if(wrap) wrap.style.display = 'none';
+    }
+
+    function _mfToggleEditCatRename(){
+        var sel = document.getElementById('mfEditFCat');
+        if(!sel || !sel.value) return;
+        var wrap = document.getElementById('mfEditCatRenameWrap');
+        if(!wrap) return;
+        var show = wrap.style.display === 'none';
+        wrap.style.display = show ? 'flex' : 'none';
+        if(show){
+            var inp = document.getElementById('mfEditCatRenameInput');
+            if(inp){ inp.value = sel.value; inp.focus(); inp.select(); }
+        }
+    }
+    async function _mfConfirmEditCatRename(){
+        var sel = document.getElementById('mfEditFCat');
+        var inp = document.getElementById('mfEditCatRenameInput');
+        if(!sel || !inp) return;
+        var oldName = sel.value, newName = inp.value.trim();
+        _mfCancelEditCatRename();
+        await _mfDoRenameCat(oldName, newName, function(n){ var s=document.getElementById('mfEditFCat'); if(s&&n) s.value=n; });
+    }
+    function _mfCancelEditCatRename(){
+        var wrap = document.getElementById('mfEditCatRenameWrap');
+        if(wrap) wrap.style.display = 'none';
+    }
+
     function _mfViewerAddItem(){
         var p = window._mfPageUrls ? window._mfPageUrls[_mfViewerIdx] : null;
         var from = parseInt(document.getElementById('mfEntryFrom').value)||0;
@@ -1574,9 +1646,12 @@
         }
 
         var uploaded = 0, failed = 0, skipped = 0;
-        var lastUploadedPage = 0;
+        var lastUploadedPage = 0, maxPageNum = 0;
         for(var i=0; i<files.length; i++){
-            var pageNum = _fnPageNum(files[i].name, startPage + i);
+            // 파일명 숫자가 startPage보다 작으면 PDF 내보내기 파일(001.jpg 등)로 판단해 startPage 기준으로 계산
+            var _fnNum = _fnPageNum(files[i].name, startPage + i);
+            var pageNum = (_fnNum >= startPage) ? _fnNum : (startPage + i);
+            if(pageNum > maxPageNum) maxPageNum = pageNum;
             var padded  = String(pageNum).padStart(3,'0');
             var storagePath = 'manual_pages/'+mode+'/page-'+padded+'.jpg';
 
@@ -1610,8 +1685,8 @@
             if(_lpt) _lpt.textContent=txt; if(_lpc) _lpc.textContent=cnt; if(_lpb) _lpb.style.width=pct+'%';
         }
 
-        // maxPage: 파일명 기준 최대 페이지 번호로 저장
-        var lastPage = files.reduce(function(mx, f, i){ return Math.max(mx, _fnPageNum(f.name, startPage+i)); }, 0);
+        // maxPage: 실제 처리된 페이지 번호 기준 (건너뜀 포함)
+        var lastPage = maxPageNum || (startPage + files.length - 1);
         if(lastPage > 0){
             await _authFetch('manual_meta/'+mode+'/maxPage.json','PUT',lastPage);
             _mfTotalPdfPages = lastPage;
@@ -2327,21 +2402,7 @@
         await _authFetch('manual_page_ranges/'+mode+'/'+_mfCurrentEditKey+'.json','PATCH',
             {title:newTitle, category:cat, start:start, end:end, keywords:kws});
 
-        // 이후 항목 자동 밀기 (end 늘어난 경우)
-        if(shiftDiff > 0){
-            var allRaw = await _authFetch('manual_page_ranges/'+mode+'.json');
-            if(allRaw && typeof allRaw==='object'){
-                for(var _k in allRaw){
-                    if(_k === _mfCurrentEditKey) continue;
-                    var _r = allRaw[_k];
-                    var _hit = false;
-                    var _ns = _r.start||0, _ne = _r.end||0;
-                    if(_ns > oldEnd){ _ns += shiftDiff; _hit = true; }
-                    if(_ne > oldEnd){ _ne += shiftDiff; _hit = true; }
-                    if(_hit) await _authFetch('manual_page_ranges/'+mode+'/'+_k+'.json','PATCH',{start:_ns, end:_ne});
-                }
-            }
-        }
+        // 이후 항목 자동 밀기 제거됨 — 범위 수정은 해당 항목만 적용
 
         // 검색 인덱스 갱신 (제목 바뀌면 이전 키 삭제 후 새 키 등록)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
@@ -2579,6 +2640,11 @@
             _authFetch('manual_meta/'+mode+'.json')
         ]);
         if(meta && meta.maxPage) _mfTotalPdfPages = meta.maxPage;
+        // 챗봇용 RANGES도 즉시 갱신 (새 항목이 바로 반영되도록)
+        if(raw && typeof raw === 'object'){
+            if(mode === 'bay') BAY_MANUAL_RANGES = raw;
+            else MANUAL_RANGES = raw;
+        }
         if(!raw||typeof raw!=='object'){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
         var entries = Object.entries(raw).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
         if(!entries.length){ _mfSavedPageCnt=0; _mfRegisteredRanges=[]; _mfUpdateNavBadge(); _mfRenderPageThumbs(); listEl.innerHTML='<div style="font-size:11px;color:#475569;padding:8px 0;">등록된 항목이 없습니다.</div>'; return; }
@@ -2733,6 +2799,24 @@
         return _renderedCount;
     }
 
+    async function _mfRepairBayRanges(){
+        if(localStorage.getItem('bay_range_repair_done_v1')) return;
+        var allRaw = await _authFetch('manual_page_ranges/bay.json');
+        if(!allRaw || typeof allRaw !== 'object') return;
+        // p.95~p.162 범위 항목만 -1 (사용자가 직접 수정한 163+ 항목 제외)
+        var changed = 0;
+        for(var _rk in allRaw){
+            var _rr = allRaw[_rk];
+            var _rs = _rr.start||0, _re = _rr.end||0;
+            if(_rs >= 95 && _rs <= 162){
+                await _authFetch('manual_page_ranges/bay/'+_rk+'.json','PATCH',{start:_rs-1, end:_re-1});
+                changed++;
+            }
+        }
+        localStorage.setItem('bay_range_repair_done_v1', '1');
+        if(changed > 0) _mfLoadRanges('bay');
+    }
+
     async function _mfSyncSearchIndex(){
         var btn = document.getElementById('mfSyncIndexBtn');
         if(btn){ btn.disabled=true; btn.textContent='동기화 중...'; }
@@ -2757,7 +2841,7 @@
                     });
                 }
                 await _authFetch('imi_manual_index/'+mode+'.json','PUT', newIdxFb);
-                if(mode==='bay') BAY_MANUAL_INDEX = newIdxMem;
+                if(mode==='bay'){ BAY_MANUAL_INDEX = newIdxMem; _buildBayCategoryGroups(); }
                 else MANUAL_INDEX = newIdxMem;
             }
             var cntM = Object.keys(MANUAL_INDEX).length;
@@ -2791,7 +2875,7 @@
                 Object.keys(bI).forEach(function(k){
                     var t=bI[k]; if(t&&typeof t==='string') _bi[t]=''; else _bi[k]='';
                 });
-                BAY_MANUAL_INDEX = _bi;
+                BAY_MANUAL_INDEX = _bi; _buildBayCategoryGroups();
             }
             if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
             if(bpR && typeof bpR === 'object') BAY_PAGE_RANGES  = bpR;
@@ -5505,10 +5589,10 @@
         return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    /* ── 매뉴얼 탭: 템플릿 생성 버튼 ── */
+    /* ── 매뉴얼 탭: QNA 생성 버튼 ── */
     function _appendTemplateBtn(title, botD){
         var btn=document.createElement('button');
-        btn.textContent='📝 답변 템플릿 생성';
+        btn.textContent='❓ QNA 생성';
         btn.style.cssText='margin-top:8px;width:100%;padding:9px 0;border-radius:8px;border:2px solid var(--active-focus-color);color:var(--active-focus-color);background:none;cursor:pointer;font-size:11px;font-weight:900;transition:0.15s;';
         btn.addEventListener('mouseenter',function(){if(!btn.disabled){btn.style.background='var(--active-focus-color)';btn.style.color='#fff';}});
         btn.addEventListener('mouseleave',function(){if(!btn.disabled){btn.style.background='none';btn.style.color='var(--active-focus-color)';}});
@@ -5524,12 +5608,12 @@
         var idx=currentMode==='bay'?BAY_MANUAL_INDEX:MANUAL_INDEX;
         var val=idx[title]||'';
         if(typeof val==='object') val=val.text||val.content||'';
-        addMsg('📝 템플릿 생성: '+title,'user');
+        addMsg('❓ QNA 생성: '+title,'user');
         var lid='L'+Date.now();
-        addMsg('<span style="opacity:0.5;font-style:italic;">템플릿 생성 중...</span>','bot',lid);
+        addMsg('<span style="opacity:0.5;font-style:italic;">분석 중...</span>','bot',lid);
         var botEl=document.getElementById(lid); if(!botEl)return;
         var botD=botEl.querySelector('.bubble');
-        _generateCSTemplate(title,val,title,botEl,botD);
+        _generateQnA(title,val,title,botEl,botD);
     }
 
     /* ── 메모 패드 (플로팅 스티커) ── */
@@ -6546,6 +6630,116 @@
         }catch(e){botD.innerHTML='⚠️ 네트워크 오류: '+e.message;}
     }
 
+    /* ── 금칙어 조회 ── */
+    var _badwordsCache={};
+    // 각 글자 사이에 비알파벳·비한글 문자가 끼어들어도 감지하는 퍼지 패턴
+    // 예: "버스" → /버[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]*스/i
+    var _SEP='\\s*';
+    function _buildFuzzyRe(word){
+        var pat=Array.from(word).map(function(c){
+            return c.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        }).join(_SEP);
+        return new RegExp(pat,'i');
+    }
+    // 원본 title에서 퍼지 매치 위치를 찾아 HTML 하이라이트
+    function _highlightFuzzy(title,words){
+        var spans=[];
+        words.forEach(function(w){
+            var re=new RegExp(_buildFuzzyRe(w).source,'gi');
+            var m;
+            while((m=re.exec(title))!==null){
+                spans.push({s:m.index,e:m.index+m[0].length});
+                if(m[0].length===0)re.lastIndex++;
+            }
+        });
+        spans.sort(function(a,b){return a.s-b.s;});
+        var merged=[];
+        spans.forEach(function(sp){
+            if(merged.length&&sp.s<=merged[merged.length-1].e)
+                merged[merged.length-1].e=Math.max(merged[merged.length-1].e,sp.e);
+            else merged.push({s:sp.s,e:sp.e});
+        });
+        var out='',pos=0;
+        merged.forEach(function(sp){
+            out+=escHtml(title.slice(pos,sp.s));
+            out+='<mark style="background:rgba(239,68,68,0.25);color:#ef4444;border-radius:3px;padding:0 2px;font-weight:900;">'+escHtml(title.slice(sp.s,sp.e))+'</mark>';
+            pos=sp.e;
+        });
+        return out+escHtml(title.slice(pos));
+    }
+    function _loadBadwords(mode,cb){
+        if(_badwordsCache[mode]){cb(_badwordsCache[mode]);return;}
+        db.ref('/imi_badwords/'+mode).once('value',function(snap){
+            _badwordsCache[mode]=snap.val()||{};
+            cb(_badwordsCache[mode]);
+        });
+    }
+    function checkBadwords(){
+        var inp=document.getElementById('badwordInput');
+        var title=inp?inp.value.trim():'';
+        var result=document.getElementById('badwordResult');
+        if(!title){
+            if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:13px;">물품 제목을 입력하세요.</div>';
+            return;
+        }
+        // 사용자 입력을 채팅 형식으로 추가
+        var userRow='<div style="display:flex;justify-content:flex-end;">'
+            +'<div class="bubble user-bubble" style="max-width:85%;word-break:break-all;">'+escHtml(title)+'</div>'
+            +'</div>';
+        if(result){result.insertAdjacentHTML('beforeend',userRow);result.scrollTop=99999;}
+        _loadBadwords(currentMode,function(data){
+            var matched=[];
+            (data['전체게임']||[]).forEach(function(w){
+                if(_buildFuzzyRe(w).test(title)){
+                    var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
+                    if(ex){if(ex.games.indexOf('전체게임')<0)ex.games.push('전체게임');}
+                    else matched.push({word:w,games:['전체게임']});
+                }
+            });
+            Object.keys(data).forEach(function(game){
+                if(game==='전체게임')return;
+                (data[game]||[]).forEach(function(w){
+                    if(_buildFuzzyRe(w).test(title)){
+                        var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
+                        if(ex)ex.games.push(game);
+                        else matched.push({word:w,games:[game]});
+                    }
+                });
+            });
+            if(!result)return;
+            var botContent;
+            if(matched.length===0){
+                botContent='<span style="color:#22c55e;font-weight:900;">✅ 금칙어 없음</span><br>'
+                    +'<span style="font-size:11px;opacity:0.6;">입력한 제목에서 금칙어가 발견되지 않았습니다.</span>';
+            } else {
+                var hlTitle=_highlightFuzzy(title,matched.map(function(m){return m.word;}));
+                botContent='<div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:5px;">📌 검사 제목</div>'
+                    +'<div style="font-size:12px;font-weight:700;line-height:1.7;word-break:break-all;margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);">'+hlTitle+'</div>'
+                    +'<div style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:6px;">🚫 감지된 금칙어 '+matched.length+'개</div>'
+                    +'<div style="display:flex;flex-direction:column;gap:5px;">';
+                matched.forEach(function(m){
+                    botContent+='<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:8px;">'
+                        +'<span style="font-size:13px;font-weight:900;color:#ef4444;flex-shrink:0;">'+escHtml(m.word)+'</span>'
+                        +'<div style="display:flex;flex-wrap:wrap;gap:3px;">'
+                        +m.games.map(function(g){
+                            var isAll=g==='전체게임';
+                            return '<span style="font-size:9px;font-weight:900;padding:1px 6px;border-radius:4px;'
+                                +(isAll?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')
+                                +'">'+escHtml(g)+'</span>';
+                        }).join('')
+                        +'</div>'
+                        +'</div>';
+                });
+                botContent+='</div>';
+            }
+            var botRow='<div style="display:flex;justify-content:flex-start;">'
+                +'<div class="bubble bot-bubble" style="width:90%;font-size:12px;">'+botContent+'</div>'
+                +'</div>';
+            result.insertAdjacentHTML('beforeend',botRow);
+            result.scrollTop=99999;
+        });
+    }
+
     /* ── 고객 예상 QNA 생성 ── */
     function _renderQnA(txt){
         // Q: 와 A: 사이에 빈 줄이 있어도 하나의 블록으로 합침
@@ -6684,6 +6878,17 @@
             r1.style.display='none'; r2.style.display='flex';
             t2.style.background=cColor; t2.style.color='white'; t2.style.borderColor=cColor;
             t1.style.background=''; t1.style.color=''; t1.style.borderColor='';
+            var bRes=document.getElementById('badwordResult');
+            if(bRes&&!bRes._bwInited){
+                bRes._bwInited=true;
+                bRes.innerHTML='<div style="display:flex;justify-content:flex-start;">'
+                    +'<div class="bubble bot-bubble" style="max-width:85%;font-size:12px;line-height:1.7;">'
+                    +'🚫 <strong>금칙어 조회</strong><br>'
+                    +'물품 제목을 입력하면 포함된 금칙어와 해당 게임을 표시합니다.<br>'
+                    +'<span style="opacity:0.6;font-size:11px;">공백은 투명처리 (예: 버 스 → 버스 감지)</span>'
+                    +'</div></div>';
+            }
+            var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
         }
     }
 
@@ -7663,8 +7868,10 @@
             ? allNotices[currentMode][currentEditId].date : null;
         var dateStr = existingDate || new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',weekday:'long'});
         var obj={title:content.split('\n')[0].substring(0,35),content:content,date:dateStr};
-        var existingAuthor=currentEditId&&allNotices[currentMode]&&allNotices[currentMode][currentEditId]?allNotices[currentMode][currentEditId].author:null;
+        var existingNotice=currentEditId&&allNotices[currentMode]?allNotices[currentMode][currentEditId]:null;
+        var existingAuthor=existingNotice?existingNotice.author:null;
         obj.author=existingAuthor||(_currentUser&&_currentUser.name?_currentUser.name:'알 수 없음');
+        if(existingNotice&&existingNotice.pinned) obj.pinned=true;
         if(urlVal) obj.url=urlVal;
         if(currentEditId) obj.updatedAt=new Date().toLocaleString('ko-KR',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
         var saveKey=currentEditId||String(Date.now());
@@ -8703,7 +8910,7 @@
     function _showWatchAlert(data, alertKey){
         // watchPopup ON → 하단 팝업만 표시
         if(_notifPrefs && _notifPrefs.watchPopup){
-            if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',itemCount:data.count||0,itemRows:data.itemRows||[]});
+            if(typeof _showInPagePopup==='function') _showInPagePopup('watch',{ruleName:data.label||'비거래',ruleKeyword:data.keyword||'',itemCount:data.count||0,itemRows:data.itemRows||[]});
             if(window.electronAPI && window.electronAPI.blinkTitle) { _autoWatchBlink = true; window.electronAPI.blinkTitle(true, ['비거래']); }
             // 상단바 탭 배지 표시
             var wTab = document.getElementById('watchHeaderTab');
@@ -8857,6 +9064,14 @@
                 tidLink.style.cssText = 'color:#38bdf8;text-decoration:none;font-weight:900;font-size:20px;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;';
                 tidLink.textContent = '#'+(typeof _fmtTid==='function'?_fmtTid(tid):tid);
                 infoArea.appendChild(tidLink);
+
+                var _kw4Badge = rowData.matchedKw || '';
+                if(_kw4Badge){
+                    var kwBadgeEl = document.createElement('span');
+                    kwBadgeEl.style.cssText = 'font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;';
+                    kwBadgeEl.textContent = '🔑 '+_kw4Badge;
+                    infoArea.appendChild(kwBadgeEl);
+                }
 
                 if(itemTitle){
                     var titleEl2 = document.createElement('div');

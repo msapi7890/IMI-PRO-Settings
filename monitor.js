@@ -732,11 +732,13 @@ function _getNotifPrefs(){
             var row = document.createElement('div');
             row.style.cssText = 'padding:5px 0;border-bottom:1px solid #33415540;';
             var tidHtml = '';
+            var _itKw = (it.matchedKw || '');
+            var kwBadge = _itKw ? '<span style="font-size:10px;font-weight:800;color:#86efac;background:#052e16;border:1px solid #22c55e;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;">🔑 '+_esc(_itKw)+'</span>' : '';
             if (it.tid) {
                 if (isWatch) {
-                    tidHtml = '<div><a href="https://www.itemmania.com/buy/buy_main.php?tid='+_esc(it.tid)+'" target="_blank" style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;text-decoration:none;">#'+_fmtTid(it.tid)+'</a></div>';
+                    tidHtml = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;"><a href="https://www.itemmania.com/buy/buy_main.php?tid='+_esc(it.tid)+'" target="_blank" style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;text-decoration:none;">#'+_fmtTid(it.tid)+'</a>'+kwBadge+'</div>';
                 } else {
-                    tidHtml = '<div style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+'</div>';
+                    tidHtml = '<div style="font-size:16px;font-weight:900;color:#38bdf8;letter-spacing:0.03em;">#'+_fmtTid(it.tid)+kwBadge+'</div>';
                 }
             }
             row.innerHTML = tidHtml
@@ -1386,7 +1388,7 @@ function _loadLogByType(fullDay, isWatch) {
                     ? '<span style="font-size:8px;font-weight:900;color:#22c55e;border:1px solid #22c55e;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">📦 비거래</span>'
                     : '<span style="font-size:8px;font-weight:900;color:#ef4444;border:1px solid #ef4444;border-radius:3px;padding:0 4px;flex-shrink:0;white-space:nowrap;">🚨 사기글</span>';
                 var rows = (d.itemRows || []).map(function(it) {
-                    var rawKey = it.key || (it.t || '').substring(0, 30).trim();
+                    var rawKey = it.key || (it.tid ? 'tid_' + it.tid : (it.t || '').substring(0, 30).trim());
                     var bk = _esc(rawKey);
                     var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                     var titleAttr = _esc(it.t || '');
@@ -1474,7 +1476,7 @@ function _loadLogByType(fullDay, isWatch) {
                     var d = entry.data;
                     var timeStr = new Date(d.at).toLocaleTimeString('ko-KR');
                     var rows = (d.itemRows || []).map(function(it) {
-                        var rawKey = it.key || (it.t || '').substring(0, 30).trim();
+                        var rawKey = it.key || (it.tid ? 'tid_' + it.tid : (it.t || '').substring(0, 30).trim());
                         var bk = _esc(rawKey);
                         var isBlocked = blockedSet[rawKey] || (it.tid && blockedSet[it.tid]);
                         var titleAttr = _esc(it.t || '');
@@ -1954,7 +1956,8 @@ function addBotRule() {
                 : r;
         }));
         _cancelBotRuleEdit();
-        alert('✅ 규칙이 수정됐습니다: ' + name + '\n1분 내로 봇에 자동 반영됩니다.');
+        var _brBtn = document.getElementById('brAddBtn');
+        if (_brBtn) { var _brOrig = _brBtn.textContent; _brBtn.textContent = '✅ 수정 완료!'; _brBtn.style.background = '#22c55e'; setTimeout(function(){ _brBtn.textContent = _brOrig; _brBtn.style.background = ''; }, 1500); }
     } else {
         var newRule = {
             id: 'r_' + Date.now(),
@@ -2205,7 +2208,8 @@ function addWatchScanRule() {
                 : r;
         }));
         _cancelWsrEdit();
-        alert('✅ 수정됐습니다.');
+        var _wsrBtn = document.getElementById('wsrAddBtn');
+        if (_wsrBtn) { _wsrBtn.textContent = '✅ 수정 완료!'; _wsrBtn.style.background = '#22c55e'; setTimeout(function(){ _wsrBtn.textContent = '✅ 규칙 등록'; _wsrBtn.style.background = '#22c55e'; }, 1500); }
         return;
     }
     var addedBy = (typeof _currentUser !== 'undefined' && _currentUser) ? (_currentUser.name||'') : '';

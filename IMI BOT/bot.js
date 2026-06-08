@@ -247,6 +247,7 @@
             if (kws.length && !kws.some(k => normText.includes(_norm(k)))) return;
             if (subKws.length && !subKws.every(k => normText.includes(_norm(k)))) return;
             if (exKws.length && exKws.some(k => normText.includes(_norm(k)))) return;
+            const matchedKw = kws.find(k => normText.includes(_norm(k))) || '';
 
             const price = extractMaxPrice(text);
             const hasPhoto = !!el.querySelector('.hasScreenshot');
@@ -354,7 +355,7 @@
             }
 
             // _el: DOM 참조 저장 → 클릭 시 직접 사용
-            items.push({ t: title, p: price, u: href, key: itemKey, tid, listTime, _el: el });
+            items.push({ t: title, p: price, u: href, key: itemKey, tid, listTime, matchedKw, _el: el });
         });
         return items;
     }
@@ -394,7 +395,7 @@
     // logRows: 이번에 새로 감지된 항목만 (재감지면 null → history 기록 안 함)
     function sendAlert(items, logRows) {
         const _at = Date.now();
-        const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '' }));
+        const _rows = items.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '', matchedKw: it.matchedKw || '' }));
         chrome.runtime.sendMessage({
             type: 'FIREBASE_SET',
             path: '/monitor_flash_state',
@@ -407,7 +408,7 @@
                 ruleUrl: rule.url,
                 itemCount: items.length,
                 itemRows: _rows,
-                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', listTime: it.listTime || '' })) : null,
+                logItemRows: logRows ? logRows.map(it => ({ t: it.t, p: it.p, u: it.u || '', tid: it.tid || '', key: it.key || '', listTime: it.listTime || '' })) : null,
                 scanInterval: rule.scanInterval || 60,
                 at: _at
             }
@@ -525,6 +526,14 @@
     async function doCheck() {
         if (!isRunning || !rule) return;
 
+        // 스캔마다 제외목록 최신화 (모니터 패널에서 제외한 항목 반영)
+        await new Promise(resolve => {
+            chrome.runtime.sendMessage({ type: 'GET_BLOCKED' }, bRes => {
+                if (bRes && bRes.blocked) blockedItems = new Set(bRes.blocked);
+                resolve();
+            });
+        });
+
         // 시간대 범위 체크
         const inHours = await _isInActiveHours();
         if (!inHours) {
@@ -571,7 +580,7 @@
             if (findPage2Link()) {
                 // 2페이지가 있으면 1페이지 결과를 저장하고 2페이지도 스캔 (_el 제외 직렬화)
                 sessionStorage.setItem(_P1_ITEMS_KEY, JSON.stringify(
-                    items.map(it => ({ t: it.t, p: it.p, u: it.u, key: it.key, tid: it.tid, listTime: it.listTime || '' }))
+                    items.map(it => ({ t: it.t, p: it.p, u: it.u, key: it.key, tid: it.tid, listTime: it.listTime || '', matchedKw: it.matchedKw || '' }))
                 ));
                 sessionStorage.setItem('_imi_page2_scan', '1');
                 setStatus(`1p ${items.length}개 — 2p 추가 스캔 중...`, '#f59e0b');

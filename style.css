@@ -90,8 +90,8 @@
 
         .bordered-input { background: var(--input-bg) !important; border: 2.5px solid var(--border-ui) !important; outline: none; font-weight: 600; color: var(--text-main); }
         .chat-input-area { border-top: 2px solid var(--border-ui); background: var(--bg-card); display: flex; gap: 10px; padding: 10px 15px; }
-        #userInput, #csInput { border-radius: 20px; padding: 9px 20px; font-size: 15px; flex: 1; }
-        #askBtn, #csAskBtn { border-radius: 20px; font-size: 15px; font-weight: 900; padding: 9px 35px; }
+        #userInput, #csInput, #badwordInput { border-radius: 20px; padding: 9px 20px; font-size: 15px; flex: 1; }
+        #askBtn, #csAskBtn, #bwAskBtn { border-radius: 20px; font-size: 15px; font-weight: 900; padding: 9px 35px; }
 
         .slider-container { display: flex; align-items: center; border: 2px solid var(--border-ui); padding: 0 12px; border-radius: 20px; background: var(--bg-body); width: 180px; height: 34px; position: relative; }
         #fontSlider { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; z-index: 5; }
