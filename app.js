@@ -684,38 +684,8 @@
     function _renderBadwordMgmt(){
         var wrap = document.getElementById('mfContent');
         if(!wrap) return;
-        var _kbdStyle = 'font-size:11px;padding:2px 6px;border-radius:4px;font-weight:900;background:#ef4444;color:#fff;border:none;font-family:inherit;';
         wrap.innerHTML =
-            '<div style="display:flex;flex-shrink:0;border-bottom:1px solid #334155;">'
-            +'<button id="bwTabQuery" onclick="_bwSwitchTab(\'query\')" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #ef4444;background:#0f172a;color:#ef4444;cursor:pointer;">🔍 조회</button>'
-            +'<button id="bwTabList" onclick="_bwSwitchTab(\'list\')" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">📋 목록 관리</button>'
-            +'</div>'
-            // 조회 뷰
-            +'<div id="bwViewQuery" style="display:flex;flex-direction:column;">'
-            +'<div style="padding:10px 14px;border-bottom:1px solid #334155;display:flex;gap:8px;align-items:center;">'
-            +'<input type="text" id="badwordInput" style="flex:1;padding:9px 12px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none;" placeholder="물품 제목을 그대로 입력 (예: +5강 버 스지원 갑니다!! PVPPVE 세팅)" onkeydown="if(event.key===\'Enter\'){checkBadwords();}">'
-            +'<button onclick="checkBadwords()" id="bwAskBtn" style="flex-shrink:0;padding:0 20px;height:42px;border-radius:10px;font-size:14px;font-weight:900;color:#fff;background:#ef4444;border:none;cursor:pointer;">조회</button>'
-            +'</div>'
-            +'<div id="badwordResult" style="padding:10px 14px;display:flex;flex-direction:column;gap:8px;">'
-            +'<div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;">'
-            +'<div style="text-align:center;">'
-            +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
-            +'<div style="font-size:15px;font-weight:900;color:#e2e8f0;">금칙어 조회</div>'
-            +'<div style="font-size:12px;margin-top:5px;color:#64748b;font-weight:600;">물품 제목을 위 입력창에 붙여넣고 조회 버튼을 누르세요.</div>'
-            +'</div>'
-            +'<div style="width:100%;max-width:420px;background:#0f172a;border:2px solid #334155;border-radius:14px;padding:16px 18px;">'
-            +'<div style="font-size:11px;font-weight:900;color:#ef4444;letter-spacing:0.8px;margin-bottom:12px;">📋 물품 제목 입력이 어려운 경우</div>'
-            +'<div style="display:flex;flex-direction:column;gap:10px;">'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">1</span><span>관리자 화면 물품 제목 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">2</span><span>관리자 본인 아이디 검색 → 메시지 쓰기</span></div>'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">3</span><span>물품 제목 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 보내기</span></div>'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">4</span><span>인터넷 PC 아이템매니아 본인 아이디 접속</span></div>'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">5</span><span>메시지함 → 메시지 내용 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
-            +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:#e2e8f0;line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">6</span><span>IMI PRO 금칙어 조회 입력창 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 조회</span></div>'
-            +'</div></div></div></div>'
-            +'</div>'
-            // 목록 관리 뷰
-            +'<div id="bwViewList" style="display:none;flex-direction:column;">'
+            '<div id="bwViewList" style="display:flex;flex-direction:column;">'
             +'<div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;gap:6px;align-items:center;">'
             +'<input id="bwSearchInput" type="text" placeholder="금칙어 검색..." oninput="_renderBwList()" style="flex:1;font-size:12px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;">'
             +'<button onclick="_bwShowAddForm()" style="padding:0 14px;height:34px;border-radius:8px;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>'
@@ -749,8 +719,8 @@
             +'</div>'
             +'<div id="bwListContent" style="padding:10px 14px;"></div>'
             +'</div>';
-        var bInp = document.getElementById('badwordInput');
-        if(bInp) setTimeout(function(){ bInp.focus(); }, 80);
+        _badwordsCache[currentMode] = null;
+        _renderBwList();
     }
 
     function _mfFileRow(f, priv){
