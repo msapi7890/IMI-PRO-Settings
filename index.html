@@ -1203,12 +1203,39 @@
                 <button onclick="ask()" id="askBtn" class="px-12 py-3 rounded-xl font-black text-white shadow-lg transition active:scale-95">전송</button>
             </div>
         </div>
-        <!-- 채팅방 2: 금칙어 조회 -->
+        <!-- 채팅방 2: 금칙어 조회 / 목록 관리 -->
         <div id="chatRoom2" style="flex:1;display:none;flex-direction:column;min-height:0;">
-            <div id="badwordResult" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;"></div>
-            <div class="chat-input-area">
-                <input type="text" id="badwordInput" class="bordered-input shadow-sm" placeholder="물품 제목을 그대로 입력 (예: +5강 버 스지원 갑니다!! PVPPVE 세팅)" onkeydown="if(event.key==='Enter'){checkBadwords();}">
-                <button onclick="checkBadwords()" id="bwAskBtn" style="flex-shrink:0;padding:0 20px;height:42px;border-radius:10px;font-size:14px;font-weight:900;color:#fff;background:#ef4444;border:none;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.82'" onmouseout="this.style.opacity='1'">조회</button>
+            <!-- 탭 -->
+            <div style="display:flex;flex-shrink:0;border-bottom:2px solid var(--border-ui);">
+                <button id="bwTabQuery" onclick="_bwSwitchTab('query')" style="flex:1;padding:9px 0;font-size:12px;font-weight:900;border:none;background:var(--active-focus-color);color:#fff;cursor:pointer;">🔍 조회</button>
+                <button id="bwTabList" onclick="_bwSwitchTab('list')" style="flex:1;padding:9px 0;font-size:12px;font-weight:900;border:none;background:var(--bg-body);color:var(--text-sub);cursor:pointer;">📋 목록 관리</button>
+            </div>
+            <!-- 조회 뷰 -->
+            <div id="bwViewQuery" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+                <div id="badwordResult" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="badwordInput" class="bordered-input shadow-sm" placeholder="물품 제목을 그대로 입력 (예: +5강 버 스지원 갑니다!! PVPPVE 세팅)" onkeydown="if(event.key==='Enter'){checkBadwords();}">
+                    <button onclick="checkBadwords()" id="bwAskBtn" style="flex-shrink:0;padding:0 20px;height:42px;border-radius:10px;font-size:14px;font-weight:900;color:#fff;background:#ef4444;border:none;cursor:pointer;letter-spacing:0.5px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.82'" onmouseout="this.style.opacity='1'">조회</button>
+                </div>
+            </div>
+            <!-- 목록 관리 뷰 -->
+            <div id="bwViewList" style="flex:1;display:none;flex-direction:column;min-height:0;">
+                <div style="padding:8px 10px;border-bottom:1px solid var(--border-ui);flex-shrink:0;display:flex;gap:6px;align-items:center;">
+                    <input id="bwSearchInput" type="text" placeholder="금칙어 검색..." oninput="_renderBwList()" class="bordered-input" style="flex:1;font-size:12px;padding:6px 10px;height:34px;">
+                    <button onclick="_bwShowAddForm()" style="padding:0 14px;height:34px;border-radius:8px;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>
+                </div>
+                <div id="bwAddForm" style="display:none;padding:10px;border-bottom:1px solid var(--border-ui);background:var(--bg-body);flex-shrink:0;gap:6px;flex-direction:column;">
+                    <div style="display:flex;gap:6px;">
+                        <select id="bwAddGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid var(--border-ui);background:var(--bg-card);color:var(--text-main);font-size:12px;font-weight:700;"></select>
+                        <input id="bwAddGameNew" type="text" placeholder="새 카테고리명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid var(--border-ui);background:var(--bg-card);color:var(--text-main);font-size:12px;">
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <input id="bwAddWord" type="text" placeholder="금칙어 입력" class="bordered-input" style="flex:1;font-size:13px;padding:6px 10px;height:34px;" onkeydown="if(event.key==='Enter')_bwDoAdd()">
+                        <button onclick="_bwDoAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">등록</button>
+                        <button onclick="_bwHideAddForm()" style="padding:0 10px;height:34px;border-radius:8px;background:none;border:1.5px solid var(--border-ui);color:var(--text-sub);cursor:pointer;font-size:12px;flex-shrink:0;">취소</button>
+                    </div>
+                </div>
+                <div id="bwListContent" style="flex:1;overflow-y:auto;padding:10px 12px;"></div>
             </div>
         </div>
     </section>

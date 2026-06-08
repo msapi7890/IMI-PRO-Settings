@@ -6970,6 +6970,134 @@
         }
     }
 
+    /* ── 금칙어 목록 관리 ── */
+    var _bwData = {}; // 현재 로드된 데이터 (게임명 → [단어...])
+
+    function _bwSwitchTab(tab){
+        var isQuery = tab==='query';
+        var tQ=document.getElementById('bwTabQuery'), tL=document.getElementById('bwTabList');
+        var vQ=document.getElementById('bwViewQuery'), vL=document.getElementById('bwViewList');
+        var ac='var(--active-focus-color)';
+        tQ.style.background=isQuery?'var(--active-focus-color)':'var(--bg-body)';
+        tQ.style.color=isQuery?'#fff':'var(--text-sub)';
+        tL.style.background=!isQuery?'var(--active-focus-color)':'var(--bg-body)';
+        tL.style.color=!isQuery?'#fff':'var(--text-sub)';
+        vQ.style.display=isQuery?'flex':'none';
+        vL.style.display=!isQuery?'flex':'none';
+        if(!isQuery){ _badwordsCache[currentMode]=null; _renderBwList(); }
+    }
+
+    function _renderBwList(){
+        var filter=(document.getElementById('bwSearchInput')||{}).value||'';
+        filter=filter.toLowerCase().trim();
+        var content=document.getElementById('bwListContent');
+        if(!content)return;
+        content.innerHTML='<div style="text-align:center;padding:20px;opacity:0.4;font-size:12px;">로딩 중...</div>';
+        _loadBadwords(currentMode,function(data){
+            _bwData=data;
+            var games=Object.keys(data).sort(function(a,b){ return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko'); });
+            var html='';
+            var total=0;
+            games.forEach(function(game){
+                var words=data[game]||[];
+                var filtered=filter?words.filter(function(w){return w.toLowerCase().indexOf(filter)>=0;}):words;
+                if(!filtered.length)return;
+                total+=filtered.length;
+                html+='<div style="margin-bottom:14px;">';
+                html+='<div style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
+                    +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
+                    +'<button onclick="_bwQuickAdd(\''+escHtml(game).replace(/\'/g,"\\'")+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
+                    +'</div>';
+                filtered.forEach(function(word){
+                    var realIdx=words.indexOf(word);
+                    html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--bg-body);margin-bottom:3px;" id="bwRow_'+escHtml(game)+'_'+realIdx+'">'
+                        +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+escHtml(word)+'</span>'
+                        +'<button onclick="_bwEditWord(\''+escHtml(game).replace(/\'/g,"\\'")+'\',' +realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;flex-shrink:0;">수정</button>'
+                        +'<button onclick="_bwDeleteWord(\''+escHtml(game).replace(/\'/g,"\\'")+'\',' +realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;flex-shrink:0;">삭제</button>'
+                        +'</div>';
+                });
+                html+='</div>';
+            });
+            if(!html)html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 금칙어가 없습니다.')+'</div>';
+            else html='<div style="font-size:11px;color:var(--text-sub);margin-bottom:8px;font-weight:700;">총 '+total+'개</div>'+html;
+            content.innerHTML=html;
+        });
+    }
+
+    function _bwShowAddForm(){
+        var form=document.getElementById('bwAddForm');
+        var sel=document.getElementById('bwAddGame');
+        var games=Object.keys(_bwData).sort(function(a,b){return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko');});
+        sel.innerHTML='<option value="">카테고리 선택...</option>'
+            +games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
+            +'<option value="__new__">+ 새 카테고리</option>';
+        sel.onchange=function(){
+            var ni=document.getElementById('bwAddGameNew');
+            ni.style.display=sel.value==='__new__'?'block':'none';
+        };
+        form.style.display='flex';
+        document.getElementById('bwAddWord').focus();
+    }
+
+    function _bwHideAddForm(){
+        document.getElementById('bwAddForm').style.display='none';
+        document.getElementById('bwAddWord').value='';
+        document.getElementById('bwAddGameNew').style.display='none';
+    }
+
+    function _bwQuickAdd(game){
+        _bwShowAddForm();
+        var sel=document.getElementById('bwAddGame');
+        for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===game){ sel.selectedIndex=i; break; } }
+        document.getElementById('bwAddWord').focus();
+    }
+
+    async function _bwDoAdd(){
+        var sel=document.getElementById('bwAddGame');
+        var ni=document.getElementById('bwAddGameNew');
+        var game=sel.value==='__new__'?ni.value.trim():sel.value;
+        var word=(document.getElementById('bwAddWord').value||'').trim();
+        if(!game||game==='카테고리 선택...'){ alert('카테고리를 선택하세요.'); return; }
+        if(!word){ alert('금칙어를 입력하세요.'); return; }
+        var words=(_bwData[game]||[]).slice();
+        if(words.indexOf(word)>=0){ alert('이미 등록된 금칙어입니다.'); return; }
+        words.push(word);
+        try{
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            _badwordsCache[currentMode]=null;
+            _bwHideAddForm();
+            _renderBwList();
+        }catch(e){ alert('저장 실패: '+e.message); }
+    }
+
+    async function _bwDeleteWord(game, idx){
+        var words=(_bwData[game]||[]).slice();
+        var word=words[idx];
+        if(!confirm('"'+word+'" 금칙어를 삭제하시겠습니까?'))return;
+        words.splice(idx,1);
+        try{
+            if(words.length===0) await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','DELETE');
+            else await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            _badwordsCache[currentMode]=null;
+            _renderBwList();
+        }catch(e){ alert('삭제 실패: '+e.message); }
+    }
+
+    async function _bwEditWord(game, idx){
+        var words=(_bwData[game]||[]).slice();
+        var oldWord=words[idx];
+        var newWord=prompt('금칙어 수정 ('+game+'):', oldWord);
+        if(newWord===null||newWord===oldWord)return;
+        newWord=newWord.trim();
+        if(!newWord){ alert('금칙어를 입력하세요.'); return; }
+        words[idx]=newWord;
+        try{
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            _badwordsCache[currentMode]=null;
+            _renderBwList();
+        }catch(e){ alert('수정 실패: '+e.message); }
+    }
+
     function toggleNoticePin(id, e){
         if(e){e.stopPropagation();}
         var n=allNotices[currentMode][id]; if(!n)return;
