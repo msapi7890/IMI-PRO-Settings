@@ -6954,14 +6954,47 @@
 
     var _currentChatTab=1;
     function switchChatTab(tab){
-        _currentChatTab=1;
+        _currentChatTab=tab;
         var r1=document.getElementById('chatRoom1');
+        var r2=document.getElementById('chatRoom2');
         var t1=document.getElementById('maniaLink');
         var t2=document.getElementById('bayLink');
         var cColor=currentMode==='mania'?'var(--mania-color)':'var(--bay-color)';
-        if(r1) r1.style.display='flex';
-        if(t1){ t1.style.background=cColor; t1.style.color='white'; t1.style.borderColor=cColor; }
-        if(t2){ t2.style.background=''; t2.style.color=''; t2.style.borderColor=''; }
+        if(tab===1){
+            if(r1) r1.style.display='flex';
+            if(r2) r2.style.display='none';
+            if(t1){ t1.style.background=cColor; t1.style.color='white'; t1.style.borderColor=cColor; }
+            if(t2){ t2.style.background=''; t2.style.color=''; t2.style.borderColor=''; }
+        } else {
+            if(r1) r1.style.display='none';
+            if(r2) r2.style.display='flex';
+            if(t2){ t2.style.background=cColor; t2.style.color='white'; t2.style.borderColor=cColor; }
+            if(t1){ t1.style.background=''; t1.style.color=''; t1.style.borderColor=''; }
+            var bRes=document.getElementById('badwordResult');
+            if(bRes&&!bRes._bwInited){
+                bRes._bwInited=true;
+                var _kbdStyle='font-size:11px;padding:2px 6px;border-radius:4px;font-weight:900;background:#ef4444;color:#fff;border:none;font-family:inherit;';
+                bRes.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;">'
+                    +'<div style="text-align:center;">'
+                    +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
+                    +'<div style="font-size:15px;font-weight:900;color:var(--text-main);">금칙어 조회</div>'
+                    +'<div style="font-size:12px;margin-top:5px;color:var(--text-sub);font-weight:600;">물품 제목을 아래 입력창에 붙여넣고 조회 버튼을 누르세요.</div>'
+                    +'</div>'
+                    +'<div style="width:100%;max-width:420px;background:var(--bg-body);border:2px solid var(--border-ui);border-radius:14px;padding:16px 18px;">'
+                    +'<div style="font-size:11px;font-weight:900;color:#ef4444;letter-spacing:0.8px;margin-bottom:12px;">📋 물품 제목 입력이 어려운 경우</div>'
+                    +'<div style="display:flex;flex-direction:column;gap:10px;">'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">1</span><span>관리자 화면 물품 제목 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">2</span><span>관리자 본인 아이디 검색 → 메시지 쓰기</span></div>'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">3</span><span>물품 제목 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 보내기</span></div>'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">4</span><span>인터넷 PC 아이템매니아 본인 아이디 접속</span></div>'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">5</span><span>메시지함 → 메시지 내용 복사 <kbd style="'+_kbdStyle+'">Ctrl+C</kbd></span></div>'
+                    +'<div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--text-main);line-height:1.5;"><span style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;">6</span><span>IMI PRO 금칙어 조회 입력창 붙여넣기 <kbd style="'+_kbdStyle+'">Ctrl+V</kbd> → 조회</span></div>'
+                    +'</div>'
+                    +'</div>'
+                    +'</div>';
+            }
+            var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
+        }
     }
 
     /* ── 금칙어 목록 관리 ── */
