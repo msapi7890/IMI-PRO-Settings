@@ -2875,7 +2875,9 @@
                 Object.keys(bI).forEach(function(k){
                     var t=bI[k]; if(t&&typeof t==='string') _bi[t]=''; else _bi[k]='';
                 });
-                BAY_MANUAL_INDEX = _bi; _buildBayCategoryGroups();
+                // 교체가 아닌 병합: 기본 내장 데이터(1-1. 패턴) 위에 Firebase 항목 추가
+                BAY_MANUAL_INDEX = Object.assign({}, BAY_MANUAL_INDEX, _bi);
+                _buildBayCategoryGroups();
             }
             if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
             if(bpR && typeof bpR === 'object') BAY_PAGE_RANGES  = bpR;
@@ -5022,7 +5024,9 @@
         document.getElementById('chatBox').scrollTop = 99999;
     }
     function _searchByCategory(cat, botD, idx){
-        // 베이: BAY_CATEGORY_GROUPS 기반 (BAY_MANUAL_RANGES.category 미설정 대응)
+        var allTitles = [];
+
+        // ① BAY_CATEGORY_GROUPS (내장 매뉴얼 1-1. 기반)
         if(currentMode==='bay'){
             var _bg = BAY_CATEGORY_GROUPS[cat] || BAY_CATEGORY_GROUPS[cat.trim()] || null;
             if(!_bg){
@@ -5030,28 +5034,28 @@
                 if(_bk) _bg = BAY_CATEGORY_GROUPS[_bk];
             }
             if(_bg && _bg.length){
-                var use3col2 = _bg.length >= 8;
-                var h2='<strong>🏷️ '+escHtml(cat)+' ('+_bg.length+'건):</strong>';
-                h2 += use3col2 ? '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">' : '<div class="choice-card-wrap">';
-                _bg.forEach(function(t){ h2+="<button class='choice-card' onclick='showContentById(\""+t.replace(/\"/g,'&quot;')+"\")'>▶ "+escHtml(t)+"</button>"; });
-                h2+='</div>';
-                botD.innerHTML=h2;
-                return;
+                _bg.forEach(function(t){ allTitles.push({label:t, src:'idx'}); });
             }
         }
+
+        // ② MANUAL_RANGES / BAY_MANUAL_RANGES (.category 필드 등록 항목)
         var ranges = currentMode==='mania' ? MANUAL_RANGES : BAY_MANUAL_RANGES;
-        var titles = currentMode==='mania' ? Object.keys(MANUAL_INDEX||{}) : Object.keys(BAY_MANUAL_INDEX||{});
-        var matched = Object.entries(ranges).filter(function(e){
-            return e[1] && (e[1].category||'일반')===cat;
-        }).sort(function(a,b){ return (a[1].start||0)-(b[1].start||0); });
-        if(!matched.length){ botD.innerHTML='<span>🏷️ <strong>'+escHtml(cat)+'</strong> 카테고리에 등록된 항목이 없습니다.</span>'; return; }
-        var use3col = matched.length >= 8;
-        var h='<strong>🏷️ '+escHtml(cat)+' ('+matched.length+'건):</strong>';
+        Object.entries(ranges).forEach(function(e){
+            if(e[1] && (e[1].category||'일반')===cat){
+                var _t = e[1].title||e[0]||'';
+                if(_t && !allTitles.find(function(x){ return x.label===_t; })){
+                    allTitles.push({label:_t, src:'range'});
+                }
+            }
+        });
+
+        if(!allTitles.length){ botD.innerHTML='<span>🏷️ <strong>'+escHtml(cat)+'</strong> 카테고리에 등록된 항목이 없습니다.</span>'; return; }
+        var use3col = allTitles.length >= 8;
+        var h='<strong>🏷️ '+escHtml(cat)+' ('+allTitles.length+'건):</strong>';
         h += use3col ? '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">' : '<div class="choice-card-wrap">';
-        matched.forEach(function(e){
-            var _t = (e[1].title||e[0]||'').replace(/\"/g,'&quot;');
-            if(!_t) return;
-            h+="<button class='choice-card' onclick='showContentById(\""+_t+"\")'>▶ "+escHtml(e[1].title||e[0])+"</button>";
+        allTitles.forEach(function(item){
+            var _t = item.label.replace(/\"/g,'&quot;');
+            h+="<button class='choice-card' onclick='showContentById(\""+_t+"\")'>▶ "+escHtml(item.label)+"</button>";
         });
         h+='</div>';
         botD.innerHTML=h;

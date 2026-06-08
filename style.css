@@ -331,9 +331,9 @@
         body.green-mode .memo-sec-hdr h3 { color: #1e3a1e; }
     /* ── 플립 시계 ── */
     .fc-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;user-select:none;}
-    .fc-date{font-size:13px;font-weight:900;opacity:0.6;letter-spacing:0.05em;white-space:nowrap;color:var(--text-main);}
+    .fc-date{font-size:13px;font-weight:900;opacity:0.85;letter-spacing:0.05em;white-space:nowrap;color:var(--text-main);}
     .fc-row{display:flex;align-items:center;gap:3px;}
-    .fc-sep{font-size:14px;font-weight:900;opacity:0.5;color:var(--text-main);line-height:1;margin:0 1px;}
+    .fc-sep{font-size:15px;font-weight:900;opacity:0.75;color:var(--text-main);line-height:1;margin:0 1px;}
     .fc-d{width:16px;height:20px;overflow:hidden;position:relative;background:#1e293b;border-radius:4px;}
     .fc-n{position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:900;line-height:20px;color:#f1f5f9;}
     .fc-n.cur{top:0;}
@@ -342,5 +342,7 @@
     @keyframes _fcIn{0%{top:100%}100%{top:0}}
     .fc-n.out{animation:_fcOut 0.18s ease-in forwards;}
     .fc-n.in{animation:_fcIn 0.18s ease-out forwards;}
-    body.light-mode .fc-d{background:#334155;}
-    body.green-mode .fc-d{background:#1e3a1e;}
+    body.light-mode .fc-d{background:transparent;}
+    body.light-mode .fc-n{color:var(--text-main);font-weight:900;}
+    body.green-mode .fc-d{background:transparent;}
+    body.green-mode .fc-n{color:var(--text-main);font-weight:900;}
