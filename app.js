@@ -6976,8 +6976,8 @@
                 var _kbdStyle='font-size:11px;padding:2px 6px;border-radius:4px;font-weight:900;background:#ef4444;color:#fff;border:none;font-family:inherit;';
                 bRes.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;padding:24px 20px;gap:16px;">'
                     +'<div style="text-align:center;">'
-                    +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
-                    +'<div style="font-size:15px;font-weight:900;color:var(--text-main);">금칙어 조회</div>'
+                    +'<div style="font-size:36px;margin-bottom:8px;">🕵️</div>'
+                    +'<div style="font-size:15px;font-weight:900;color:var(--text-main);">금칙어</div>'
                     +'<div style="font-size:12px;margin-top:5px;color:var(--text-sub);font-weight:600;">물품 제목을 아래 입력창에 입력하고 조회 버튼을 누르세요.</div>'
                     +'</div>'
                     +'<div style="width:100%;max-width:420px;background:var(--bg-body);border:2px solid var(--border-ui);border-radius:14px;padding:16px 18px;">'
