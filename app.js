@@ -8751,6 +8751,13 @@
             }, { passive: false });
         })();
         _fbAuthPromise.then(function(){
+            // REST로 직접 읽기 (SDK 리스너가 보안규칙에 막힐 경우 대비)
+            _authFetch('config/claude_api_key.json').then(function(val){
+                if(val && typeof val === 'string' && !CLAUDE_API_KEY){
+                    CLAUDE_API_KEY = val;
+                    updateStatusBadge();
+                }
+            }).catch(function(){});
             var _apiKeyFirstLoad = true;
             db.ref('config/claude_api_key').on('value', function(snap){
                 CLAUDE_API_KEY = snap.val() || '';
