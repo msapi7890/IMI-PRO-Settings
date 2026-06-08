@@ -6679,7 +6679,7 @@
         var title=inp?inp.value.trim():'';
         var result=document.getElementById('badwordResult');
         if(!title){
-            if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:13px;">물품 제목을 입력하세요.</div>';
+            if(result)result.innerHTML='<div style="text-align:center;color:var(--text-muted,#888);padding:30px 16px;font-size:17px;">물품 제목을 입력하세요.</div>';
             return;
         }
         // 사용자 입력을 채팅 형식으로 추가
@@ -6710,20 +6710,20 @@
             var botContent;
             if(matched.length===0){
                 botContent='<span style="color:#22c55e;font-weight:900;">✅ 금칙어 없음</span><br>'
-                    +'<span style="font-size:11px;opacity:0.6;">입력한 제목에서 금칙어가 발견되지 않았습니다.</span>';
+                    +'<span style="font-size:14px;opacity:0.6;">입력한 제목에서 금칙어가 발견되지 않았습니다.</span>';
             } else {
                 var hlTitle=_highlightFuzzy(title,matched.map(function(m){return m.word;}));
-                botContent='<div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:5px;">📌 검사 제목</div>'
-                    +'<div style="font-size:12px;font-weight:700;line-height:1.7;word-break:break-all;margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);">'+hlTitle+'</div>'
-                    +'<div style="font-size:11px;font-weight:900;opacity:0.7;margin-bottom:6px;">🚫 감지된 금칙어 '+matched.length+'개</div>'
+                botContent='<div style="font-size:14px;font-weight:900;color:#ef4444;margin-bottom:5px;">📌 검사 제목</div>'
+                    +'<div style="font-size:16px;font-weight:700;line-height:1.7;word-break:break-all;margin-bottom:10px;padding:7px 10px;background:rgba(239,68,68,0.08);border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);">'+hlTitle+'</div>'
+                    +'<div style="font-size:14px;font-weight:900;opacity:0.7;margin-bottom:6px;">🚫 감지된 금칙어 '+matched.length+'개</div>'
                     +'<div style="display:flex;flex-direction:column;gap:5px;">';
                 matched.forEach(function(m){
                     botContent+='<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:8px;">'
-                        +'<span style="font-size:13px;font-weight:900;color:#ef4444;flex-shrink:0;">'+escHtml(m.word)+'</span>'
+                        +'<span style="font-size:17px;font-weight:900;color:#ef4444;flex-shrink:0;">'+escHtml(m.word)+'</span>'
                         +'<div style="display:flex;flex-wrap:wrap;gap:3px;">'
                         +m.games.map(function(g){
                             var isAll=g==='전체게임';
-                            return '<span style="font-size:9px;font-weight:900;padding:1px 6px;border-radius:4px;'
+                            return '<span style="font-size:13px;font-weight:900;padding:2px 8px;border-radius:4px;'
                                 +(isAll?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')
                                 +'">'+escHtml(g)+'</span>';
                         }).join('')
@@ -6733,7 +6733,7 @@
                 botContent+='</div>';
             }
             var botRow='<div style="display:flex;justify-content:flex-start;">'
-                +'<div class="bubble bot-bubble" style="width:90%;font-size:12px;">'+botContent+'</div>'
+                +'<div class="bubble bot-bubble" style="width:90%;font-size:15px;">'+botContent+'</div>'
                 +'</div>';
             result.insertAdjacentHTML('beforeend',botRow);
             result.scrollTop=99999;
@@ -6882,10 +6882,10 @@
             if(bRes&&!bRes._bwInited){
                 bRes._bwInited=true;
                 bRes.innerHTML='<div style="display:flex;justify-content:flex-start;">'
-                    +'<div class="bubble bot-bubble" style="max-width:85%;font-size:12px;line-height:1.7;">'
+                    +'<div class="bubble bot-bubble" style="max-width:85%;font-size:15px;line-height:1.7;">'
                     +'🚫 <strong>금칙어 조회</strong><br>'
                     +'물품 제목을 입력하면 포함된 금칙어와 해당 게임을 표시합니다.<br>'
-                    +'<span style="opacity:0.6;font-size:11px;">공백은 투명처리 (예: 버 스 → 버스 감지)</span>'
+                    +'<span style="opacity:0.6;font-size:13px;">공백은 투명처리 (예: 버 스 → 버스 감지)</span>'
                     +'</div></div>';
             }
             var bInp=document.getElementById('badwordInput'); if(bInp)setTimeout(function(){bInp.focus();},80);
