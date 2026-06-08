@@ -6690,7 +6690,11 @@
         _loadBadwords(currentMode,function(data){
             var matched=[];
             (data['전체게임']||[]).forEach(function(w){
-                if(_buildFuzzyRe(w).test(title)) matched.push({word:w,games:['전체게임']});
+                if(_buildFuzzyRe(w).test(title)){
+                    var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
+                    if(ex){if(ex.games.indexOf('전체게임')<0)ex.games.push('전체게임');}
+                    else matched.push({word:w,games:['전체게임']});
+                }
             });
             Object.keys(data).forEach(function(game){
                 if(game==='전체게임')return;
@@ -6729,7 +6733,7 @@
                 botContent+='</div>';
             }
             var botRow='<div style="display:flex;justify-content:flex-start;">'
-                +'<div class="bubble bot-bubble" style="max-width:90%;font-size:12px;">'+botContent+'</div>'
+                +'<div class="bubble bot-bubble" style="width:90%;font-size:12px;">'+botContent+'</div>'
                 +'</div>';
             result.insertAdjacentHTML('beforeend',botRow);
             result.scrollTop=99999;
