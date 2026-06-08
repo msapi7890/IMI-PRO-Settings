@@ -54,16 +54,10 @@
     function updateStatusBadge(){
         var badge = document.getElementById('syncStatusBadge');
         var bar = document.getElementById('apiKeyWarningBar');
+        if(badge) badge.style.display = 'none';
         if(CLAUDE_API_KEY){
-            badge.style.display = 'none';
             if(bar) bar.style.display = 'none';
         } else {
-            badge.style.display = 'inline-block';
-            badge.style.borderColor = '#ef4444';
-            badge.style.color = '#ef4444';
-            badge.style.cursor = 'pointer';
-            badge.onclick = checkAppStatus;
-            badge.innerText = '\u26A0 API KEY \uD544\uC694';
             if(bar){
                 bar.style.display = 'block';
                 if(_currentUser && _currentUser.role==='admin'){
@@ -103,13 +97,22 @@
     }
 
     async function checkAppStatus(){
+        async function _saveApiKey(val){
+            try{
+                await _authFetch('config/claude_api_key.json','PUT', val);
+            } catch(e){
+                alert("❌ Firebase 저장 실패: "+e.message);
+                return false;
+            }
+            return true;
+        }
         if(!CLAUDE_API_KEY){
             var pw = await showCustomPrompt("관리자 비밀번호를 입력하세요:", true);
             if(pw !== ADMIN_PW){if(pw !== null)alert("❌ 비밀번호가 틀렸습니다.");return;}
             var key = await showCustomPrompt("Claude API 키 입력 (sk-ant-...):");
             if(key && key.startsWith('sk-ant-')){
-                db.ref('config/claude_api_key').set(key.trim());
-                alert("✅ API 키 저장 완료! 전체 실무자에게 자동 적용됩니다.");
+                var ok = await _saveApiKey(key.trim());
+                if(ok) alert("✅ API 키 저장 완료! 전체 실무자에게 자동 적용됩니다.");
             } else if(key){alert("❌ 올바르지 않은 형식입니다.");}
         } else {
             if(confirm("IMI PRO v49.0\n모드: "+currentMode.toUpperCase()+"\nAPI키: "+CLAUDE_API_KEY.substring(0,12)+"...\n\n[확인] 키 변경  [취소] 닫기")){
@@ -119,12 +122,12 @@
                 if(key === null){ /* 취소 */ }
                 else if(key.trim()===''){
                     if(confirm("API 키를 삭제하시겠습니까?\nAI 기능이 비활성화됩니다.")){
-                        db.ref('config/claude_api_key').set('');
-                        alert("✅ API 키가 삭제됐습니다. 전체 실무자에게 자동 적용됩니다.");
+                        var ok = await _saveApiKey('');
+                        if(ok) alert("✅ API 키가 삭제됐습니다. 전체 실무자에게 자동 적용됩니다.");
                     }
                 } else if(key.trim().startsWith('sk-ant-')){
-                    db.ref('config/claude_api_key').set(key.trim());
-                    alert("✅ API 키 변경 완료! 전체 실무자에게 자동 적용됩니다.");
+                    var ok = await _saveApiKey(key.trim());
+                    if(ok) alert("✅ API 키 변경 완료! 전체 실무자에게 자동 적용됩니다.");
                 } else {alert("❌ 올바르지 않은 형식입니다.");}
             }
         }
