@@ -1129,14 +1129,14 @@
 <main class="flex flex-1 overflow-hidden">
     <aside id="aiAssistPanel" class="side-bar left-bar flex flex-col overflow-hidden w-[var(--sidebar-w)] border-r-2 border-[var(--border-ui)] bg-[var(--bg-card)]" style="flex-shrink:0;min-width:var(--sidebar-w);">
         <!-- 상단 섹션 (게임정보 + 홈페이지, 내용만큼만 차지) -->
-        <div style="flex:0 0 auto;overflow-y:auto;overflow-x:hidden;max-height:38%;">
+        <div style="flex:0 0 auto;overflow-y:auto;overflow-x:hidden;max-height:52%;">
             <div class="assist-inner">
                 <!-- 홈페이지 바로가기 -->
                 <div class="assist-section">
                     <div class="assist-sec-header">🏠 홈페이지 바로가기</div>
                     <div style="padding:8px;display:flex;flex-direction:column;gap:6px;">
-                        <a id="homeLinkMania" href="https://www.itemmania.com/" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:9px;border:2px solid var(--border-ui);text-decoration:none;transition:0.15s;background:var(--bg-card);" onmouseover="this.style.borderColor='var(--mania-color)';this.style.boxShadow='0 0 0 2px var(--mania-color)33'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.boxShadow=''"><img src="https://img1.itemmania.com/images2026/header-logo.png" alt="아이템매니아" style="height:28px;width:auto;object-fit:contain;max-width:100%;"></a>
-                        <a id="homeLinkBay" href="https://www.itembay.com/intro" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:9px;border:2px solid var(--border-ui);text-decoration:none;transition:0.15s;background:var(--bg-card);" onmouseover="this.style.borderColor='var(--bay-color)';this.style.boxShadow='0 0 0 2px var(--bay-color)33'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.boxShadow=''"><img src="https://www.itembay.com/resources/image/main_ib4/logo_top.png" alt="아이템베이" style="height:28px;width:auto;object-fit:contain;max-width:100%;"></a>
+                        <a id="homeLinkMania" href="https://www.itemmania.com/" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:13px 10px;border-radius:9px;border:2px solid var(--border-ui);text-decoration:none;transition:0.15s;background:var(--bg-card);" onmouseover="this.style.borderColor='var(--mania-color)';this.style.boxShadow='0 0 0 2px var(--mania-color)33'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.boxShadow=''"><img src="https://img1.itemmania.com/images2026/header-logo.png" alt="아이템매니아" style="height:34px;width:auto;object-fit:contain;max-width:100%;"></a>
+                        <a id="homeLinkBay" href="https://www.itembay.com/intro" target="_blank" style="display:flex;align-items:center;justify-content:center;padding:13px 10px;border-radius:9px;border:2px solid var(--border-ui);text-decoration:none;transition:0.15s;background:var(--bg-card);" onmouseover="this.style.borderColor='var(--bay-color)';this.style.boxShadow='0 0 0 2px var(--bay-color)33'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.boxShadow=''"><img src="https://www.itembay.com/resources/image/main_ib4/logo_top.png" alt="아이템베이" style="height:34px;width:auto;object-fit:contain;max-width:100%;"></a>
                     </div>
                 </div>
                 <!-- 이용약관 -->
@@ -1149,13 +1149,13 @@
                 <div class="assist-section">
                     <div class="assist-sec-header">🎮 게임정보</div>
                     <div style="padding:8px;">
-                        <a href="https://web-production-60bf5.up.railway.app" target="_blank" class="accent-hover-btn" style="display:block;text-align:center;padding:8px 6px;border-radius:9px;border:2px solid var(--border-ui);font-size:13px;font-weight:900;text-decoration:none;white-space:nowrap;color:var(--text-main);" onmouseover="this.style.background='#3abff8';this.style.color='#fff';this.style.borderColor='#3abff8'" onmouseout="this.style.background='';this.style.color='';this.style.borderColor=''">🎮 게임정보 바로가기 ↗</a>
+                        <a href="https://web-production-60bf5.up.railway.app" target="_blank" class="accent-hover-btn" style="display:block;text-align:center;padding:13px 6px;border-radius:9px;border:2px solid var(--border-ui);font-size:14px;font-weight:900;text-decoration:none;white-space:nowrap;color:var(--text-main);" onmouseover="this.style.background='#3abff8';this.style.color='#fff';this.style.borderColor='#3abff8'" onmouseout="this.style.background='';this.style.color='';this.style.borderColor=''">🎮 게임정보 바로가기 ↗</a>
                     </div>
                 </div>
             </div>
         </div>
         <!-- 메모 패드 (나머지 공간 전부 차지) -->
-        <div style="flex:1;display:flex;flex-direction:column;min-height:120px;overflow:hidden;">
+        <div style="flex:1;display:flex;flex-direction:column;min-height:80px;overflow:hidden;">
             <div class="memo-sec-hdr" style="flex-shrink:0;">
                 <h3 style="font-size:12px;font-weight:900;letter-spacing:0.05em;">📝 내 메모</h3>
                 <button onclick="addMemo()" title="새 메모 추가" style="width:26px;height:26px;border-radius:7px;border:2px solid var(--border-ui);font-size:16px;font-weight:900;transition:0.15s;background:transparent;color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;padding-bottom:1px;" onmouseover="this.style.borderColor='var(--active-focus-color)';this.style.color='var(--active-focus-color)'" onmouseout="this.style.borderColor='var(--border-ui)';this.style.color='var(--text-main)'">+</button>
