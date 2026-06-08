@@ -104,6 +104,9 @@
                 alert("❌ Firebase 저장 실패: "+e.message);
                 return false;
             }
+            // SDK 리스너 응답 여부와 무관하게 즉시 로컬 반영
+            CLAUDE_API_KEY = val;
+            updateStatusBadge();
             return true;
         }
         if(!CLAUDE_API_KEY){
