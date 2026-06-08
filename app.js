@@ -6978,7 +6978,7 @@
                     +'<div style="text-align:center;">'
                     +'<div style="font-size:36px;margin-bottom:8px;">🚫</div>'
                     +'<div style="font-size:15px;font-weight:900;color:var(--text-main);">금칙어 조회</div>'
-                    +'<div style="font-size:12px;margin-top:5px;color:var(--text-sub);font-weight:600;">물품 제목을 아래 입력창에 붙여넣고 조회 버튼을 누르세요.</div>'
+                    +'<div style="font-size:12px;margin-top:5px;color:var(--text-sub);font-weight:600;">물품 제목을 아래 입력창에 입력하고 조회 버튼을 누르세요.</div>'
                     +'</div>'
                     +'<div style="width:100%;max-width:420px;background:var(--bg-body);border:2px solid var(--border-ui);border-radius:14px;padding:16px 18px;">'
                     +'<div style="font-size:11px;font-weight:900;color:#ef4444;letter-spacing:0.8px;margin-bottom:12px;">📋 물품 제목 입력이 어려운 경우</div>'
