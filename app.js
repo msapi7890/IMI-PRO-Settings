@@ -665,8 +665,8 @@
         document.getElementById('manualFilesModal').style.display='none';
     }
     function _mfSwitchTab(n){
-        var cols = {1:'#f59e0b', 2:'#0284c7', 3:'#ef4444'};
-        [1,2,3].forEach(function(i){
+        var cols = {1:'#f59e0b', 2:'#0284c7', 3:'#ef4444', 4:'#8b5cf6'};
+        [1,2,3,4].forEach(function(i){
             var btn = document.getElementById('mfTab'+i);
             if(!btn) return;
             var active = i===n;
@@ -675,10 +675,168 @@
             btn.style.color = active ? cols[i] : '#475569';
         });
         var wrap = document.getElementById('mfContent');
-        if(wrap) wrap.style.padding = n===3 ? '0' : '16px 20px';
+        if(wrap) wrap.style.padding = (n===3||n===4) ? '0' : '16px 20px';
         if(n===1) _renderManualMgmt();
         else if(n===2) _renderManualFiles();
-        else _renderBadwordMgmt();
+        else if(n===3) _renderBadwordMgmt();
+        else _renderGlossaryMgmt();
+    }
+
+    /* ── 용어 관리 탭 ── */
+    var _glossaryCache = {};
+    function _renderGlossaryMgmt(){
+        var wrap=document.getElementById('mfContent');
+        if(!wrap)return;
+        var mode=_mfMgmtMode;
+        wrap.innerHTML='<div style="display:flex;flex-direction:column;height:100%;">'
+            // 상단 툴바
+            +'<div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;gap:6px;align-items:center;">'
+            +'<input id="glossaryMgmtSearch" type="text" placeholder="용어 검색..." oninput="_glossaryMgmtFilter()" style="flex:1;font-size:12px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;">'
+            +'<button onclick="_glossaryMgmtShowAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#8b5cf6;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>'
+            +'</div>'
+            // 추가 폼
+            +'<div id="glossaryAddForm" style="display:none;padding:10px;border-bottom:1px solid #334155;background:#0f172a;gap:6px;flex-direction:column;">'
+            +'<div style="display:flex;gap:6px;">'
+            +'<select id="glossaryAddGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
+            +'<input id="glossaryAddGameNew" type="text" placeholder="새 게임명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
+            +'</div>'
+            +'<input id="glossaryAddTerm" type="text" placeholder="용어 (예: 버스, 대리, 밀대)" style="padding:6px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">'
+            +'<textarea id="glossaryAddDef" rows="3" placeholder="정의 (예: 강한 유저가 약한 유저를 파티에 태워 레이드를 대신 클리어해주는 서비스)" style="padding:8px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>'
+            +'<div style="display:flex;gap:6px;justify-content:flex-end;">'
+            +'<button onclick="_glossaryDoAdd()" style="padding:0 18px;height:32px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;">등록</button>'
+            +'<button onclick="_glossaryHideAdd()" style="padding:0 10px;height:32px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;">취소</button>'
+            +'</div>'
+            +'</div>'
+            // 목록
+            +'<div id="glossaryMgmtList" style="flex:1;overflow-y:auto;padding:10px 14px;"></div>'
+            +'</div>';
+        _glossaryMgmtLoad();
+    }
+
+    function _glossaryMgmtLoad(){
+        var mode=_mfMgmtMode;
+        var list=document.getElementById('glossaryMgmtList');
+        if(!list)return;
+        list.innerHTML='<div style="text-align:center;padding:20px;opacity:0.4;font-size:12px;">로딩 중...</div>';
+        db.ref('/imi_glossary/'+mode).once('value',function(snap){
+            _glossaryCache[mode]=snap.val()||{};
+            _glossaryMgmtRender();
+        });
+    }
+
+    function _glossaryMgmtRender(){
+        var mode=_mfMgmtMode;
+        var data=_glossaryCache[mode]||{};
+        var filter=(document.getElementById('glossaryMgmtSearch')||{}).value||'';
+        filter=filter.toLowerCase().trim();
+        var list=document.getElementById('glossaryMgmtList');
+        if(!list)return;
+        var games=Object.keys(data).sort(function(a,b){return a.localeCompare(b,'ko');});
+        var html='';
+        var total=0;
+        games.forEach(function(game){
+            var terms=data[game]||{};
+            var keys=Object.keys(terms).sort(function(a,b){return a.localeCompare(b,'ko');});
+            var filtered=filter?keys.filter(function(k){
+                return k.toLowerCase().indexOf(filter)>=0||(terms[k]||'').toLowerCase().indexOf(filter)>=0;
+            }):keys;
+            if(!filtered.length)return;
+            total+=filtered.length;
+            var gEsc=escHtml(game).replace(/\'/g,"\\'");
+            html+='<div style="margin-bottom:14px;">';
+            html+='<div style="font-size:11px;font-weight:900;color:#8b5cf6;padding:4px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
+                +'<span>🎮 '+escHtml(game)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
+                +'<button onclick="_glossaryAddForGame(\''+gEsc+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;cursor:pointer;">+ 추가</button>'
+                +'</div>';
+            filtered.forEach(function(term){
+                var def=terms[term]||'';
+                var tEsc=escHtml(term).replace(/\'/g,"\\'");
+                html+='<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                    +'<span style="flex-shrink:0;min-width:90px;font-size:12px;font-weight:900;color:var(--text-main);">'+escHtml(term)+'</span>'
+                    +'<span style="flex:1;font-size:12px;color:var(--text-sub);line-height:1.6;">'+escHtml(def)+'</span>'
+                    +'<div style="display:flex;gap:3px;flex-shrink:0;">'
+                    +'<button onclick="_glossaryEdit(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;">수정</button>'
+                    +'<button onclick="_glossaryDelete(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;">삭제</button>'
+                    +'</div>'
+                    +'</div>';
+            });
+            html+='</div>';
+        });
+        if(!html) html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 용어가 없습니다.')+'</div>';
+        else html='<div style="font-size:11px;color:var(--text-sub);margin-bottom:8px;font-weight:700;">총 '+total+'개</div>'+html;
+        list.innerHTML=html;
+    }
+
+    function _glossaryMgmtFilter(){ _glossaryMgmtRender(); }
+
+    function _glossaryMgmtShowAdd(){
+        var form=document.getElementById('glossaryAddForm');
+        var sel=document.getElementById('glossaryAddGame');
+        var mode=_mfMgmtMode;
+        var games=Object.keys(_glossaryCache[mode]||{}).sort(function(a,b){return a.localeCompare(b,'ko');});
+        sel.innerHTML='<option value="">게임 선택...</option>'
+            +games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
+            +'<option value="__new__">+ 새 게임</option>';
+        sel.onchange=function(){
+            document.getElementById('glossaryAddGameNew').style.display=sel.value==='__new__'?'block':'none';
+        };
+        document.getElementById('glossaryAddGameNew').style.display='none';
+        form.style.display='flex';
+        document.getElementById('glossaryAddTerm').focus();
+    }
+
+    function _glossaryHideAdd(){
+        document.getElementById('glossaryAddForm').style.display='none';
+        document.getElementById('glossaryAddTerm').value='';
+        document.getElementById('glossaryAddDef').value='';
+        document.getElementById('glossaryAddGameNew').style.display='none';
+    }
+
+    function _glossaryAddForGame(game){
+        _glossaryMgmtShowAdd();
+        var sel=document.getElementById('glossaryAddGame');
+        for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===game){sel.selectedIndex=i;break;}}
+        document.getElementById('glossaryAddTerm').focus();
+    }
+
+    async function _glossaryDoAdd(){
+        var sel=document.getElementById('glossaryAddGame');
+        var ni=document.getElementById('glossaryAddGameNew');
+        var game=sel.value==='__new__'?ni.value.trim():sel.value;
+        var term=(document.getElementById('glossaryAddTerm').value||'').trim();
+        var def=(document.getElementById('glossaryAddDef').value||'').trim();
+        if(!game||game==='게임 선택...'){ alert('게임을 선택하세요.'); return; }
+        if(!term){ alert('용어를 입력하세요.'); return; }
+        if(!def){ alert('정의를 입력하세요.'); return; }
+        try{
+            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','PUT',def);
+            _glossaryCache[_mfMgmtMode]=null;
+            _glossaryHideAdd();
+            _glossaryMgmtLoad();
+        }catch(e){ alert('저장 실패: '+e.message); }
+    }
+
+    async function _glossaryEdit(game, term){
+        var data=_glossaryCache[_mfMgmtMode]||{};
+        var oldDef=(data[game]||{})[term]||'';
+        var newDef=prompt('정의 수정 ('+game+' / '+term+'):', oldDef);
+        if(newDef===null||newDef===oldDef)return;
+        newDef=newDef.trim();
+        if(!newDef){ alert('정의를 입력하세요.'); return; }
+        try{
+            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','PUT',newDef);
+            _glossaryCache[_mfMgmtMode]=null;
+            _glossaryMgmtLoad();
+        }catch(e){ alert('수정 실패: '+e.message); }
+    }
+
+    async function _glossaryDelete(game, term){
+        if(!confirm('"'+term+'" 용어를 삭제하시겠습니까?'))return;
+        try{
+            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','DELETE');
+            _glossaryCache[_mfMgmtMode]=null;
+            _glossaryMgmtLoad();
+        }catch(e){ alert('삭제 실패: '+e.message); }
     }
 
     function _renderBadwordMgmt(){
@@ -5076,7 +5234,9 @@
             + cats.map(function(c){
                 return '<button style="'+btnStyle+'" onmouseover="this.style.background=\'var(--border-ui)\'" onmouseout="this.style.background=\'none\'" onclick="_catMenuSelect(\''+c.replace(/'/g,"\\'")+'\')">'
                     + escHtml(c) + '</button>';
-            }).join('');
+            }).join('')
+            + '<div style="border-top:1px solid var(--border-ui);margin:5px 0;"></div>'
+            + '<button style="'+btnStyle+'color:#8b5cf6;font-weight:900;" onmouseover="this.style.background=\'var(--border-ui)\'" onmouseout="this.style.background=\'none\'" onclick="_showGlossaryView()">📖 비거래 용어정리</button>';
         popup.style.display = 'block';
         // 팝업 외부 클릭 시 닫기
         setTimeout(function(){
@@ -5098,6 +5258,63 @@
         _searchByCategory(cat, botD, idx);
         document.getElementById('chatBox').scrollTop = 99999;
     }
+    function _showGlossaryView(){
+        document.getElementById('catMenuPopup').style.display='none';
+        var lid='L'+Date.now();
+        addMsg('','bot',lid);
+        var botD=document.getElementById(lid).querySelector('.bubble');
+        botD.innerHTML='<span style="opacity:0.5;font-size:12px;">용어 목록 로딩 중...</span>';
+        document.getElementById('chatBox').scrollTop=99999;
+        db.ref('/imi_glossary/'+currentMode).once('value',function(snap){
+            var raw=snap.val()||{};
+            _renderGlossaryView(botD, raw);
+            document.getElementById('chatBox').scrollTop=99999;
+        });
+    }
+
+    function _renderGlossaryView(container, raw, filterStr){
+        var filter=(filterStr||'').toLowerCase().trim();
+        var games=Object.keys(raw).sort(function(a,b){return a.localeCompare(b,'ko');});
+        var html='<div style="display:flex;flex-direction:column;gap:10px;">';
+        // 검색창
+        html+='<div style="position:sticky;top:0;z-index:5;background:var(--bg-body);padding-bottom:6px;">'
+            +'<input id="glossarySearch" type="text" placeholder="🔍 용어 검색..." value="'+escHtml(filterStr||'')+'" '
+            +'oninput="_glossaryFilter(this)" '
+            +'style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:1.5px solid var(--border-ui);background:var(--bg-sub);color:var(--text-main);font-size:13px;outline:none;">'
+            +'</div>';
+        var totalCount=0;
+        var bodyHtml='';
+        games.forEach(function(game){
+            var terms=raw[game]||{};
+            var keys=Object.keys(terms).sort(function(a,b){return a.localeCompare(b,'ko');});
+            var filtered=filter?keys.filter(function(k){
+                return k.toLowerCase().indexOf(filter)>=0||(terms[k]||'').toLowerCase().indexOf(filter)>=0;
+            }):keys;
+            if(!filtered.length)return;
+            totalCount+=filtered.length;
+            bodyHtml+='<div style="margin-bottom:6px;">';
+            bodyHtml+='<div style="font-size:11px;font-weight:900;color:#8b5cf6;padding:4px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:6px;">🎮 '+escHtml(game)+'</div>';
+            filtered.forEach(function(term){
+                var def=terms[term]||'';
+                bodyHtml+='<div style="display:flex;gap:10px;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                    +'<span style="flex-shrink:0;min-width:90px;font-size:12px;font-weight:900;color:var(--text-main);">'+escHtml(term)+'</span>'
+                    +'<span style="font-size:12px;color:var(--text-sub);line-height:1.6;">'+escHtml(def)+'</span>'
+                    +'</div>';
+            });
+            bodyHtml+='</div>';
+        });
+        if(!bodyHtml) bodyHtml='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 용어가 없습니다.')+'</div>';
+        else html+='<div style="font-size:11px;color:var(--text-sub);font-weight:700;">총 '+totalCount+'개</div>';
+        html+=bodyHtml+'</div>';
+        container.innerHTML=html;
+        container._glossaryRaw=raw;
+    }
+    function _glossaryFilter(inp){
+        var container=inp.closest('.bubble');
+        if(!container||!container._glossaryRaw)return;
+        _renderGlossaryView(container,container._glossaryRaw,inp.value);
+    }
+
     function _searchByCategory(cat, botD, idx){
         var allTitles = [];
 
