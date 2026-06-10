@@ -7498,11 +7498,12 @@
     }
 
     function _bwAddTarget(btn, game){
-        var section = btn.closest('.bw-game-section');
+        // btn → 버튼 div → 헤더 div → game-section div
+        var section = (btn.closest && btn.closest('.bw-game-section')) || (btn.parentNode && btn.parentNode.parentNode);
         if(!section) return;
         var existing = section.querySelector('.bw-target-inline-wrap');
         if(existing){ existing.remove(); return; }
-        var header = section.querySelector('.bw-game-header');
+        var header = section.querySelector('.bw-game-header') || (btn.parentNode);
 
         var wrap = document.createElement('div');
         wrap.className = 'bw-target-inline-wrap';
@@ -7549,7 +7550,7 @@
     }
 
     function _bwDeleteTarget(btn, game, target){
-        var section = btn.closest('.bw-target-section');
+        var section = (btn.closest && btn.closest('.bw-target-section')) || (btn.parentNode && btn.parentNode.parentNode);
         if(!section) return;
         var existing = section.querySelector('.bw-del-confirm');
         if(existing){ existing.remove(); return; }
