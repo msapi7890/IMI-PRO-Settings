@@ -7286,22 +7286,24 @@
             var games=Object.keys(data).sort(function(a,b){ return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko'); });
             var html='';
             var total=0;
-            games.forEach(function(game){
+            games.forEach(function(game, gi){
                 var targetMap=data[game]||{};
                 var targets=Object.keys(targetMap).sort(function(a,b){return a==='전체'?-1:b==='전체'?1:a.localeCompare(b,'ko');});
                 var gameHtml='';
                 var gameCount=0;
-                targets.forEach(function(target){
+                var gsId='bwGS'+gi;
+                targets.forEach(function(target, ti){
                     var words=targetMap[target]||[];
                     var filtered=filter?words.filter(function(w){return w.toLowerCase().indexOf(filter)>=0;}):words;
                     if(!filtered.length)return;
                     gameCount+=filtered.length;
                     var gEsc=escHtml(game).replace(/\'/g,"\\'");
                     var tEsc=escHtml(target).replace(/\'/g,"\\'");
-                    gameHtml+='<div class="bw-target-section" style="margin-bottom:8px;margin-left:8px;">';
+                    var tsId='bwTS'+gi+'_'+ti;
+                    gameHtml+='<div id="'+tsId+'" style="margin-bottom:8px;margin-left:8px;">';
                     gameHtml+='<div style="font-size:10px;font-weight:800;color:#fbbf24;padding:3px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
                         +'<span>🎯 '+escHtml(target)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                        +'<button onclick="_bwDeleteTarget(this,\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
+                        +'<button onclick="_bwDeleteTarget(\''+tsId+'\',\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
                         +'</div>';
                     filtered.forEach(function(word){
                         var realIdx=words.indexOf(word);
@@ -7316,11 +7318,11 @@
                 if(!gameHtml)return;
                 total+=gameCount;
                 var gEsc2=escHtml(game).replace(/\'/g,"\\'");
-                html+='<div class="bw-game-section" style="margin-bottom:14px;">';
-                html+='<div class="bw-game-header" style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
+                html+='<div id="'+gsId+'" style="margin-bottom:14px;">';
+                html+='<div style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
                     +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+gameCount+')</span></span>'
                     +'<div style="display:flex;gap:4px;">'
-                    +'<button onclick="_bwAddTarget(this,\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
+                    +'<button onclick="_bwAddTarget(\''+gsId+'\',\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
                     +'<button onclick="_bwQuickAdd(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
                     +'</div>'
                     +'</div>';
@@ -7497,13 +7499,12 @@
         }catch(e){ alert('수정 실패: '+e.message); }
     }
 
-    function _bwAddTarget(btn, game){
-        // btn → 버튼 div → 헤더 div → game-section div
-        var section = (btn.closest && btn.closest('.bw-game-section')) || (btn.parentNode && btn.parentNode.parentNode);
+    function _bwAddTarget(sectionId, game){
+        var section = document.getElementById(sectionId);
         if(!section) return;
         var existing = section.querySelector('.bw-target-inline-wrap');
         if(existing){ existing.remove(); return; }
-        var header = section.querySelector('.bw-game-header') || (btn.parentNode);
+        var header = section.firstElementChild;
 
         var wrap = document.createElement('div');
         wrap.className = 'bw-target-inline-wrap';
@@ -7549,8 +7550,8 @@
         };
     }
 
-    function _bwDeleteTarget(btn, game, target){
-        var section = (btn.closest && btn.closest('.bw-target-section')) || (btn.parentNode && btn.parentNode.parentNode);
+    function _bwDeleteTarget(sectionId, game, target){
+        var section = document.getElementById(sectionId);
         if(!section) return;
         var existing = section.querySelector('.bw-del-confirm');
         if(existing){ existing.remove(); return; }
