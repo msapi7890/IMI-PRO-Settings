@@ -393,7 +393,8 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   <div class="nav-sec">매뉴얼 사용</div>
   <a href="#sec-manual">📚 매뉴얼 검색</a>
   <a href="#sec-imgview">🖼 이미지 뷰어</a>
-  <a href="#sec-qna">❓ 고객 예상 QNA</a>
+  <a href="#sec-qna">❓ QNA 생성</a>
+  <a href="#sec-badword">🕵️ 금칙어 조회</a>
   <div class="nav-sec">봇 운영</div>
   <a href="#sec-bot">🤖 봇 시작/중지</a>
   <a href="#sec-watch">🛒 비거래 알림</a>
@@ -562,7 +563,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       <div class="r-chat-tabs">
         <div class="r-tab-row">
           <div class="r-ctab active">📚 매뉴얼</div>
-          <div class="r-ctab">❓ 고객 예상 QNA</div>
+          <div class="r-ctab">🕵️ 금칙어</div>
         </div>
         <div class="r-tab-row">
           <div class="r-modebtn mania">아이템매니아 (MANIA)</div>
@@ -673,7 +674,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
       <div class="r-chat-tabs">
         <div class="r-tab-row">
           <div class="r-ctab active">📚 매뉴얼</div>
-          <div class="r-ctab">❓ 고객 예상 QNA</div>
+          <div class="r-ctab">🕵️ 금칙어</div>
         </div>
         <div class="r-tab-row">
           <div class="r-modebtn mania">아이템매니아 (MANIA)</div>
@@ -1033,7 +1034,7 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   <div style="background:#0f172a;border-bottom:1px solid #334155;padding:6px 10px;display:flex;flex-direction:column;gap:5px;">
     <div style="display:flex;gap:5px;">
       <div class="r-ctab active" style="font-size:9.5px;">📚 매뉴얼</div>
-      <div class="r-ctab" style="font-size:9.5px;">❓ 고객 예상 QNA</div>
+      <div class="r-ctab" style="font-size:9.5px;">🕵️ 금칙어</div>
     </div>
     <div style="display:flex;gap:5px;">
       <div style="flex:1;padding:5px;border-radius:7px;border:2px solid #3abff8;background:rgba(58,191,248,.1);color:#3abff8;font-size:9px;font-weight:900;text-align:center;">아이템매니아 (MANIA)</div>
@@ -1081,7 +1082,10 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
     <div class="r-kw-label">이 항목에 등록된 키워드로 검색할 수 있어요</div>
     <div class="r-kw-val">키워드1, 키워드2 (쉼표로 여러 개 저장 가능)</div>
   </div>
-  <div style="padding:6px 12px 4px;border-top:1px solid #334155;">
+  <div style="padding:6px 12px 8px;border-top:1px solid #334155;">
+    <div style="background:none;border:1.5px solid #3abff8;border-radius:7px;padding:7px 0;font-size:10px;font-weight:900;color:#3abff8;text-align:center;cursor:pointer;">❓ QNA 생성</div>
+  </div>
+  <div style="padding:0 12px 4px;">
     <div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:6px;">▲ 관련 공지 (5건 · 최신순)</div>
     <div class="r-notice-cards" style="padding:0;">
       <div class="r-notice-link">[매니아] 네이버페이 서비스 점검 <span class="r-notice-link-date">2026. 4. 17.</span></div>
@@ -1322,53 +1326,97 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
 <div class="tip">베이 모드는 최대 3열(3×n) 그리드로 표시되며, 각 이미지 상단 중앙에 번호가 표시됩니다.</div>
 </section>
 
-<!-- ═══ 고객 예상 QNA ═══ -->
+<!-- ═══ QNA 생성 ═══ -->
 <section class="section" id="sec-qna">
-<h2>❓ 고객 예상 QNA</h2>
-<p><strong>❓ 고객 예상 QNA</strong> 탭에서는 선택한 매뉴얼 항목을 기반으로 고객이 물어볼 수 있는 예상 질문과 답변을 자동 생성합니다.</p>
-<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(58,191,248,.07);border:1.5px solid rgba(58,191,248,.25);border-radius:9px;padding:10px 16px;margin:10px 0;">
-  <span style="font-size:12px;color:#94a3b8;">화면별 상세 설명은 <strong style="color:#e2e8f0;">매뉴얼 가이드</strong>에서 확인하세요.</span>
-  <button onclick="switchGuideTab('manual')" style="padding:6px 16px;border-radius:7px;border:1.5px solid #3abff8;background:rgba(58,191,248,.12);color:#3abff8;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;">📚 매뉴얼 가이드 보기 →</button>
-</div>
+<h2>❓ QNA 생성</h2>
+<p>매뉴얼 항목을 검색한 뒤 결과 하단에 나타나는 <strong>❓ QNA 생성</strong> 버튼을 누르면, 해당 항목을 기반으로 고객이 물어볼 수 있는 예상 질문과 답변을 AI가 자동으로 만들어줍니다.</p>
+<div class="warn" style="margin:10px 0;">⚠️ 별도 탭이 아닙니다! <strong>📚 매뉴얼</strong> 탭에서 항목을 먼저 검색한 뒤 결과 아래에 버튼이 나타납니다.</div>
 
 <div class="flow">
-  <div class="flow-box highlight">❓ 고객 예상 QNA 탭</div>
+  <div class="flow-box highlight">📚 매뉴얼 탭</div>
   <div class="flow-arr">→</div>
-  <div class="flow-box">항목 선택 (드롭다운)</div>
+  <div class="flow-box">키워드 검색 → 항목 클릭</div>
+  <div class="flow-arr">→</div>
+  <div class="flow-box highlight">❓ QNA 생성 버튼 클릭</div>
   <div class="flow-arr">→</div>
   <div class="flow-box result">Q&amp;A 자동 생성</div>
 </div>
 
 <div class="mockup">
-  <div class="mockup-lbl">고객 예상 QNA</div>
+  <div class="mockup-lbl">매뉴얼 검색 결과 → QNA 생성 버튼 위치</div>
+  <div style="background:#0f172a;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+    <div style="background:#111827;border:1.5px solid #1e293b;border-radius:8px;padding:10px 12px;">
+      <div style="font-size:10px;font-weight:900;color:#e2e8f0;margin-bottom:6px;">📋 네이버페이 충전</div>
+      <div style="font-size:9px;color:#64748b;">매뉴얼 내용 / 이미지</div>
+    </div>
+    <div style="background:none;border:1.5px solid #3abff8;border-radius:7px;padding:8px 0;font-size:10px;font-weight:900;color:#3abff8;text-align:center;">❓ QNA 생성</div>
+    <div style="font-size:9px;color:#475569;padding:2px 4px;">🔑 키워드: 충전, 네이버페이, 포인트</div>
+    <div style="font-size:9px;color:#475569;">▲ 관련 공지 (3건 · 최신순)</div>
+  </div>
+</div>
+<div class="tip">매뉴얼 이미지 바로 아래에 ❓ QNA 생성 버튼이 있고, 그 아래로 키워드와 관련 공지가 표시됩니다.</div>
+<div class="tip">사이트 선택(매니아/베이)에 따라 각 사이트에 맞는 경로와 내용으로 QNA가 생성됩니다.</div>
+</section>
+
+<!-- ═══ 금칙어 조회 ═══ -->
+<section class="section" id="sec-badword">
+<h2>🕵️ 금칙어 조회</h2>
+<p>물품 제목에 등록된 <strong>금칙어</strong>가 포함되어 있는지 바로 확인할 수 있는 탭입니다. 매니아/베이 모드에 따라 각각 다른 금칙어 목록이 적용됩니다.</p>
+
+<div class="steps">
+  <div class="step"><div class="snum">1</div><div class="sbody">상단 탭에서 <strong>🕵️ 금칙어</strong> 탭 클릭</div></div>
+  <div class="step"><div class="snum">2</div><div class="sbody">입력창에 <strong>물품 제목을 그대로</strong> 복붙하거나 입력</div></div>
+  <div class="step"><div class="snum">3</div><div class="sbody"><span class="ui-btn" style="font-size:10px;padding:2px 10px;">조회</span> 버튼 클릭 (또는 Enter)</div></div>
+  <div class="step"><div class="snum">4</div><div class="sbody">금칙어가 있으면 <strong>어떤 단어</strong>인지 + <strong>어느 게임 카테고리</strong>인지 표시</div></div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-lbl">금칙어 조회 탭</div>
   <div style="background:#0f172a;border-bottom:1px solid #334155;padding:6px 10px;display:flex;flex-direction:column;gap:5px;">
     <div style="display:flex;gap:5px;">
       <div class="r-ctab" style="font-size:9.5px;">📚 매뉴얼</div>
-      <div class="r-ctab active" style="font-size:9.5px;">❓ 고객 예상 QNA</div>
+      <div class="r-ctab active" style="font-size:9.5px;">🕵️ 금칙어</div>
     </div>
     <div style="display:flex;gap:5px;">
       <div style="flex:1;padding:5px;border-radius:7px;border:2px solid #3abff8;background:rgba(58,191,248,.1);color:#3abff8;font-size:9px;font-weight:900;text-align:center;">아이템매니아 (MANIA)</div>
       <div style="flex:1;padding:5px;border-radius:7px;border:1.5px solid #334155;color:#64748b;font-size:9px;font-weight:900;text-align:center;">아이템베이 (BAY)</div>
     </div>
   </div>
-  <div style="background:#0f172a;padding:10px 12px;">
-    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;">
-      <select style="flex:1;background:#1e293b;border:1.5px solid #334155;border-radius:7px;padding:5px 8px;font-size:10px;color:#cbd5e1;"><option>네이버페이 충전</option></select>
-      <div style="background:#3abff8;color:#0f172a;border-radius:7px;padding:5px 12px;font-size:10px;font-weight:900;white-space:nowrap;">■ 답변 맞춤형 생성</div>
+  <div style="background:#0f172a;flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+    <div style="background:#0a1628;border:1.5px solid #1e3a5f;border-radius:10px;padding:9px 12px;align-self:flex-end;max-width:90%;font-size:10px;color:#cbd5e1;">+5강 버 스지원 갑니다!! PVPPVE 세팅</div>
+    <div style="background:#111827;border:1.5px solid #ef4444;border-radius:10px;padding:10px 12px;max-width:90%;font-size:10px;color:#cbd5e1;">
+      <div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:4px;">🚫 금칙어 2개 감지됨</div>
+      <div style="margin-bottom:2px;"><span style="background:#ef4444;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:900;">버스</span> <span style="font-size:9px;color:#64748b;">· 로스트아크</span></div>
+      <div><span style="background:#ef4444;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:900;">PVP</span> <span style="font-size:9px;color:#64748b;">· 전체 게임</span></div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <div style="background:#0a1f10;border:1.5px solid #22c55e;border-radius:8px;padding:9px 11px;">
-        <div style="font-size:10px;font-weight:900;color:#4ade80;margin-bottom:3px;">Q. 네이버페이로 어떻게 충전하나요?</div>
-        <div style="font-size:10px;color:#94a3b8;line-height:1.7;">마이름 &gt; 마일리지 충전 &gt; 간편결제 충전 &gt; 네이버페이 선택 후 충전 금액을 입력하세요.</div>
-      </div>
-      <div style="background:#0a1f10;border:1.5px solid #22c55e;border-radius:8px;padding:9px 11px;">
-        <div style="font-size:10px;font-weight:900;color:#4ade80;margin-bottom:3px;">Q. 충전 취소가 가능한가요?</div>
-        <div style="font-size:10px;color:#94a3b8;line-height:1.7;">결제일로부터 최대 1년 이내 취소 가능합니다.</div>
-      </div>
+  </div>
+  <div style="padding:8px;border-top:1px solid #334155;display:flex;gap:6px;">
+    <div style="flex:1;background:#1e293b;border:1.5px solid #334155;border-radius:16px;padding:7px 14px;font-size:10px;color:#64748b;">물품 제목을 그대로 입력...</div>
+    <div style="background:#ef4444;color:#fff;border-radius:10px;padding:7px 14px;font-size:10px;font-weight:900;white-space:nowrap;">조회</div>
+  </div>
+</div>
+
+<h3>감지 기준</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;font-size:12px;">
+  <div style="background:var(--bg2);border:1.5px solid #22c55e;border-radius:8px;padding:10px 12px;">
+    <div style="font-size:10px;font-weight:900;color:#22c55e;margin-bottom:4px;">✅ 감지됨</div>
+    <div style="font-size:11px;line-height:1.8;color:#94a3b8;">
+      <strong style="color:#e2e8f0;">버스</strong> → 그대로<br>
+      <strong style="color:#e2e8f0;">버 스</strong> → 띄어쓰기 무시하고 감지<br>
+      <strong style="color:#e2e8f0;">버&nbsp;&nbsp;스</strong> → 여러 칸 공백도 무시
+    </div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid #ef4444;border-radius:8px;padding:10px 12px;">
+    <div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:4px;">❌ 감지 안 됨</div>
+    <div style="font-size:11px;line-height:1.8;color:#94a3b8;">
+      <strong style="color:#e2e8f0;">버.스</strong> → 특수문자 있으면 통과<br>
+      <strong style="color:#e2e8f0;">버/스</strong> → 슬래시도 통과<br>
+      <strong style="color:#e2e8f0;">버_스</strong> → 밑줄도 통과
     </div>
   </div>
 </div>
-<div class="tip">사이트 선택(매니아/베이)에 따라 각 사이트에 맞는 경로와 내용으로 QNA가 생성됩니다.</div>
+<div class="tip">공백(띄어쓰기)만 무시하고 감지합니다. <strong>점·슬래시 등 특수문자가 중간에 있으면 금칙어로 잡지 않습니다.</strong></div>
+<div class="tip">금칙어 목록은 매니아/베이 각각 별도로 관리됩니다. 파일 매뉴얼 → 🕵️ 금칙어 관리 탭에서 추가·수정 가능합니다. (부관리자 이상)</div>
 </section>
 
 
@@ -2187,6 +2235,20 @@ hr{border:none;border-top:1px solid var(--border);margin:20px 0;}
   <div class="step"><div class="snum">3</div><div class="sbody">모든 접속자 화면에 즉시 표시됨</div></div>
 </div>
 <div class="tip">▲/▼ 버튼으로 긴급공지 바를 접거나 펼칠 수 있습니다. 개인 설정으로 저장됩니다.</div>
+
+<h3>📌 오른쪽 NOTICE 패널 — 중복 공지 자동 감지</h3>
+<p>오른쪽 패널의 <span class="ui-btn" style="font-size:10px;padding:2px 8px;background:#0284c7;border-color:#0284c7;color:#fff;">글쓰기</span> 버튼으로 공지를 등록할 때, <strong>최근 1개월 이내 비슷한 공지가 이미 있으면 자동으로 감지</strong>합니다.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;font-size:12px;">
+  <div style="background:var(--bg2);border:1.5px solid #ef4444;border-radius:8px;padding:10px 12px;">
+    <div style="font-size:10px;font-weight:900;color:#ef4444;margin-bottom:4px;">🚫 완전 동일 공지 (유사도 95% 이상)</div>
+    <div style="font-size:11px;color:#94a3b8;line-height:1.7;">등록이 <strong style="color:#e2e8f0;">차단</strong>됩니다.<br>기존 공지가 팝업으로 표시되며<br><strong>취소 버튼만</strong> 선택 가능합니다.</div>
+  </div>
+  <div style="background:var(--bg2);border:1.5px solid #fbbf24;border-radius:8px;padding:10px 12px;">
+    <div style="font-size:10px;font-weight:900;color:#fbbf24;margin-bottom:4px;">⚠️ 유사 공지 (유사도 60~95%)</div>
+    <div style="font-size:11px;color:#94a3b8;line-height:1.7;">기존 공지와 <strong style="color:#e2e8f0;">나란히 비교</strong>하는 팝업이 뜹니다.<br><strong>그래도 등록</strong> 또는 <strong>취소</strong>를 선택할 수 있습니다.</div>
+  </div>
+</div>
+<div class="tip">공지 수정(편집) 시에는 중복 검사를 진행하지 않습니다. 신규 등록 시에만 작동합니다.</div>
 </section>
 
 <!-- ═══ 15. 파일 매뉴얼 ═══ -->
@@ -2364,7 +2426,8 @@ window.addEventListener('scroll', function(){
     {id:'sec-member',  label:'👥 멤버 확인'},
     {id:'sec-manual',  label:'📚 매뉴얼 검색'},
     {id:'sec-imgview', label:'🖼 이미지 뷰어'},
-    {id:'sec-qna',     label:'❓ 고객 예상 QNA'},
+    {id:'sec-qna',     label:'❓ QNA 생성'},
+    {id:'sec-badword', label:'🕵️ 금칙어 조회'},
     {id:'sec-bot',     label:'🤖 봇 시작/중지'},
     {id:'sec-watch',   label:'🛒 비거래 알림'},
     {id:'sec-fraud',   label:'🚨 사기글 알림'},
@@ -2389,6 +2452,7 @@ window.addEventListener('scroll', function(){
     'sec-manual':  '',
     'sec-imgview': '',
     'sec-qna':     '',
+    'sec-badword': '',
     'sec-bot':     '',
     'sec-watch':   '',
     'sec-fraud':   '',

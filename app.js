@@ -2740,6 +2740,8 @@
         await _authFetch('manual_page_ranges/'+mode+'/'+key+'.json', 'DELETE');
         // 챗봇 검색 인덱스에서도 삭제 (여기 안 지우면 검색에 계속 뜸)
         await _authFetch('imi_manual_index/'+mode+'/'+normalizeKey(title)+'.json', 'DELETE');
+        // BAY는 HTML 내장 데이터와 병합 방식이라 삭제 마커 저장 (앱 재시작 후에도 반영)
+        await _authFetch('imi_manual_deleted/'+mode+'/'+normalizeKey(title)+'.json', 'PUT', true);
         // 메모리 캐시 즉시 반영 (페이지 새로고침 없이 검색에서 바로 사라짐)
         var idx = mode==='bay' ? BAY_MANUAL_INDEX : MANUAL_INDEX;
         if(idx && idx[title] !== undefined) delete idx[title];
@@ -2928,6 +2930,20 @@
                 });
                 // 교체가 아닌 병합: 기본 내장 데이터(1-1. 패턴) 위에 Firebase 항목 추가
                 BAY_MANUAL_INDEX = Object.assign({}, BAY_MANUAL_INDEX, _bi);
+                _buildBayCategoryGroups();
+            }
+            // 삭제 마커 적용: 내장 데이터에 있었지만 삭제된 항목을 BAY/MANIA 모두에서 제거
+            var delM = await _authFetch('imi_manual_deleted/mania.json');
+            var delB = await _authFetch('imi_manual_deleted/bay.json');
+            if(delM && typeof delM === 'object'){
+                Object.keys(delM).forEach(function(dk){
+                    Object.keys(MANUAL_INDEX).forEach(function(t){ if(normalizeKey(t)===dk) delete MANUAL_INDEX[t]; });
+                });
+            }
+            if(delB && typeof delB === 'object'){
+                Object.keys(delB).forEach(function(dk){
+                    Object.keys(BAY_MANUAL_INDEX).forEach(function(t){ if(normalizeKey(t)===dk) delete BAY_MANUAL_INDEX[t]; });
+                });
                 _buildBayCategoryGroups();
             }
             if(pR  && typeof pR  === 'object') PAGE_RANGES      = pR;
