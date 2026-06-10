@@ -6988,11 +6988,14 @@
         db.ref('/imi_badwords/'+mode).once('value',function(snap){
             var raw=snap.val()||{};
             var out={};
+            if(!_bwArrayGames[mode]) _bwArrayGames[mode]=new Set();
             Object.keys(raw).forEach(function(game){
                 if(Array.isArray(raw[game])){
                     out[game]={'전체':raw[game]};
+                    _bwArrayGames[mode].add(game);
                 } else {
                     out[game]=raw[game]||{};
+                    _bwArrayGames[mode].delete(game);
                 }
             });
             _badwordsCache[mode]=out;
@@ -7252,7 +7255,8 @@
     }
 
     /* ── 금칙어 목록 관리 ── */
-    var _bwData = {}; // 현재 로드된 데이터 (게임명 → [단어...])
+    var _bwData = {};
+    var _bwArrayGames = {}; // mode → Set<game> : Firebase에 배열로 저장된 게임명 추적
 
     function _bwSwitchTab(tab){
         var isQuery = tab==='query';
@@ -7294,10 +7298,10 @@
                     gameCount+=filtered.length;
                     var gEsc=escHtml(game).replace(/\'/g,"\\'");
                     var tEsc=escHtml(target).replace(/\'/g,"\\'");
-                    gameHtml+='<div style="margin-bottom:8px;margin-left:8px;">';
+                    gameHtml+='<div class="bw-target-section" style="margin-bottom:8px;margin-left:8px;">';
                     gameHtml+='<div style="font-size:10px;font-weight:800;color:#fbbf24;padding:3px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
                         +'<span>🎯 '+escHtml(target)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                        +'<button onclick="_bwDeleteTarget(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
+                        +'<button onclick="_bwDeleteTarget(this,\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
                         +'</div>';
                     filtered.forEach(function(word){
                         var realIdx=words.indexOf(word);
@@ -7544,15 +7548,52 @@
         };
     }
 
-    async function _bwDeleteTarget(game, target){
+    function _bwDeleteTarget(btn, game, target){
+        var section = btn.closest('.bw-target-section');
+        if(!section) return;
+        var existing = section.querySelector('.bw-del-confirm');
+        if(existing){ existing.remove(); return; }
+
         var words=((_bwData[game]||{})[target]||[]);
-        if(words.length>0&&!confirm('"'+target+'" 적용 대상을 삭제하면 등록된 '+words.length+'개 금칙어도 함께 삭제됩니다. 계속하시겠습니까?'))return;
-        if(words.length===0&&!confirm('"'+target+'" 적용 대상을 삭제하시겠습니까?'))return;
-        try{
-            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','DELETE');
-            _badwordsCache[currentMode]=null;
-            _renderBwList();
-        }catch(e){ alert('삭제 실패: '+e.message); }
+        var confirmWrap = document.createElement('div');
+        confirmWrap.className = 'bw-del-confirm';
+        confirmWrap.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 8px;margin:2px 0 4px;background:rgba(239,68,68,0.1);border-radius:6px;border:1px solid rgba(239,68,68,0.2);';
+
+        var msg = document.createElement('span');
+        msg.style.cssText = 'flex:1;font-size:10px;color:#ef4444;';
+        msg.textContent = words.length>0 ? '"'+target+'" 삭제 시 '+words.length+'개 금칙어도 함께 삭제됩니다.' : '"'+target+'" 적용 대상을 삭제하시겠습니까?';
+
+        var okBtn = document.createElement('button');
+        okBtn.textContent = '삭제';
+        okBtn.style.cssText = 'padding:2px 8px;border-radius:5px;background:#ef4444;border:none;color:#fff;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '취소';
+        cancelBtn.style.cssText = 'padding:2px 8px;border-radius:5px;background:none;border:1px solid var(--border-ui);color:var(--text-sub);font-size:10px;cursor:pointer;flex-shrink:0;';
+
+        confirmWrap.appendChild(msg);
+        confirmWrap.appendChild(okBtn);
+        confirmWrap.appendChild(cancelBtn);
+        section.appendChild(confirmWrap);
+
+        cancelBtn.onclick = function(){ confirmWrap.remove(); };
+
+        okBtn.onclick = async function(){
+            okBtn.disabled = true;
+            okBtn.textContent = '삭제중...';
+            try{
+                var isLegacyArray = (_bwArrayGames[currentMode]||new Set()).has(game) && target==='전체';
+                if(isLegacyArray){
+                    // 기존 배열 저장 구조 → 게임 노드 자체를 빈 object로 초기화
+                    await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',{});
+                    _bwArrayGames[currentMode].delete(game);
+                } else {
+                    await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','DELETE');
+                }
+                _badwordsCache[currentMode]=null;
+                _renderBwList();
+            }catch(e){ alert('삭제 실패: '+e.message); okBtn.disabled=false; okBtn.textContent='삭제'; }
+        };
     }
 
     function toggleNoticePin(id, e){
