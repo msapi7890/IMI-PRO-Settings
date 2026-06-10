@@ -7312,11 +7312,11 @@
                 if(!gameHtml)return;
                 total+=gameCount;
                 var gEsc2=escHtml(game).replace(/\'/g,"\\'");
-                html+='<div style="margin-bottom:14px;">';
-                html+='<div style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
+                html+='<div class="bw-game-section" style="margin-bottom:14px;">';
+                html+='<div class="bw-game-header" style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
                     +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+gameCount+')</span></span>'
                     +'<div style="display:flex;gap:4px;">'
-                    +'<button onclick="_bwAddTarget(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
+                    +'<button onclick="_bwAddTarget(this,\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
                     +'<button onclick="_bwQuickAdd(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
                     +'</div>'
                     +'</div>';
@@ -7493,17 +7493,55 @@
         }catch(e){ alert('수정 실패: '+e.message); }
     }
 
-    async function _bwAddTarget(game){
-        var name=prompt('새 적용 대상 이름을 입력하세요:','');
-        if(!name)return;
-        name=name.trim();
-        if(!name)return;
-        if((_bwData[game]||{})[name]!==undefined){ alert('이미 존재하는 적용 대상입니다.'); return; }
-        try{
-            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(name)+'.json','PUT',[]);
-            _badwordsCache[currentMode]=null;
-            _renderBwList();
-        }catch(e){ alert('저장 실패: '+e.message); }
+    function _bwAddTarget(btn, game){
+        var section = btn.closest('.bw-game-section');
+        if(!section) return;
+        var existing = section.querySelector('.bw-target-inline-wrap');
+        if(existing){ existing.remove(); return; }
+        var header = section.querySelector('.bw-game-header');
+
+        var wrap = document.createElement('div');
+        wrap.className = 'bw-target-inline-wrap';
+        wrap.style.cssText = 'display:flex;align-items:center;gap:4px;padding:4px 2px;margin-bottom:4px;';
+
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = '새 적용 대상 이름...';
+        inp.style.cssText = 'flex:1;padding:4px 8px;border-radius:6px;font-size:11px;background:var(--bg-body);border:1px solid rgba(251,191,36,0.4);color:var(--text-main);outline:none;';
+
+        var okBtn = document.createElement('button');
+        okBtn.textContent = '확인';
+        okBtn.style.cssText = 'padding:3px 10px;border-radius:6px;background:#fbbf24;border:none;color:#000;font-size:11px;font-weight:700;cursor:pointer;';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '취소';
+        cancelBtn.style.cssText = 'padding:3px 8px;border-radius:6px;background:none;border:1px solid var(--border-ui);color:var(--text-sub);font-size:11px;cursor:pointer;';
+
+        wrap.appendChild(inp);
+        wrap.appendChild(okBtn);
+        wrap.appendChild(cancelBtn);
+        if(header && header.nextSibling){
+            section.insertBefore(wrap, header.nextSibling);
+        } else {
+            section.appendChild(wrap);
+        }
+        inp.focus();
+
+        cancelBtn.onclick = function(){ wrap.remove(); };
+        inp.onkeydown = function(e){ if(e.key==='Enter') okBtn.click(); else if(e.key==='Escape') wrap.remove(); };
+
+        okBtn.onclick = async function(){
+            var name = inp.value.trim();
+            if(!name){ inp.focus(); return; }
+            if((_bwData[game]||{})[name]!==undefined){ alert('이미 존재하는 적용 대상입니다.'); inp.focus(); return; }
+            okBtn.disabled = true;
+            okBtn.textContent = '저장중...';
+            try{
+                await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(name)+'.json','PUT',[]);
+                _badwordsCache[currentMode]=null;
+                _renderBwList();
+            }catch(e){ alert('저장 실패: '+e.message); okBtn.disabled=false; okBtn.textContent='확인'; }
+        };
     }
 
     async function _bwDeleteTarget(game, target){
