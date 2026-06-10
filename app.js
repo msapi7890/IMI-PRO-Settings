@@ -8154,6 +8154,73 @@
         closeUrgentCreateModal();
         setTimeout(function(){_urgentSaving=false;},1500);
     }
+    /* ── 중복 공지 감지 ── */
+    var _dupSaveCallback=null;
+    function _noticeNorm(t){return(t||'').toLowerCase().replace(/\s+/g,'').replace(/[^가-힣ㄱ-㆏a-z0-9]/g,'');}
+    function _noticeSimilarity(a,b){
+        var na=_noticeNorm(a), nb=_noticeNorm(b);
+        if(!na||!nb) return 0;
+        if(na===nb) return 1;
+        // 한쪽이 다른쪽을 포함하면 높은 유사도
+        if(na.indexOf(nb)>=0||nb.indexOf(na)>=0) return 0.9;
+        // Jaccard (2글자 단위 바이그램)
+        function bigrams(s){var r={};for(var i=0;i<s.length-1;i++){var g=s[i]+s[i+1];r[g]=(r[g]||0)+1;}return r;}
+        var ba=bigrams(na), bb=bigrams(nb);
+        var keys=new Set(Object.keys(ba).concat(Object.keys(bb)));
+        var inter=0,union=0;
+        keys.forEach(function(k){var x=ba[k]||0,y=bb[k]||0;inter+=Math.min(x,y);union+=Math.max(x,y);});
+        return union?inter/union:0;
+    }
+    function _findRecentDupNotices(content){
+        var cutoff=Date.now()-30*24*3600*1000; // 최근 30일
+        var notices=allNotices[currentMode]||{};
+        var results=[];
+        Object.keys(notices).forEach(function(id){
+            var n=notices[id]; if(!n) return;
+            // 날짜 파싱 (Firebase key는 timestamp ms)
+            var ts=parseInt(id)||0;
+            if(ts>0&&ts<cutoff) return; // 30일 초과 제외
+            var sim=_noticeSimilarity(content, n.content||'');
+            if(sim>=0.6) results.push({id:id,notice:n,sim:sim});
+        });
+        results.sort(function(a,b){return b.sim-a.sim;});
+        return results;
+    }
+    function _showDupModal(dups, newContent, isExact, onProceed){
+        _dupSaveCallback=onProceed;
+        document.getElementById('dupNew').textContent=newContent;
+        var exEl=document.getElementById('dupExisting');
+        exEl.innerHTML='';
+        dups.forEach(function(d){
+            var pct=Math.round(d.sim*100);
+            var card=document.createElement('div');
+            card.style.cssText='padding:10px 12px;background:var(--bg-body);border:1.5px solid var(--border-ui);border-radius:10px;font-size:11px;font-weight:700;line-height:1.7;white-space:pre-wrap;word-break:break-all;flex-shrink:0;';
+            var badge='<span style="display:inline-block;font-size:9px;font-weight:900;padding:1px 7px;border-radius:5px;margin-bottom:6px;'+(pct>=95?'background:#7f1d1d;color:#fca5a5;':'background:#1e3a5f;color:#93c5fd;')+'">유사도 '+pct+'%'+(pct>=95?' — 동일':'')+' · '+(d.notice.date||'').substring(0,10)+'</span>\n';
+            card.innerHTML=badge+escHtml(d.notice.content||'');
+            exEl.appendChild(card);
+        });
+        var sub=document.getElementById('dupModalSub');
+        var proceedBtn=document.getElementById('dupProceedBtn');
+        if(isExact){
+            sub.textContent='동일한 공지가 이미 등록되어 있습니다. 등록할 수 없습니다.';
+            sub.style.color='#ef4444';
+            proceedBtn.style.display='none';
+        } else {
+            sub.textContent='최근 1개월 이내 유사한 공지가 있습니다. 등록 전 확인해 주세요.';
+            sub.style.color='';
+            proceedBtn.style.display='';
+        }
+        document.getElementById('dupNoticeModal').classList.remove('hidden');
+    }
+    function closeDupModal(){
+        document.getElementById('dupNoticeModal').classList.add('hidden');
+        _dupSaveCallback=null;
+    }
+    function proceedDupSave(){
+        document.getElementById('dupNoticeModal').classList.add('hidden');
+        if(_dupSaveCallback){var cb=_dupSaveCallback;_dupSaveCallback=null;cb();}
+    }
+
     function saveNotice(){
         var content=document.getElementById('editContent').value.trim(); if(!content) return;
         var urlVal=document.getElementById('editUrl').value.trim();
@@ -8170,25 +8237,39 @@
         var saveKey=currentEditId||String(Date.now());
         var existingUrls=_noticeExistingImgs.map(function(x){return x.url;});
         var btn=document.getElementById('saveBtn');
-        if(_noticeImgFiles.length===0){
-            if(existingUrls.length>0) obj.images=existingUrls;
-            db.ref('notices_'+currentMode).child(saveKey).set(obj);
-            closeModal();
-        } else {
-            if(btn){btn.disabled=true;btn.textContent='업로드 중...';}
-            var uploads=_noticeImgFiles.map(function(item){
-                var ref=storage.ref('notice_images/'+saveKey+'_'+item.key);
-                return ref.put(item.file).then(function(){return ref.getDownloadURL();});
-            });
-            Promise.all(uploads).then(function(newUrls){
-                obj.images=existingUrls.concat(newUrls);
+
+        function _doSave(){
+            if(_noticeImgFiles.length===0){
+                if(existingUrls.length>0) obj.images=existingUrls;
                 db.ref('notices_'+currentMode).child(saveKey).set(obj);
                 closeModal();
-            }).catch(function(err){
-                alert('이미지 업로드 실패: '+err.message);
-                if(btn){btn.disabled=false;btn.textContent='저장 완료';}
-            });
+            } else {
+                if(btn){btn.disabled=true;btn.textContent='업로드 중...';}
+                var uploads=_noticeImgFiles.map(function(item){
+                    var ref=storage.ref('notice_images/'+saveKey+'_'+item.key);
+                    return ref.put(item.file).then(function(){return ref.getDownloadURL();});
+                });
+                Promise.all(uploads).then(function(newUrls){
+                    obj.images=existingUrls.concat(newUrls);
+                    db.ref('notices_'+currentMode).child(saveKey).set(obj);
+                    closeModal();
+                }).catch(function(err){
+                    alert('이미지 업로드 실패: '+err.message);
+                    if(btn){btn.disabled=false;btn.textContent='저장 완료';}
+                });
+            }
         }
+
+        // 새 공지 등록일 때만 중복 검사 (수정 시 제외)
+        if(!currentEditId){
+            var dups=_findRecentDupNotices(content);
+            if(dups.length>0){
+                var isExact=dups[0].sim>=0.95;
+                _showDupModal(dups,content,isExact,isExact?null:_doSave);
+                return;
+            }
+        }
+        _doSave();
     }
     function clearCSChat(){
         var box=document.getElementById('csChatBox');
