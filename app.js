@@ -5505,7 +5505,7 @@
                 botD.innerHTML=content
                     ?'<div class="mt-card"><div class="mt-header">\uD83D\uDCCB '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content)+'</pre>'+kwHtml2+'</div>'
                     :"\uD83D\uDCED \uD574\uB2F9 \uD56D\uBAA9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
-                if(content){ loadKeywords(title, botD); _appendRelatedNotices(title, botD); _appendTemplateBtn(title, botD); }
+                if(content){ _appendTemplateBtn(title, botD); loadKeywords(title, botD); _appendRelatedNotices(title, botD); }
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
                 return;
@@ -5529,8 +5529,8 @@
                     var content=manualIdx[title];
                     if(content && typeof content==='object') content=content.text||content.content||'';
                     botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div><pre class="mt-raw">'+escHtml(content||'내용 없음')+'</pre></div>';
-                    _appendRelatedNotices(title, botD);
                     _appendTemplateBtn(title, botD);
+                    _appendRelatedNotices(title, botD);
                     document.getElementById('chatBox').scrollTop=99999;
                     return;
                 }
@@ -5602,9 +5602,9 @@
                     }
                 }
                 botD.innerHTML='<div class="mt-card"><div class="mt-header">📋 '+escHtml(title)+'</div>'+pgHtml+kwHtml+'</div>';
+                _appendTemplateBtn(title, botD);
                 loadKeywords(title, botD);
                 _appendRelatedNotices(title, botD);
-                _appendTemplateBtn(title, botD);
                 document.getElementById('chatBox').scrollTop=99999;
                 document.getElementById('userInput').focus();
             });
