@@ -979,14 +979,18 @@
         <!-- 스크롤 영역 -->
         <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:24px 28px 16px;word-break:break-word;overflow-wrap:break-word;">
             <div id="viewMode">
-                <span id="modalDate" class="text-base font-black mb-1 block text-[var(--active-focus-color)]">날짜...</span>
-                <span id="viewUpdatedAt" class="hidden text-sm opacity-50 mb-1 block"></span>
-                <span id="viewAuthor" class="hidden text-sm opacity-50 mb-3 block"></span>
-                <h4 id="viewTitle" class="hidden text-2xl font-black mb-4 border-b pb-4 leading-tight"></h4>
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+                    <span id="modalDate" class="text-base font-black text-[var(--active-focus-color)]">날짜...</span>
+                    <span id="viewUpdatedAt" class="hidden text-xs opacity-50" style="white-space:nowrap;"></span>
+                </div>
+                <h4 id="viewTitle" class="hidden text-2xl font-black mb-4 border-b pb-4 leading-tight mt-1"></h4>
                 <div id="viewContent" class="mb-4 text-base font-medium leading-relaxed"></div>
                 <div id="viewImgArea" class="mb-4"></div>
                 <div id="viewUrlWrap" class="hidden mb-4 px-3 py-2 rounded-xl border-2 border-[var(--border-ui)] text-xs font-bold break-all">
                     🔗 <a id="viewUrl" href="#" target="_blank" rel="noopener" style="color:var(--active-focus-color);text-decoration:underline;"></a>
+                </div>
+                <div style="display:flex;justify-content:flex-end;">
+                    <span id="viewAuthor" class="hidden text-xs opacity-40"></span>
                 </div>
             </div>
             <div id="editMode" class="hidden">

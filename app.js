@@ -8042,7 +8042,7 @@
         }
         var authorEl=document.getElementById('viewAuthor');
         if(authorEl){
-            if(n.author){authorEl.textContent='✍️ 작성자: '+n.author;authorEl.classList.remove('hidden');}
+            if(n.author){authorEl.textContent='— '+n.author;authorEl.classList.remove('hidden');}
             else{authorEl.classList.add('hidden');}
         }
         document.getElementById('viewTitle').innerText=n.title;
