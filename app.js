@@ -698,6 +698,10 @@
             +'<input id="bwAddGameNew" type="text" placeholder="새 카테고리명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
             +'</div>'
             +'<div style="display:flex;gap:6px;">'
+            +'<select id="bwAddTarget" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"><option value="">적용 대상 선택...</option></select>'
+            +'<input id="bwAddTargetNew" type="text" placeholder="새 적용 대상명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
+            +'</div>'
+            +'<div style="display:flex;gap:6px;">'
             +'<input id="bwAddWord" type="text" placeholder="금칙어 입력" style="flex:1;font-size:13px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;" onkeydown="if(event.key===\'Enter\')_bwDoAdd()">'
             +'<button onclick="_bwDoAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">등록</button>'
             +'<button onclick="_bwHideAddForm()" style="padding:0 10px;height:34px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;flex-shrink:0;">취소</button>'
@@ -709,6 +713,10 @@
             +'<div style="display:flex;gap:6px;">'
             +'<select id="bwBulkGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
             +'<input id="bwBulkGameNew" type="text" placeholder="새 카테고리명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
+            +'</div>'
+            +'<div style="display:flex;gap:6px;">'
+            +'<select id="bwBulkTarget" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"><option value="">적용 대상 선택...</option></select>'
+            +'<input id="bwBulkTargetNew" type="text" placeholder="새 적용 대상명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
             +'</div>'
             +'<textarea id="bwBulkWords" rows="6" placeholder="금칙어를 한 줄에 하나씩 입력하세요&#10;예)&#10;작업템&#10;사기&#10;버스" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;resize:vertical;outline:none;box-sizing:border-box;line-height:1.6;" oninput="_bwBulkCount()"></textarea>'
             +'<div style="display:flex;align-items:center;gap:6px;">'
@@ -6761,8 +6769,17 @@
     function _loadBadwords(mode,cb){
         if(_badwordsCache[mode]){cb(_badwordsCache[mode]);return;}
         db.ref('/imi_badwords/'+mode).once('value',function(snap){
-            _badwordsCache[mode]=snap.val()||{};
-            cb(_badwordsCache[mode]);
+            var raw=snap.val()||{};
+            var out={};
+            Object.keys(raw).forEach(function(game){
+                if(Array.isArray(raw[game])){
+                    out[game]={'전체':raw[game]};
+                } else {
+                    out[game]=raw[game]||{};
+                }
+            });
+            _badwordsCache[mode]=out;
+            cb(out);
         });
     }
     function checkBadwords(){
@@ -6778,21 +6795,20 @@
         }
         _loadBadwords(currentMode,function(data){
             var matched=[];
-            (data['전체게임']||[]).forEach(function(w){
-                if(_buildFuzzyRe(w).test(title)){
-                    var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
-                    if(ex){if(ex.games.indexOf('전체게임')<0)ex.games.push('전체게임');}
-                    else matched.push({word:w,games:['전체게임']});
+            function _pushMatch(w,game,tgt){
+                if(!_buildFuzzyRe(w).test(title))return;
+                var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
+                if(ex){
+                    if(ex.games.indexOf(game)<0)ex.games.push(game);
+                    if(tgt&&ex.targets.indexOf(tgt)<0)ex.targets.push(tgt);
+                } else {
+                    matched.push({word:w,games:[game],targets:tgt?[tgt]:[]});
                 }
-            });
+            }
             Object.keys(data).forEach(function(game){
-                if(game==='전체게임')return;
-                (data[game]||[]).forEach(function(w){
-                    if(_buildFuzzyRe(w).test(title)){
-                        var ex=matched.find(function(m){return m.word.toLowerCase()===w.toLowerCase();});
-                        if(ex)ex.games.push(game);
-                        else matched.push({word:w,games:[game]});
-                    }
+                var targetMap=data[game]||{};
+                Object.keys(targetMap).forEach(function(tgt){
+                    (targetMap[tgt]||[]).forEach(function(w){ _pushMatch(w,game,tgt); });
                 });
             });
             if(!result)return;
@@ -6835,6 +6851,11 @@
                                 +'">'+escHtml(g)+'</span>';
                         }).join('')
                         +'</div>'
+                        +(m.targets.length?'<div style="display:flex;flex-wrap:wrap;gap:4px;">'
+                            +m.targets.map(function(t){
+                                return '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(234,179,8,0.15);color:#fbbf24;border:1px solid rgba(234,179,8,0.3);">🎯 '+escHtml(t)+'</span>';
+                            }).join('')
+                            +'</div>':'')
                         +'</div>';
                 });
                 html+='</div>';
@@ -7045,23 +7066,44 @@
             var html='';
             var total=0;
             games.forEach(function(game){
-                var words=data[game]||[];
-                var filtered=filter?words.filter(function(w){return w.toLowerCase().indexOf(filter)>=0;}):words;
-                if(!filtered.length)return;
-                total+=filtered.length;
+                var targetMap=data[game]||{};
+                var targets=Object.keys(targetMap).sort(function(a,b){return a==='전체'?-1:b==='전체'?1:a.localeCompare(b,'ko');});
+                var gameHtml='';
+                var gameCount=0;
+                targets.forEach(function(target){
+                    var words=targetMap[target]||[];
+                    var filtered=filter?words.filter(function(w){return w.toLowerCase().indexOf(filter)>=0;}):words;
+                    if(!filtered.length)return;
+                    gameCount+=filtered.length;
+                    var gEsc=escHtml(game).replace(/\'/g,"\\'");
+                    var tEsc=escHtml(target).replace(/\'/g,"\\'");
+                    gameHtml+='<div style="margin-bottom:8px;margin-left:8px;">';
+                    gameHtml+='<div style="font-size:10px;font-weight:800;color:#fbbf24;padding:3px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
+                        +'<span>🎯 '+escHtml(target)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
+                        +'<button onclick="_bwDeleteTarget(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
+                        +'</div>';
+                    filtered.forEach(function(word){
+                        var realIdx=words.indexOf(word);
+                        gameHtml+='<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;background:var(--bg-body);margin-bottom:2px;">'
+                            +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+escHtml(word)+'</span>'
+                            +'<button onclick="_bwEditWord(\''+gEsc+'\',\''+tEsc+'\','+realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;flex-shrink:0;">수정</button>'
+                            +'<button onclick="_bwDeleteWord(\''+gEsc+'\',\''+tEsc+'\','+realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;flex-shrink:0;">삭제</button>'
+                            +'</div>';
+                    });
+                    gameHtml+='</div>';
+                });
+                if(!gameHtml)return;
+                total+=gameCount;
+                var gEsc2=escHtml(game).replace(/\'/g,"\\'");
                 html+='<div style="margin-bottom:14px;">';
                 html+='<div style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
-                    +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                    +'<button onclick="_bwQuickAdd(\''+escHtml(game).replace(/\'/g,"\\'")+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
+                    +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+gameCount+')</span></span>'
+                    +'<div style="display:flex;gap:4px;">'
+                    +'<button onclick="_bwAddTarget(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
+                    +'<button onclick="_bwQuickAdd(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
+                    +'</div>'
                     +'</div>';
-                filtered.forEach(function(word){
-                    var realIdx=words.indexOf(word);
-                    html+='<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:var(--bg-body);margin-bottom:3px;" id="bwRow_'+escHtml(game)+'_'+realIdx+'">'
-                        +'<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">'+escHtml(word)+'</span>'
-                        +'<button onclick="_bwEditWord(\''+escHtml(game).replace(/\'/g,"\\'")+'\',' +realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;flex-shrink:0;">수정</button>'
-                        +'<button onclick="_bwDeleteWord(\''+escHtml(game).replace(/\'/g,"\\'")+'\',' +realIdx+')" style="font-size:10px;padding:3px 10px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;flex-shrink:0;">삭제</button>'
-                        +'</div>';
-                });
+                html+=gameHtml;
                 html+='</div>';
             });
             if(!html)html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 금칙어가 없습니다.')+'</div>';
@@ -7070,10 +7112,24 @@
         });
     }
 
+    function _bwRefreshTargetSel(gameSel, targetSel, targetNew){
+        var game=gameSel.value;
+        var targets=game&&game!=='__new__'?Object.keys(_bwData[game]||{}).sort(function(a,b){return a==='전체'?-1:b==='전체'?1:a.localeCompare(b,'ko');}):[];
+        targetSel.innerHTML='<option value="">적용 대상 선택...</option>'
+            +targets.map(function(t){return '<option value="'+escHtml(t)+'">'+escHtml(t)+'</option>';}).join('')
+            +'<option value="__new__">+ 새 적용 대상</option>';
+        targetSel.onchange=function(){
+            targetNew.style.display=targetSel.value==='__new__'?'block':'none';
+        };
+        targetNew.style.display='none';
+    }
+
     function _bwShowAddForm(){
         document.getElementById('bwBulkForm').style.display='none';
         var form=document.getElementById('bwAddForm');
         var sel=document.getElementById('bwAddGame');
+        var targetSel=document.getElementById('bwAddTarget');
+        var targetNew=document.getElementById('bwAddTargetNew');
         var games=Object.keys(_bwData).sort(function(a,b){return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko');});
         sel.innerHTML='<option value="">카테고리 선택...</option>'
             +games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
@@ -7081,7 +7137,9 @@
         sel.onchange=function(){
             var ni=document.getElementById('bwAddGameNew');
             ni.style.display=sel.value==='__new__'?'block':'none';
+            _bwRefreshTargetSel(sel,targetSel,targetNew);
         };
+        _bwRefreshTargetSel(sel,targetSel,targetNew);
         form.style.display='flex';
         document.getElementById('bwAddWord').focus();
     }
@@ -7090,12 +7148,15 @@
         document.getElementById('bwAddForm').style.display='none';
         document.getElementById('bwAddWord').value='';
         document.getElementById('bwAddGameNew').style.display='none';
+        document.getElementById('bwAddTargetNew').style.display='none';
     }
 
     function _bwShowBulkForm(){
         document.getElementById('bwAddForm').style.display='none';
         var bulkForm = document.getElementById('bwBulkForm');
         var sel = document.getElementById('bwBulkGame');
+        var targetSel = document.getElementById('bwBulkTarget');
+        var targetNew = document.getElementById('bwBulkTargetNew');
         var games = Object.keys(_bwData).sort(function(a,b){return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko');});
         sel.innerHTML = '<option value="">카테고리 선택...</option>'
             + games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
@@ -7103,7 +7164,9 @@
         sel.onchange = function(){
             var ni = document.getElementById('bwBulkGameNew');
             ni.style.display = sel.value==='__new__' ? 'block' : 'none';
+            _bwRefreshTargetSel(sel,targetSel,targetNew);
         };
+        _bwRefreshTargetSel(sel,targetSel,targetNew);
         bulkForm.style.display = 'flex';
         bulkForm.style.flexDirection = 'column';
         document.getElementById('bwBulkWords').focus();
@@ -7113,6 +7176,7 @@
         document.getElementById('bwBulkForm').style.display = 'none';
         document.getElementById('bwBulkWords').value = '';
         document.getElementById('bwBulkGameNew').style.display = 'none';
+        document.getElementById('bwBulkTargetNew').style.display = 'none';
         document.getElementById('bwBulkCountLabel').textContent = '0개 단어';
     }
 
@@ -7125,12 +7189,16 @@
     async function _bwDoBulkAdd(){
         var sel = document.getElementById('bwBulkGame');
         var ni = document.getElementById('bwBulkGameNew');
+        var tSel = document.getElementById('bwBulkTarget');
+        var tNi = document.getElementById('bwBulkTargetNew');
         var game = sel.value==='__new__' ? ni.value.trim() : sel.value;
+        var target = tSel.value==='__new__' ? tNi.value.trim() : tSel.value;
         if(!game || game==='카테고리 선택...'){ alert('카테고리를 선택하세요.'); return; }
+        if(!target || target==='적용 대상 선택...'){ alert('적용 대상을 선택하세요.'); return; }
         var ta = document.getElementById('bwBulkWords');
         var newWords = (ta.value||'').split('\n').map(function(l){return l.trim();}).filter(Boolean);
         if(!newWords.length){ alert('단어를 입력하세요.'); return; }
-        var existing = (_bwData[game]||[]).slice();
+        var existing = ((_bwData[game]||{})[target]||[]).slice();
         var added = [], skipped = [];
         newWords.forEach(function(w){
             if(existing.indexOf(w)>=0) skipped.push(w);
@@ -7138,7 +7206,7 @@
         });
         if(!added.length){ alert('모두 이미 등록된 단어입니다.\n중복: '+skipped.join(', ')); return; }
         try{
-            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',existing);
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','PUT',existing);
             _badwordsCache[currentMode] = null;
             _bwHideBulkForm();
             _renderBwList();
@@ -7152,53 +7220,84 @@
         _bwShowAddForm();
         var sel=document.getElementById('bwAddGame');
         for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===game){ sel.selectedIndex=i; break; } }
+        var targetSel=document.getElementById('bwAddTarget');
+        var targetNew=document.getElementById('bwAddTargetNew');
+        _bwRefreshTargetSel(sel,targetSel,targetNew);
         document.getElementById('bwAddWord').focus();
     }
 
     async function _bwDoAdd(){
         var sel=document.getElementById('bwAddGame');
         var ni=document.getElementById('bwAddGameNew');
+        var tSel=document.getElementById('bwAddTarget');
+        var tNi=document.getElementById('bwAddTargetNew');
         var game=sel.value==='__new__'?ni.value.trim():sel.value;
+        var target=tSel.value==='__new__'?tNi.value.trim():tSel.value;
         var word=(document.getElementById('bwAddWord').value||'').trim();
         if(!game||game==='카테고리 선택...'){ alert('카테고리를 선택하세요.'); return; }
+        if(!target||target==='적용 대상 선택...'){ alert('적용 대상을 선택하세요.'); return; }
         if(!word){ alert('금칙어를 입력하세요.'); return; }
-        var words=(_bwData[game]||[]).slice();
+        var words=((_bwData[game]||{})[target]||[]).slice();
         if(words.indexOf(word)>=0){ alert('이미 등록된 금칙어입니다.'); return; }
         words.push(word);
         try{
-            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','PUT',words);
             _badwordsCache[currentMode]=null;
             _bwHideAddForm();
             _renderBwList();
         }catch(e){ alert('저장 실패: '+e.message); }
     }
 
-    async function _bwDeleteWord(game, idx){
-        var words=(_bwData[game]||[]).slice();
+    async function _bwDeleteWord(game, target, idx){
+        var words=((_bwData[game]||{})[target]||[]).slice();
         var word=words[idx];
         if(!confirm('"'+word+'" 금칙어를 삭제하시겠습니까?'))return;
         words.splice(idx,1);
         try{
-            if(words.length===0) await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','DELETE');
-            else await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            if(words.length===0) await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','DELETE');
+            else await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','PUT',words);
             _badwordsCache[currentMode]=null;
             _renderBwList();
         }catch(e){ alert('삭제 실패: '+e.message); }
     }
 
-    async function _bwEditWord(game, idx){
-        var words=(_bwData[game]||[]).slice();
+    async function _bwEditWord(game, target, idx){
+        var words=((_bwData[game]||{})[target]||[]).slice();
         var oldWord=words[idx];
-        var newWord=prompt('금칙어 수정 ('+game+'):', oldWord);
+        var newWord=prompt('금칙어 수정 ('+game+' / '+target+'):', oldWord);
         if(newWord===null||newWord===oldWord)return;
         newWord=newWord.trim();
         if(!newWord){ alert('금칙어를 입력하세요.'); return; }
         words[idx]=newWord;
         try{
-            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'.json','PUT',words);
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','PUT',words);
             _badwordsCache[currentMode]=null;
             _renderBwList();
         }catch(e){ alert('수정 실패: '+e.message); }
+    }
+
+    async function _bwAddTarget(game){
+        var name=prompt('새 적용 대상 이름을 입력하세요:','');
+        if(!name)return;
+        name=name.trim();
+        if(!name)return;
+        if((_bwData[game]||{})[name]!==undefined){ alert('이미 존재하는 적용 대상입니다.'); return; }
+        try{
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(name)+'.json','PUT',[]);
+            _badwordsCache[currentMode]=null;
+            _renderBwList();
+        }catch(e){ alert('저장 실패: '+e.message); }
+    }
+
+    async function _bwDeleteTarget(game, target){
+        var words=((_bwData[game]||{})[target]||[]);
+        if(words.length>0&&!confirm('"'+target+'" 적용 대상을 삭제하면 등록된 '+words.length+'개 금칙어도 함께 삭제됩니다. 계속하시겠습니까?'))return;
+        if(words.length===0&&!confirm('"'+target+'" 적용 대상을 삭제하시겠습니까?'))return;
+        try{
+            await _authFetch('imi_badwords/'+currentMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(target)+'.json','DELETE');
+            _badwordsCache[currentMode]=null;
+            _renderBwList();
+        }catch(e){ alert('삭제 실패: '+e.message); }
     }
 
     function toggleNoticePin(id, e){
