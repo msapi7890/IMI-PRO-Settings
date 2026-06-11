@@ -7303,7 +7303,7 @@
                     gameHtml+='<div id="'+tsId+'" style="margin-bottom:8px;margin-left:8px;">';
                     gameHtml+='<div style="font-size:10px;font-weight:800;color:#fbbf24;padding:3px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
                         +'<span>🎯 '+escHtml(target)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                        +'<button onclick="_bwDeleteTarget(\''+tsId+'\',\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
+                        +'<button data-bwts="'+tsId+'" data-game="'+gEsc+'" data-target="'+tEsc+'" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
                         +'</div>';
                     filtered.forEach(function(word){
                         var realIdx=words.indexOf(word);
@@ -7322,7 +7322,7 @@
                 html+='<div style="font-size:11px;font-weight:900;color:var(--text-sub);padding:5px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
                     +'<span>📂 '+escHtml(game)+' <span style="opacity:0.6;">('+gameCount+')</span></span>'
                     +'<div style="display:flex;gap:4px;">'
-                    +'<button onclick="_bwAddTarget(\''+gsId+'\',\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
+                    +'<button data-bwgs="'+gsId+'" data-game="'+gEsc2+'" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;cursor:pointer;">+ 적용대상</button>'
                     +'<button onclick="_bwQuickAdd(\''+gEsc2+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--bg-body);border:1px solid var(--border-ui);color:var(--text-sub);cursor:pointer;">+ 추가</button>'
                     +'</div>'
                     +'</div>';
@@ -7332,6 +7332,17 @@
             if(!html)html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 금칙어가 없습니다.')+'</div>';
             else html='<div style="font-size:11px;color:var(--text-sub);margin-bottom:8px;font-weight:700;">총 '+total+'개</div>'+html;
             content.innerHTML=html;
+            // onclick 속성 대신 addEventListener로 직접 바인딩
+            content.querySelectorAll('[data-bwts]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    _bwDeleteTarget(btn.getAttribute('data-bwts'), btn.getAttribute('data-game'), btn.getAttribute('data-target'));
+                });
+            });
+            content.querySelectorAll('[data-bwgs]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    _bwAddTarget(btn.getAttribute('data-bwgs'), btn.getAttribute('data-game'));
+                });
+            });
         });
     }
 
