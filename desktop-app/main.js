@@ -172,7 +172,8 @@ function createWindow() {
     if (icon) opts.icon = icon;
 
     win = new BrowserWindow(opts);
-    win.loadURL(APP_URL);
+    const loadURL = () => win.loadURL(APP_URL + '?_v=' + Date.now());
+    win.webContents.session.clearCache().then(loadURL).catch(loadURL);
 
     // 렌더러 title 변경 차단 — main이 win.setTitle로 모든 타이틀 제어
     win.on('page-title-updated', (e) => { e.preventDefault(); });
