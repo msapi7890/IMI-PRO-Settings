@@ -886,6 +886,21 @@
             +'<div id="bwListContent" style="padding:10px 14px;"></div>'
             +'</div>';
         _badwordsCache[currentMode] = null;
+        if(!wrap._bwClickDelegated){
+            wrap._bwClickDelegated=true;
+            wrap.addEventListener('click',function(e){
+                var b;
+                if((b=e.target.closest('[data-bwts]'))){
+                    _bwDeleteTarget(b.getAttribute('data-bwts'),b.getAttribute('data-game'),b.getAttribute('data-target'));
+                } else if((b=e.target.closest('[data-bwgs]'))){
+                    _bwAddTarget(b.getAttribute('data-bwgs'),b.getAttribute('data-game'));
+                } else if((b=e.target.closest('[data-bwedit]'))){
+                    _bwEditWord(b.getAttribute('data-wid'),b.getAttribute('data-game'),b.getAttribute('data-target'),parseInt(b.getAttribute('data-idx')));
+                } else if((b=e.target.closest('[data-bwdel]'))){
+                    _bwDeleteWord(b.getAttribute('data-wid'),b.getAttribute('data-game'),b.getAttribute('data-target'),parseInt(b.getAttribute('data-idx')));
+                }
+            });
+        }
         _renderBwList();
     }
 
@@ -7339,27 +7354,6 @@
             if(!html)html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 금칙어가 없습니다.')+'</div>';
             else html='<div style="font-size:11px;color:var(--text-sub);margin-bottom:8px;font-weight:700;">총 '+total+'개</div>'+html;
             content.innerHTML=html;
-            // onclick 속성 대신 addEventListener로 직접 바인딩
-            content.querySelectorAll('[data-bwts]').forEach(function(btn){
-                btn.addEventListener('click', function(){
-                    _bwDeleteTarget(btn.getAttribute('data-bwts'), btn.getAttribute('data-game'), btn.getAttribute('data-target'));
-                });
-            });
-            content.querySelectorAll('[data-bwgs]').forEach(function(btn){
-                btn.addEventListener('click', function(){
-                    _bwAddTarget(btn.getAttribute('data-bwgs'), btn.getAttribute('data-game'));
-                });
-            });
-            content.querySelectorAll('[data-bwedit]').forEach(function(btn){
-                btn.addEventListener('click', function(){
-                    _bwEditWord(btn.getAttribute('data-wid'), btn.getAttribute('data-game'), btn.getAttribute('data-target'), parseInt(btn.getAttribute('data-idx')));
-                });
-            });
-            content.querySelectorAll('[data-bwdel]').forEach(function(btn){
-                btn.addEventListener('click', function(){
-                    _bwDeleteWord(btn.getAttribute('data-wid'), btn.getAttribute('data-game'), btn.getAttribute('data-target'), parseInt(btn.getAttribute('data-idx')));
-                });
-            });
         });
     }
 
