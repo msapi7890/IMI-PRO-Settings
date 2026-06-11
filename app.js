@@ -7303,6 +7303,8 @@
         if(!content)return;
         content.innerHTML='<div style="text-align:center;padding:20px;opacity:0.4;font-size:12px;">로딩 중...</div>';
         _loadBadwords(currentMode,function(data){
+            var content=document.getElementById('bwListContent');
+            if(!content)return;
             _bwData=data;
             var games=Object.keys(data).sort(function(a,b){ return a==='전체게임'?-1:b==='전체게임'?1:a.localeCompare(b,'ko'); });
             var html='';
