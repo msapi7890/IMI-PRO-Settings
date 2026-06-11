@@ -7309,7 +7309,7 @@
                     gameHtml+='<div id="'+tsId+'" style="margin-bottom:8px;margin-left:8px;">';
                     gameHtml+='<div style="font-size:10px;font-weight:800;color:#fbbf24;padding:3px 4px;display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">'
                         +'<span>🎯 '+escHtml(target)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                        +'<button data-bwts="'+tsId+'" data-game="'+gEsc+'" data-target="'+tEsc+'" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;" title="적용 대상 삭제">✕</button>'
+                        +'<button data-bwts="'+tsId+'" data-game="'+gEsc+'" data-target="'+tEsc+'" style="font-size:10px;padding:1px 6px;border-radius:5px;background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;cursor:pointer;position:relative;z-index:99999;pointer-events:auto;" title="적용 대상 삭제">✕</button>'
                         +'</div>';
                     filtered.forEach(function(word){
                         var realIdx=words.indexOf(word);
