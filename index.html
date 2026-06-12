@@ -17,6 +17,7 @@
 
     <link rel="stylesheet" href="style.css">
     <script src="terms.js"></script>
+    <script src="db_wrapper.js"></script>
 </head>
 
 <body class="light-mode" id="mainBody">
@@ -153,7 +154,6 @@
         <div id="mfTabBar" style="display:flex;flex-shrink:0;border-bottom:1px solid #334155;">
             <button id="mfTab1" onclick="_mfSwitchTab(1)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid #f59e0b;background:#0f172a;color:#f59e0b;cursor:pointer;display:none;">&#x1f4c4; 매뉴얼 관리</button>
             <button id="mfTab3" onclick="_mfSwitchTab(3)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">🕵️ 금칙어 관리</button>
-            <button id="mfTab4" onclick="_mfSwitchTab(4)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">📖 용어 관리</button>
             <button id="mfTab2" onclick="_mfSwitchTab(2)" style="flex:1;padding:9px;font-size:11px;font-weight:900;border:none;border-bottom:2px solid transparent;background:#1e293b;color:#475569;cursor:pointer;">&#x1f4c2; 파일 목록</button>
         </div>
         <div id="mfContent" style="flex:1;overflow-y:auto;padding:16px 20px;">
@@ -1178,6 +1178,12 @@
             <div id="linkArea" style="display:flex;gap:6px;">
                 <button id="maniaLink" onclick="switchChatTab(1)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">📚 매뉴얼</button>
                 <button id="bayLink" onclick="switchChatTab(2)" class="link-banner" style="flex:1;text-align:center;border:none;cursor:pointer;">🕵️ 금칙어</button>
+            </div>
+            <!-- AI 비거래 분석 모드 배너 (linkArea 대체) -->
+            <div id="aiModeBanner" style="display:none;align-items:center;gap:8px;background:rgba(245,158,11,0.13);border:2px solid rgba(245,158,11,0.45);border-radius:10px;padding:0 14px;height:38px;">
+                <span style="font-size:12px;font-weight:900;color:#f59e0b;white-space:nowrap;">🤖 AI 비거래 분석 모드</span>
+                <span id="aiImgBadge" style="flex:1;display:flex;align-items:center;"></span>
+                <button onclick="_exitAiMode()" style="margin-left:auto;height:26px;padding:0 12px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:6px;color:#ef4444;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;">✕ 종료</button>
             </div>
             <!-- 모드 버튼 -->
             <div class="flex gap-2">

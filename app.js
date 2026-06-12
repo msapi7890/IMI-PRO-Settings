@@ -21,21 +21,11 @@
     var BAY_CATEGORY_GROUPS = {};
     _buildBayCategoryGroups();
 
-    var FIREBASE_CONFIG = {apiKey:"AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI",authDomain:"manual-9a47c.firebaseapp.com",databaseURL:"https://manual-9a47c-default-rtdb.firebaseio.com",projectId:"manual-9a47c",storageBucket:"manual-9a47c.firebasestorage.app",messagingSenderId:"360735158801",appId:"1:360735158801:web:1dd7b4d7a07ac9502a37b0"};
-    firebase.initializeApp(FIREBASE_CONFIG);
-    var db = firebase.database();
-    var storage = firebase.storage();
+    // ▼ 사내 서버 MySQL API 사용 (Firebase DB 대체)
+    var db = window._mysqlDb;
+    var storage = null; // 매뉴얼 파일 업로드는 별도 처리
     var _fbRestToken = null;
-    var _fbAuthPromise = fetch(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDc3L_8IfVJxjIkv1tnOXRy_tQx3fSPxOI',
-        {method:'POST',headers:{'Content-Type':'application/json'},
-         body:JSON.stringify({email:'imiprobot@gmail.com',password:'mania3001!',returnSecureToken:true})}
-    ).then(function(r){return r.json();}).then(function(d){
-        if(d.idToken){
-            _fbRestToken=d.idToken;
-            return firebase.auth().signInWithEmailAndPassword('imiprobot@gmail.com','mania3001!').catch(function(e){ console.warn('[FB SDK auth] 실패:', e.message); });
-        } else console.warn('[FB auth] 실패:', d.error&&d.error.message);
-    }).catch(function(e){ console.warn('[FB auth] 오류:', e.message); });
+    var _fbAuthPromise = Promise.resolve();
     var ADMIN_PW = "mania3001!";
     var CLAUDE_API_KEY = "";
 
@@ -244,6 +234,9 @@
 
     // 초기화
     async function _authInit(){
+        // 사내 서버: 로그인 없이 자동 진입
+        _authGrant({name:'관리자', role:'admin', monitor_disabled:false, os_notif_disabled:false});
+        return;
         _showLockView('lockLoadingView');
         var saved = _authLoadLocal();
         if(saved && saved.name && saved.hash){
@@ -675,168 +668,10 @@
             btn.style.color = active ? cols[i] : '#475569';
         });
         var wrap = document.getElementById('mfContent');
-        if(wrap) wrap.style.padding = (n===3||n===4) ? '0' : '16px 20px';
+        if(wrap) wrap.style.padding = n===3 ? '0' : '16px 20px';
         if(n===1) _renderManualMgmt();
         else if(n===2) _renderManualFiles();
         else if(n===3) _renderBadwordMgmt();
-        else _renderGlossaryMgmt();
-    }
-
-    /* ── 용어 관리 탭 ── */
-    var _glossaryCache = {};
-    function _renderGlossaryMgmt(){
-        var wrap=document.getElementById('mfContent');
-        if(!wrap)return;
-        var mode=_mfMgmtMode;
-        wrap.innerHTML='<div style="display:flex;flex-direction:column;height:100%;">'
-            // 상단 툴바
-            +'<div style="padding:8px 10px;border-bottom:1px solid #334155;display:flex;gap:6px;align-items:center;">'
-            +'<input id="glossaryMgmtSearch" type="text" placeholder="용어 검색..." oninput="_glossaryMgmtFilter()" style="flex:1;font-size:12px;padding:6px 10px;height:34px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;outline:none;">'
-            +'<button onclick="_glossaryMgmtShowAdd()" style="padding:0 14px;height:34px;border-radius:8px;background:#8b5cf6;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;flex-shrink:0;">+ 추가</button>'
-            +'</div>'
-            // 추가 폼
-            +'<div id="glossaryAddForm" style="display:none;padding:10px;border-bottom:1px solid #334155;background:#0f172a;gap:6px;flex-direction:column;">'
-            +'<div style="display:flex;gap:6px;">'
-            +'<select id="glossaryAddGame" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;"></select>'
-            +'<input id="glossaryAddGameNew" type="text" placeholder="새 게임명" style="display:none;flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #334155;background:#1e293b;color:#e2e8f0;font-size:12px;">'
-            +'</div>'
-            +'<input id="glossaryAddTerm" type="text" placeholder="용어 (예: 버스, 대리, 밀대)" style="padding:6px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;outline:none;">'
-            +'<textarea id="glossaryAddDef" rows="3" placeholder="정의 (예: 강한 유저가 약한 유저를 파티에 태워 레이드를 대신 클리어해주는 서비스)" style="padding:8px 10px;border-radius:8px;border:1.5px solid #334155;background:#0f172a;color:#e2e8f0;font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>'
-            +'<div style="display:flex;gap:6px;justify-content:flex-end;">'
-            +'<button onclick="_glossaryDoAdd()" style="padding:0 18px;height:32px;border-radius:8px;background:#22c55e;color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:900;">등록</button>'
-            +'<button onclick="_glossaryHideAdd()" style="padding:0 10px;height:32px;border-radius:8px;background:none;border:1.5px solid #334155;color:#64748b;cursor:pointer;font-size:12px;">취소</button>'
-            +'</div>'
-            +'</div>'
-            // 목록
-            +'<div id="glossaryMgmtList" style="flex:1;overflow-y:auto;padding:10px 14px;"></div>'
-            +'</div>';
-        _glossaryMgmtLoad();
-    }
-
-    function _glossaryMgmtLoad(){
-        var mode=_mfMgmtMode;
-        var list=document.getElementById('glossaryMgmtList');
-        if(!list)return;
-        list.innerHTML='<div style="text-align:center;padding:20px;opacity:0.4;font-size:12px;">로딩 중...</div>';
-        db.ref('/imi_glossary/'+mode).once('value',function(snap){
-            _glossaryCache[mode]=snap.val()||{};
-            _glossaryMgmtRender();
-        });
-    }
-
-    function _glossaryMgmtRender(){
-        var mode=_mfMgmtMode;
-        var data=_glossaryCache[mode]||{};
-        var filter=(document.getElementById('glossaryMgmtSearch')||{}).value||'';
-        filter=filter.toLowerCase().trim();
-        var list=document.getElementById('glossaryMgmtList');
-        if(!list)return;
-        var games=Object.keys(data).sort(function(a,b){return a.localeCompare(b,'ko');});
-        var html='';
-        var total=0;
-        games.forEach(function(game){
-            var terms=data[game]||{};
-            var keys=Object.keys(terms).sort(function(a,b){return a.localeCompare(b,'ko');});
-            var filtered=filter?keys.filter(function(k){
-                return k.toLowerCase().indexOf(filter)>=0||(terms[k]||'').toLowerCase().indexOf(filter)>=0;
-            }):keys;
-            if(!filtered.length)return;
-            total+=filtered.length;
-            var gEsc=escHtml(game).replace(/\'/g,"\\'");
-            html+='<div style="margin-bottom:14px;">';
-            html+='<div style="font-size:11px;font-weight:900;color:#8b5cf6;padding:4px 2px;border-bottom:1px solid var(--border-ui);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;">'
-                +'<span>🎮 '+escHtml(game)+' <span style="opacity:0.6;">('+filtered.length+')</span></span>'
-                +'<button onclick="_glossaryAddForGame(\''+gEsc+'\')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);color:#8b5cf6;cursor:pointer;">+ 추가</button>'
-                +'</div>';
-            filtered.forEach(function(term){
-                var def=terms[term]||'';
-                var tEsc=escHtml(term).replace(/\'/g,"\\'");
-                html+='<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,0.04);">'
-                    +'<span style="flex-shrink:0;min-width:90px;font-size:12px;font-weight:900;color:var(--text-main);">'+escHtml(term)+'</span>'
-                    +'<span style="flex:1;font-size:12px;color:var(--text-sub);line-height:1.6;">'+escHtml(def)+'</span>'
-                    +'<div style="display:flex;gap:3px;flex-shrink:0;">'
-                    +'<button onclick="_glossaryEdit(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border-ui);background:none;color:var(--text-sub);cursor:pointer;">수정</button>'
-                    +'<button onclick="_glossaryDelete(\''+gEsc+'\',\''+tEsc+'\')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;">삭제</button>'
-                    +'</div>'
-                    +'</div>';
-            });
-            html+='</div>';
-        });
-        if(!html) html='<div style="text-align:center;padding:30px;opacity:0.4;font-size:13px;">'+(filter?'검색 결과 없음':'등록된 용어가 없습니다.')+'</div>';
-        else html='<div style="font-size:11px;color:var(--text-sub);margin-bottom:8px;font-weight:700;">총 '+total+'개</div>'+html;
-        list.innerHTML=html;
-    }
-
-    function _glossaryMgmtFilter(){ _glossaryMgmtRender(); }
-
-    function _glossaryMgmtShowAdd(){
-        var form=document.getElementById('glossaryAddForm');
-        var sel=document.getElementById('glossaryAddGame');
-        var mode=_mfMgmtMode;
-        var games=Object.keys(_glossaryCache[mode]||{}).sort(function(a,b){return a.localeCompare(b,'ko');});
-        sel.innerHTML='<option value="">게임 선택...</option>'
-            +games.map(function(g){return '<option value="'+escHtml(g)+'">'+escHtml(g)+'</option>';}).join('')
-            +'<option value="__new__">+ 새 게임</option>';
-        sel.onchange=function(){
-            document.getElementById('glossaryAddGameNew').style.display=sel.value==='__new__'?'block':'none';
-        };
-        document.getElementById('glossaryAddGameNew').style.display='none';
-        form.style.display='flex';
-        document.getElementById('glossaryAddTerm').focus();
-    }
-
-    function _glossaryHideAdd(){
-        document.getElementById('glossaryAddForm').style.display='none';
-        document.getElementById('glossaryAddTerm').value='';
-        document.getElementById('glossaryAddDef').value='';
-        document.getElementById('glossaryAddGameNew').style.display='none';
-    }
-
-    function _glossaryAddForGame(game){
-        _glossaryMgmtShowAdd();
-        var sel=document.getElementById('glossaryAddGame');
-        for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===game){sel.selectedIndex=i;break;}}
-        document.getElementById('glossaryAddTerm').focus();
-    }
-
-    async function _glossaryDoAdd(){
-        var sel=document.getElementById('glossaryAddGame');
-        var ni=document.getElementById('glossaryAddGameNew');
-        var game=sel.value==='__new__'?ni.value.trim():sel.value;
-        var term=(document.getElementById('glossaryAddTerm').value||'').trim();
-        var def=(document.getElementById('glossaryAddDef').value||'').trim();
-        if(!game||game==='게임 선택...'){ alert('게임을 선택하세요.'); return; }
-        if(!term){ alert('용어를 입력하세요.'); return; }
-        if(!def){ alert('정의를 입력하세요.'); return; }
-        try{
-            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','PUT',def);
-            _glossaryCache[_mfMgmtMode]=null;
-            _glossaryHideAdd();
-            _glossaryMgmtLoad();
-        }catch(e){ alert('저장 실패: '+e.message); }
-    }
-
-    async function _glossaryEdit(game, term){
-        var data=_glossaryCache[_mfMgmtMode]||{};
-        var oldDef=(data[game]||{})[term]||'';
-        var newDef=prompt('정의 수정 ('+game+' / '+term+'):', oldDef);
-        if(newDef===null||newDef===oldDef)return;
-        newDef=newDef.trim();
-        if(!newDef){ alert('정의를 입력하세요.'); return; }
-        try{
-            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','PUT',newDef);
-            _glossaryCache[_mfMgmtMode]=null;
-            _glossaryMgmtLoad();
-        }catch(e){ alert('수정 실패: '+e.message); }
-    }
-
-    async function _glossaryDelete(game, term){
-        if(!confirm('"'+term+'" 용어를 삭제하시겠습니까?'))return;
-        try{
-            await _authFetch('imi_glossary/'+_mfMgmtMode+'/'+encodeURIComponent(game)+'/'+encodeURIComponent(term)+'.json','DELETE');
-            _glossaryCache[_mfMgmtMode]=null;
-            _glossaryMgmtLoad();
-        }catch(e){ alert('삭제 실패: '+e.message); }
     }
 
     function _renderBadwordMgmt(){
@@ -5273,18 +5108,271 @@
         _searchByCategory(cat, botD, idx);
         document.getElementById('chatBox').scrollTop = 99999;
     }
+    var _aiMode=false;
+    var _aiPendingImg=null;
+    var _aiBadwordsCtx='';
+
+    function _buildAiBadwordsCtx(data){
+        var lines=[];
+        Object.keys(data).forEach(function(game){
+            var targets=data[game]||{};
+            Object.keys(targets).forEach(function(target){
+                var words=(targets[target]||[]).filter(function(w){return w&&w.trim();});
+                if(words.length) lines.push('['+game+' / '+target+']: '+words.join(', '));
+            });
+        });
+        return lines.join('\n');
+    }
+
     function _showGlossaryView(){
         document.getElementById('catMenuPopup').style.display='none';
+        _aiMode=true;
+        _aiPendingImg=null;
+        var banner=document.getElementById('aiModeBanner');
+        var linkArea=document.getElementById('linkArea');
+        if(linkArea) linkArea.style.display='none';
+        if(banner) banner.style.display='flex';
+        var inp=document.getElementById('userInput');
+        if(inp){ inp._origPlaceholder=inp.placeholder; inp.placeholder='판매글 내용 입력 또는 스크린샷 Ctrl+V...'; inp.focus(); }
+        _updateAiImgBadge();
+
+        // 금칙어 로딩 (비동기, 완료 전에도 AI 모드는 즉시 사용 가능)
+        _aiBadwordsCtx='';
+        _loadBadwords(currentMode, function(data){
+            _aiBadwordsCtx=_buildAiBadwordsCtx(data);
+        });
+
         var lid='L'+Date.now();
         addMsg('','bot',lid);
-        var botD=document.getElementById(lid).querySelector('.bubble');
-        botD.innerHTML='<span style="opacity:0.5;font-size:12px;">용어 목록 로딩 중...</span>';
+        document.getElementById(lid).querySelector('.bubble').innerHTML=
+            '<div style="font-size:12px;font-weight:900;color:#f59e0b;">🤖 AI 비거래 분석 모드</div>'
+            +'<div style="font-size:11px;color:var(--text-sub);margin-top:6px;line-height:1.8;">'
+            +'• 판매글 텍스트를 붙여넣거나 직접 입력 후 <b>전송</b><br>'
+            +'• 스크린샷: Shift+S 캡처 → 입력창에 Ctrl+V<br>'
+            +'• 텍스트+이미지 동시 전송 가능</div>';
         document.getElementById('chatBox').scrollTop=99999;
-        db.ref('/imi_glossary/'+currentMode).once('value',function(snap){
-            var raw=snap.val()||{};
-            _renderGlossaryView(botD, raw);
-            document.getElementById('chatBox').scrollTop=99999;
+    }
+
+    var _aiImgStore=[];
+    function _aiImgModal(idx){
+        var src=_aiImgStore[idx]; if(!src) return;
+        var ov=document.createElement('div');
+        ov.style.cssText='position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+        ov.onclick=function(){ document.body.removeChild(ov); };
+        var img=document.createElement('img');
+        img.src=src;
+        img.style.cssText='max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 0 40px rgba(0,0,0,0.8);';
+        ov.appendChild(img);
+        document.body.appendChild(ov);
+    }
+
+    function _exitAiMode(){
+        _aiMode=false;
+        _aiPendingImg=null;
+        var banner=document.getElementById('aiModeBanner');
+        var linkArea=document.getElementById('linkArea');
+        if(banner) banner.style.display='none';
+        if(linkArea) linkArea.style.display='flex';
+        var inp=document.getElementById('userInput');
+        if(inp){ inp.placeholder=inp._origPlaceholder||'질문을 입력하세요...'; }
+        _updateAiImgBadge();
+    }
+
+    function _cancelAiImg(){
+        _aiPendingImg=null;
+        _updateAiImgBadge();
+    }
+
+    function _updateAiImgBadge(){
+        var badge=document.getElementById('aiImgBadge');
+        if(!badge) return;
+        if(_aiMode&&_aiPendingImg){
+            var src='data:'+(_aiPendingImg.mediaType||'image/png')+';base64,'+_aiPendingImg.base64;
+            badge.innerHTML='<div style="display:flex;align-items:center;gap:6px;">'
+                +'<img src="'+src+'" style="height:34px;width:auto;max-width:72px;border-radius:5px;border:1.5px solid rgba(34,197,94,0.4);object-fit:cover;cursor:pointer;flex-shrink:0;" onclick="_aiImgModalSrc(\''+src+'\')" title="클릭하면 크게 보기">'
+                +'<button onclick="_cancelAiImg()" style="height:34px;padding:0 10px;border-radius:5px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;font-size:11px;font-weight:900;cursor:pointer;flex-shrink:0;">✕ 취소</button>'
+                +'</div>';
+        } else {
+            badge.innerHTML='';
+        }
+    }
+
+    function _aiImgModalSrc(src){
+        var ov=document.createElement('div');
+        ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+        ov.onclick=function(){document.body.removeChild(ov);};
+        var img=document.createElement('img');
+        img.src=src;
+        img.style.cssText='max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 0 40px rgba(0,0,0,0.8);';
+        ov.appendChild(img);
+        document.body.appendChild(ov);
+    }
+
+    // paste 이벤트: AI 모드일 때 이미지 캡처
+    (function(){
+        document.addEventListener('paste',function(e){
+            if(!_aiMode) return;
+            var items=(e.clipboardData||{}).items||[];
+            for(var i=0;i<items.length;i++){
+                if(items[i].type.indexOf('image')>=0){
+                    e.preventDefault();
+                    var file=items[i].getAsFile();
+                    var reader=new FileReader();
+                    reader.onload=(function(f){ return function(ev){
+                        _aiPendingImg={base64:ev.target.result.split(',')[1],mediaType:f.type||'image/png',name:'스크린샷'};
+                        _updateAiImgBadge();
+                    }; })(file);
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            }
         });
+    })();
+
+    var _AI_SYSTEM='당신은 아이템매니아 플랫폼의 비거래 판단 전문 도우미입니다.\n\n'
+        +'[비거래 기준]\n'
+        +'1. 계정귀속 아이템: 양도 불가 귀속 아이템\n'
+        +'2. 현금·포인트 결제: 현금거래, 계좌이체, 문화상품권, 넥슨캐시 등\n'
+        +'3. 불법 획득 아이템: 핵·버그·복사·작업장 아이템\n'
+        +'4. 게임사 정책상 거래 불가 아이템: 귀속 장비, 이벤트 귀속템 등\n'
+        +'5. 서비스 거래: 계정 판매/대여, 대리 플레이, 레벨업·업적·던전·장비 획득 대행\n\n'
+        +'[비거래가 아닌 것]\n'
+        +'- 직업·클래스명, 일반 강화·제작 용어, 수량·거래 조건 표현\n'
+        +'- 유저 간 거래 허용된 인게임 화폐 (단, 귀속 포인트는 비거래)\n'
+        +'- 단순 드랍 출처 표기용 지역/던전/보스명\n\n'
+        +'[항목 추출 규칙 — 반드시 준수]\n'
+        +'① 판매글 전체를 검토하여 비거래에 해당하는 항목을 빠짐없이 모두 추출하세요.\n'
+        +'② 단어 필드: 판매글 원문에 있는 비거래 핵심 단어를 그대로 추출. 임의 해석·변형·요약 금지.\n'
+        +'③ 뜻 필드: 아래 두 가지를 합쳐서 2~3문장으로 작성.\n'
+        +'   A. 이 단어가 판매글에서 어떤 의미로 쓰였는지 (원문 맥락 반영)\n'
+        +'   B. 게임을 모르는 사람도 이해할 수 있도록 해당 게임 용어의 실제 의미 설명\n'
+        +'   예) 간당 → "\'간당\'은 \'시간당\'의 줄임말로, 이 판매글에서는 \'간당 1.1\'처럼 시간 단위로 육성 서비스 가격을 표기하는 데 사용됨. 1시간에 1.1만원을 받고 계정을 대신 플레이해주는 서비스 단가를 뜻함."\n'
+        +'   예) 손사냥 → "매크로나 자동사냥 프로그램 없이 사람이 직접 손으로 캐릭터를 조작해 육성해주는 방식. 이 판매글에서는 프로그램 사용이 아닌 직접 플레이임을 강조하여 대리 육성 서비스를 홍보하고 있음."\n'
+        +'④ 이유 필드: [비거래 유형] + 이 판매글에서 왜 비거래인지 구체적 사유. 뜻 내용 단순 반복 금지.\n'
+        +'   유형 태그: [대리 플레이] [버스 서비스] [계정 대여·판매] [자동 프로그램·매크로] [귀속 아이템] [현금 거래] [불법 획득 아이템]\n'
+        +'   예) 간당 → "[대리 플레이] 타인 계정을 시간제로 맡아 대신 플레이하는 서비스 — 계정을 제3자에게 공유·대여하는 행위는 아이템매니아 서비스 거래 정책 위반"\n'
+        +'   예) 손사냥 → "[대리 플레이] \'프로그램 아닌 직접 손 조작\'임을 강조하는 대리 육성 서비스 — 방식과 무관하게 타인 계정 대리 플레이 자체가 비거래"\n'
+        +'   예) 자투 → "[귀속 아이템] 장착 시 해당 캐릭터에 귀속되어 타 유저에게 양도·거래 불가 — 귀속 아이템 거래 시도는 비거래"\n\n'
+        +'[용어 조회 모드 — 입력이 "[용어 조회]"로 시작하는 경우]\n'
+        +'판매글 전체가 아닌 단어/표현 하나만 조회하는 경우입니다.\n'
+        +'해당 단어가 게임 서비스 맥락에서 비거래로 쓰이는지 판단하세요.\n'
+        +'- 동생: 다른 유저의 계정을 대신 키워주는 대리 육성 서비스 → 비거래\n'
+        +'- 밀대: 파티에 태워 고난이도 던전을 대신 클리어해주는 버스 서비스 → 비거래\n'
+        +'- 버스: 강한 유저가 약한 유저를 데려가 콘텐츠를 대신 클리어해주는 서비스 → 비거래\n'
+        +'단어 자체가 일반 단어라도 게임 서비스에서 비거래 용도로 사용되는 경우 비거래로 판정하세요.\n\n'
+        +'비거래인 경우 반드시 아래 JSON 형식으로만 답변하세요:\n'
+        +'{"판정":"비거래","항목":[{"단어":"핵심 단어","정식명칭":"줄임말이면 전체 명칭, 아니면 빈 문자열","뜻":"게임 내 의미(서비스 행위 반복 금지)","이유":"판매글 맥락 + 비거래 이유"}]}\n\n'
+        +'정상거래인 경우:\n'
+        +'{"판정":"정상거래","근거":"간략한 이유"}\n\n'
+        +'JSON 이외의 내용은 절대 포함하지 마세요. 마크다운 코드블록도 쓰지 마세요.';
+
+    async function _callClaudeAPI(text, imageBase64, imageMediaType){
+        var content=[];
+        if(imageBase64&&imageMediaType) content.push({type:'image',source:{type:'base64',media_type:imageMediaType,data:imageBase64}});
+        var userText=(text&&text.trim())||'';
+        if(!userText&&!imageBase64) return {ok:false,error:'내용을 입력해주세요.'};
+        if(!userText) userText='위 이미지의 판매글을 분석해주세요.';
+        // 단어/짧은 문구 단독 입력 감지 (공백 포함 20자 이하, 이미지 없음)
+        var isSingleTerm=!imageBase64&&userText.length<=20&&userText.split(/\s+/).length<=3;
+        if(isSingleTerm){
+            userText='[용어 조회] 아이템매니아 게임 서비스 거래에서 "'+userText+'" 이 단어/표현이 비거래 용어인지 알려주세요. '
+                +'판매글 전체 문장이 아닌 단어만 입력된 경우로, 이 단어가 게임 서비스 맥락(대리 플레이, 버스, 귀속 아이템 등)에서 비거래로 쓰이는지 판단해주세요.';
+        }
+        content.push({type:'text',text:userText});
+        var sys=_AI_SYSTEM;
+        if(_aiBadwordsCtx){
+            sys+='\n\n[참고: 등록된 금칙어 목록]\n'
+                +'아래는 플랫폼에 등록된 금칙어 목록입니다. 비거래 판단의 참고 자료로만 활용하고, 이 목록에 있다고 해서 자동으로 비거래로 판정하지 마세요.\n'
+                +'판매글 내용과 맥락을 함께 고려하여 실제 비거래 해당 여부를 판단하세요.\n\n'
+                +_aiBadwordsCtx;
+        }
+        var body={model:'claude-opus-4-8',max_tokens:4096,system:sys,messages:[{role:'user',content:content}]};
+
+        if(window.electronAPI&&window.electronAPI.claudeAnalyze){
+            return window.electronAPI.claudeAnalyze({body:body});
+        }
+        // 웹 환경: PHP 프록시
+        try{
+            var res=await fetch('./claude-proxy.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            var data=await res.json();
+            if(data.content&&data.content[0]) return {ok:true,result:data.content[0].text};
+            return {ok:false,error:data.error?data.error.message:'알 수 없는 오류'};
+        }catch(e){ return {ok:false,error:e.message}; }
+    }
+
+    function _renderAIResult(botD, resultText){
+        try{
+            var json=JSON.parse(resultText.trim());
+            if(json.판정==='크롤링불가'){
+                botD.innerHTML='<div style="padding:14px 18px;background:rgba(245,158,11,0.1);border-radius:12px;border:1.5px solid rgba(245,158,11,0.3);">'
+                    +'<div style="font-size:calc(var(--base-font,14px));font-weight:900;color:#fbbf24;margin-bottom:8px;">⚠️ URL 접근 불가</div>'
+                    +'<div style="font-size:calc(var(--base-font,14px) - 1px);color:var(--text-main);line-height:1.7;">'+escHtml(json.근거||'')+'</div></div>';
+            } else if(json.판정==='비거래'){
+                var cards=(json.항목||[]).map(function(item){
+                    var 정식=(item.정식명칭||'').trim();
+                    return '<div style="background:rgba(239,68,68,0.08);border:2px solid rgba(239,68,68,0.3);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;">'
+                        +'<div style="font-size:calc(var(--base-font,14px) + 2px);font-weight:900;color:#f87171;letter-spacing:0.02em;">'+escHtml(item.단어||'')+'</div>'
+                        +(정식?'<div style="font-size:calc(var(--base-font,14px) - 1px);font-weight:900;color:#fbbf24;background:rgba(251,191,36,0.12);border-radius:6px;padding:3px 9px;display:inline-block;width:fit-content;">→ '+escHtml(정식)+'</div>':'')
+                        +'<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">'
+                        +'<div style="font-size:calc(var(--base-font,14px) - 3px);font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">용어 뜻</div>'
+                        +'<div style="font-size:calc(var(--base-font,14px) - 1px);color:var(--text-main);line-height:1.7;">'+escHtml(item.뜻||'')+'</div>'
+                        +'</div>'
+                        +'<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;">'
+                        +'<div style="font-size:calc(var(--base-font,14px) - 3px);font-weight:900;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">비거래 이유</div>'
+                        +'<div style="font-size:calc(var(--base-font,14px) - 1px);color:#fca5a5;line-height:1.7;">'+escHtml(item.이유||'')+'</div>'
+                        +'</div>'
+                        +'</div>';
+                }).join('');
+                botD.innerHTML='<div style="display:flex;flex-direction:column;gap:12px;">'
+                    +'<div style="font-size:calc(var(--base-font,14px) + 1px);font-weight:900;color:#f87171;">🔴 비거래</div>'
+                    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">'+cards+'</div>'
+                    +'</div>';
+            } else {
+                botD.innerHTML='<div style="padding:18px 20px;background:rgba(34,197,94,0.08);border-radius:14px;border:2px solid rgba(34,197,94,0.3);">'
+                    +'<div style="font-size:calc(var(--base-font,14px) + 1px);font-weight:900;color:#22c55e;margin-bottom:10px;">🟢 정상거래</div>'
+                    +'<div style="font-size:calc(var(--base-font,14px) - 1px);color:var(--text-sub);line-height:1.8;">'+escHtml(json.근거||'')+'</div></div>';
+            }
+        }catch(e){
+            var isNT=resultText.indexOf('비거래')>=0;
+            botD.innerHTML='<div style="padding:18px 20px;background:'+(isNT?'rgba(239,68,68,0.08)':'rgba(34,197,94,0.08)')+';border-radius:14px;border:2px solid '+(isNT?'rgba(239,68,68,0.3)':'rgba(34,197,94,0.3)')+';"><div style="font-size:calc(var(--base-font,14px) - 1px);white-space:pre-wrap;line-height:1.8;color:var(--text-main);">'+escHtml(resultText)+'</div></div>';
+        }
+    }
+
+    async function _runAIFromInput(){
+        var inp=document.getElementById('userInput');
+        var q=(inp&&inp.value)||'';
+        if(!q.trim()&&!_aiPendingImg){ inp&&inp.focus(); return; }
+        var imgB64=_aiPendingImg?_aiPendingImg.base64:null;
+        var imgType=_aiPendingImg?_aiPendingImg.mediaType:null;
+        _aiPendingImg=null;
+        _updateAiImgBadge();
+        if(q.trim()) addMsg(q,'user');
+        if(imgB64){
+            var _imgLid='Li'+Date.now();
+            addMsg('','user',_imgLid);
+            var _imgBubble=document.getElementById(_imgLid)&&document.getElementById(_imgLid).querySelector('.bubble');
+            if(_imgBubble){
+                var _imgSrc='data:'+(imgType||'image/png')+';base64,'+imgB64;
+                var _imgIdx=_aiImgStore.length;
+                _aiImgStore.push(_imgSrc);
+                _imgBubble.innerHTML='<img src="'+_imgSrc+'" style="max-width:220px;max-height:160px;border-radius:8px;cursor:pointer;display:block;border:2px solid rgba(245,158,11,0.3);" onclick="_aiImgModal('+_imgIdx+')" title="클릭하면 크게 보기">';
+            }
+        }
+        if(inp) inp.value='';
+        var lid='L'+Date.now();
+        addMsg('⏳ AI 분석 중...','bot',lid);
+        var botD=document.getElementById(lid).querySelector('.bubble');
+        try{
+            var resp=await _callClaudeAPI(q,imgB64,imgType);
+            if(resp.ok){
+                _renderAIResult(botD, resp.result);
+            } else {
+                botD.innerHTML='<span style="color:#ef4444;font-size:12px;">오류: '+escHtml(resp.error||'알 수 없는 오류')+'</span>';
+            }
+        }catch(e){
+            botD.innerHTML='<span style="color:#ef4444;font-size:12px;">오류: '+escHtml(e.message)+'</span>';
+        }
+        document.getElementById('chatBox').scrollTop=99999;
     }
 
     function _renderGlossaryView(container, raw, filterStr){
@@ -5370,6 +5458,7 @@
 
     var _lastAskTime = 0;
     async function ask(){
+        if(_aiMode){ await _runAIFromInput(); return; }
         var inp=document.getElementById('userInput');
         var q=inp.value.trim(); if(!q) return;
         var _now=Date.now(); if(_now-_lastAskTime<500){return;} _lastAskTime=_now;
